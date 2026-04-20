@@ -1,21 +1,29 @@
-import { getEngine } from "./engine";
+import { ensureRunning, getEngine } from "./engine";
 
 let recorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
 let startTs = 0;
 
-export function startRecording(): void {
+export async function startRecording(): Promise<void> {
+  await ensureRunning();
   const { recorderDest } = getEngine();
   if (recorder && recorder.state === "recording") return;
   chunks = [];
-  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-    ? "audio/webm;codecs=opus"
-    : "audio/webm";
-  recorder = new MediaRecorder(recorderDest.stream, { mimeType: mime, audioBitsPerSecond: 256000 });
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+  ];
+  const mime = candidates.find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
+  recorder = mime
+    ? new MediaRecorder(recorderDest.stream, { mimeType: mime, audioBitsPerSecond: 256000 })
+    : new MediaRecorder(recorderDest.stream);
   recorder.ondataavailable = (e) => {
     if (e.data && e.data.size > 0) chunks.push(e.data);
   };
-  recorder.start(1000);
+  recorder.start(500);
   startTs = Date.now();
 }
 
