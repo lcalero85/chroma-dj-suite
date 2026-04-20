@@ -243,6 +243,16 @@ export const useApp = create<AppState>()(
         mixer: s.mixer,
         radio: s.radio,
       }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppState>;
+        return {
+          ...current,
+          ...p,
+          mixer: { ...current.mixer, ...(p.mixer ?? {}) },
+          settings: { ...current.settings, ...(p.settings ?? {}) },
+          radio: { ...current.radio, ...(p.radio ?? {}) },
+        };
+      },
     },
   ),
 );

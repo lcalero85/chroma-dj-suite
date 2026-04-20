@@ -48,7 +48,14 @@ function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecord
 export function RecorderPanel() {
   const recordings = useApp((s) => s.recordings);
   const setRecordings = useApp((s) => s.setRecordings);
-  const mixer = useApp((s) => s.mixer);
+  const mixerRaw = useApp((s) => s.mixer);
+  const mixer = {
+    micOn: mixerRaw.micOn ?? false,
+    micLevel: mixerRaw.micLevel ?? 1,
+    micDuck: mixerRaw.micDuck ?? 0.4,
+    micPreset: mixerRaw.micPreset ?? "off",
+    numpadDeck: mixerRaw.numpadDeck ?? "A",
+  };
   const [, force] = useState(0);
 
   useEffect(() => {
