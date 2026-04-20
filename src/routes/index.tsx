@@ -70,19 +70,20 @@ function Index() {
           gap: 10,
           padding: 10,
           minHeight: 0,
+          overflow: "hidden",
         }}
       >
         <div style={{ minHeight: 0, gridColumn: "1 / 2", gridRow: "1 / 2" }}>
           <Deck id="A" side="left" />
         </div>
-        <div style={{ gridColumn: "2 / 3", gridRow: "1 / 2", minHeight: 0 }}>
+        <div style={{ gridColumn: "2 / 3", gridRow: "1 / 2", minHeight: 0, overflow: "hidden" }}>
           <Mixer />
         </div>
         <div style={{ minHeight: 0, gridColumn: "3 / 4", gridRow: "1 / 2" }}>
           <Deck id="B" side="right" />
         </div>
       </div>
-      <div style={{ height: "32%", minHeight: 240, padding: "0 10px 10px 10px", overflow: "hidden" }}>
+      <div style={{ height: "32%", minHeight: 240, padding: "0 10px 10px 10px", overflow: "hidden", flexShrink: 0 }}>
         <BottomTabs />
       </div>
       <Drawer />

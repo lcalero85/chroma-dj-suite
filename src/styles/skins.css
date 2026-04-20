@@ -485,3 +485,48 @@ html[data-skin="ocean"] {
 .vdj-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .vdj-scroll::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
 .vdj-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Deck "track loaded" indicator: pulsing border + soft glow */
+@keyframes vdj-loaded-border {
+  0%, 100% { border-color: var(--accent); box-shadow: var(--shadow-1), 0 0 0 1px var(--accent), 0 0 18px color-mix(in oklab, var(--accent) 35%, transparent); }
+  50%      { border-color: var(--line-strong); box-shadow: var(--shadow-1), 0 0 0 1px transparent, 0 0 6px color-mix(in oklab, var(--accent) 15%, transparent); }
+}
+.vdj-panel[data-loaded="true"] {
+  animation: vdj-loaded-border 2.4s ease-in-out infinite;
+}
+.vdj-panel[data-playing="true"] {
+  animation: vdj-loaded-border 0.9s ease-in-out infinite;
+}
+
+/* "LOADED" / "LIVE" badge */
+@keyframes vdj-badge-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px currentColor; }
+  50%      { opacity: 0.55; box-shadow: 0 0 2px currentColor; }
+}
+.vdj-loaded-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  color: var(--accent);
+  animation: vdj-badge-pulse 1.6s ease-in-out infinite;
+}
+.vdj-loaded-badge[data-tone="live"] {
+  color: var(--good, var(--accent));
+  background: color-mix(in oklab, var(--good, var(--accent)) 18%, transparent);
+  animation-duration: 0.7s;
+}
+.vdj-loaded-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
