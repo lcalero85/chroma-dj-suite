@@ -17,9 +17,10 @@ export function FxPanel() {
       [1, 2, 3].forEach((id) => {
         const r = createFxRack();
         racks.current[id] = r;
-        // Insert in parallel: master also gets fed; here we simply tap master output
+        // Parallel send: master taps into the FX input; FX wet returns to master
+        // (so it routes through limiter + recorder tap correctly)
         master.connect(r.input);
-        r.output.connect(getEngine().ctx.destination);
+        r.output.connect(master);
       });
     }
     return () => {
