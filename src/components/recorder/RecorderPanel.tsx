@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/state/store";
 import { isRecording, recordingElapsed, startRecording, stopRecording } from "@/audio/recorder";
 import { listRecordings, putRecording, deleteRecording, uid } from "@/lib/db";
-import { ensureRunning } from "@/audio/engine";
+import { ensureRunning, VOICE_PRESETS } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Circle, Square, Download, Trash2, Mic, MicOff } from "lucide-react";
+import { Circle, Square, Download, Trash2, Mic, MicOff, Wand2, Keyboard } from "lucide-react";
 import { toast } from "sonner";
-import { setMicOn, setMicLevel, setMicDuck } from "@/state/controller";
+import { setMicOn, setMicLevel, setMicDuck, setVoicePreset, setNumpadDeck } from "@/state/controller";
 
 function fileExt(mime: string) {
   if (mime.includes("wav")) return "wav";
@@ -17,10 +17,7 @@ function fileExt(mime: string) {
 
 function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecordings>>[number]; onDelete: () => Promise<void> }) {
   const url = useMemo(() => URL.createObjectURL(r.blob), [r.blob]);
-
-  useEffect(() => {
-    return () => URL.revokeObjectURL(url);
-  }, [url]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
 
   return (
     <div
@@ -37,7 +34,7 @@ function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecord
         <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
         <div className="vdj-label">{formatTime(r.duration)} · {(r.blob.size / 1024 / 1024).toFixed(1)} MB · {fileExt(r.mime).toUpperCase()}</div>
       </div>
-      <audio src={url} controls preload="metadata" style={{ height: 28, width: 320, maxWidth: "40%" }} />
+      <audio src={url} controls preload="auto" style={{ height: 28, width: 320, maxWidth: "40%" }} />
       <a className="vdj-btn" style={{ padding: "4px 6px" }} href={url} download={`${r.name}.${fileExt(r.mime)}`}>
         <Download size={12} />
       </a>
@@ -68,7 +65,8 @@ export function RecorderPanel() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+      {/* TOP ROW: record + voice over banner */}
+      <div style={{ display: "flex", alignItems: "stretch", gap: 10, flexWrap: "wrap" }}>
         <button
           className="vdj-btn"
           data-active={rec}
@@ -105,73 +103,123 @@ export function RecorderPanel() {
           {rec ? <Square size={12} /> : <Circle size={12} fill="currentColor" />}
           {rec ? "Detener" : "Grabar"}
         </button>
-        <span className="vdj-readout" style={{ color: rec ? "var(--bad)" : "var(--text-3)" }}>
+        <span className="vdj-readout" style={{ color: rec ? "var(--bad)" : "var(--text-3)", display: "flex", alignItems: "center" }}>
           {formatTime(recordingElapsed())}
         </span>
-        <div
-          className="vdj-panel-inset"
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: 8,
-            flexWrap: "wrap",
-            minHeight: 56,
-          }}
-        >
-          <button
-            className="vdj-btn"
-            data-active={mixer.micOn}
-            data-tone={mixer.micOn ? "live" : undefined}
-            title="Voice-over (micrófono en vivo)"
-            onClick={async () => {
-              const ok = await setMicOn(!mixer.micOn);
-              if (ok && !mixer.micOn) toast.success("Micrófono activo", { description: "Tu voz entra al master y a la grabación." });
-              else if (mixer.micOn) toast("Micrófono apagado");
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              minWidth: 138,
-              minHeight: 40,
-              justifyContent: "center",
-              boxShadow: mixer.micOn ? "var(--beat-glow)" : "none",
-            }}
-          >
-            {mixer.micOn ? <Mic size={14} /> : <MicOff size={14} />}
-            VOICE OVER
-          </button>
-          <span className="vdj-loaded-badge" data-tone="live" style={{ animation: mixer.micOn ? undefined : "none", opacity: mixer.micOn ? 1 : 0.65 }}>
-            {mixer.micOn ? "EN VIVO" : "MIC OFF"}
-          </span>
-          <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            LVL
-            <input
-              type="range"
-              min={0}
-              max={2}
-              step={0.01}
-              value={mixer.micLevel}
-              onChange={(e) => setMicLevel(parseFloat(e.target.value))}
-              style={{ width: 70 }}
-            />
-          </label>
-          <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            DUCK
-            <input
-              type="range"
-              min={0}
-              max={0.9}
-              step={0.01}
-              value={mixer.micDuck}
-              onChange={(e) => setMicDuck(parseFloat(e.target.value))}
-              style={{ width: 70 }}
-            />
-          </label>
+
+        {/* Numpad target indicator */}
+        <div className="vdj-panel-inset" style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}>
+          <Keyboard size={12} />
+          <span className="vdj-label">NUMPAD →</span>
+          <button className="vdj-btn" data-active={mixer.numpadDeck === "A"} style={{ padding: "2px 8px" }} onClick={() => setNumpadDeck("A")}>A</button>
+          <button className="vdj-btn" data-active={mixer.numpadDeck === "B"} style={{ padding: "2px 8px" }} onClick={() => setNumpadDeck("B")}>B</button>
+          <span className="vdj-label" style={{ opacity: 0.7 }}>(` para alternar)</span>
         </div>
       </div>
+
+      {/* VOICE OVER ROW */}
+      <div
+        className="vdj-panel-inset"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: 10,
+          flexWrap: "wrap",
+          minHeight: 64,
+          border: mixer.micOn ? "1px solid var(--bad)" : undefined,
+          boxShadow: mixer.micOn ? "var(--beat-glow)" : "none",
+          background: mixer.micOn ? "color-mix(in oklab, var(--bad) 8%, var(--surface-2))" : undefined,
+        }}
+      >
+        <button
+          className="vdj-btn"
+          data-active={mixer.micOn}
+          data-tone={mixer.micOn ? "live" : undefined}
+          title="Voice-over (micrófono en vivo)"
+          onClick={async () => {
+            const ok = await setMicOn(!mixer.micOn);
+            if (ok && !mixer.micOn) toast.success("Voice-over ACTIVO", { description: "Tu voz entra al master y a la grabación." });
+            else if (mixer.micOn) toast("Voice-over apagado");
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            minWidth: 150,
+            minHeight: 44,
+            justifyContent: "center",
+            fontWeight: 800,
+            letterSpacing: "0.08em",
+          }}
+        >
+          {mixer.micOn ? <Mic size={16} /> : <MicOff size={16} />}
+          VOICE OVER
+        </button>
+
+        {mixer.micOn && (
+          <span
+            className="vdj-loaded-badge"
+            data-tone="live"
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: "0.18em",
+              padding: "4px 10px",
+              animation: "vdj-pulse 1s infinite",
+            }}
+          >
+            ● EN VIVO
+          </span>
+        )}
+
+        <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          LVL
+          <input
+            type="range"
+            min={0}
+            max={2}
+            step={0.01}
+            value={mixer.micLevel}
+            onChange={(e) => setMicLevel(parseFloat(e.target.value))}
+            style={{ width: 80 }}
+          />
+          <span className="vdj-readout" style={{ fontSize: 10, minWidth: 30 }}>{mixer.micLevel.toFixed(2)}</span>
+        </label>
+        <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          DUCK
+          <input
+            type="range"
+            min={0}
+            max={0.9}
+            step={0.01}
+            value={mixer.micDuck}
+            onChange={(e) => setMicDuck(parseFloat(e.target.value))}
+            style={{ width: 80 }}
+          />
+          <span className="vdj-readout" style={{ fontSize: 10, minWidth: 30 }}>{Math.round(mixer.micDuck * 100)}%</span>
+        </label>
+
+        {/* Voice presets */}
+        <div className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Wand2 size={12} /> EFECTO
+          <select
+            value={mixer.micPreset}
+            onChange={(e) => {
+              setVoicePreset(e.target.value);
+              const p = VOICE_PRESETS.find((x) => x.id === e.target.value);
+              if (p && p.id !== "off") toast(`Efecto voz: ${p.label}`);
+            }}
+            className="vdj-btn"
+            style={{ padding: "4px 8px", fontFamily: "var(--font-mono)" }}
+          >
+            {VOICE_PRESETS.map((p) => (
+              <option key={p.id} value={p.id}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, overflow: "auto", padding: 6 }}>
         {recordings.length === 0 && (
           <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>Sin grabaciones aún.</div>

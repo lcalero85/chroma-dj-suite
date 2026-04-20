@@ -3,9 +3,11 @@ import { LibraryPanel } from "../library/LibraryPanel";
 import { FxPanel } from "../fx/FxPanel";
 import { SamplerPanel } from "../sampler/SamplerPanel";
 import { RecorderPanel } from "../recorder/RecorderPanel";
+import { RadioPanel } from "../radio/RadioPanel";
 
 const TABS = [
   { id: "library", label: "Library" },
+  { id: "radio", label: "Radio" },
   { id: "fx", label: "FX" },
   { id: "sampler", label: "Sampler" },
   { id: "recorder", label: "Recorder" },
@@ -25,6 +27,7 @@ export function BottomTabs() {
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
         {tab === "library" && <LibraryPanel />}
+        {tab === "radio" && <RadioPanel />}
         {tab === "fx" && <FxPanel />}
         {tab === "sampler" && <SamplerPanel />}
         {tab === "recorder" && <RecorderPanel />}
