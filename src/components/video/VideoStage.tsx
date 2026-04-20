@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp, defaultVideoFx } from "@/state/store";
 import { getVideo } from "@/audio/videoDeck";
 
@@ -15,6 +15,7 @@ export const videoStageRef: { current: HTMLCanvasElement | null } = { current: n
  */
 export function VideoStage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const decks = useApp((s) => s.decks);
   const videoMix = useApp((s) => s.videoMix);
   const audioXf = useApp((s) => s.mixer.xfader);
@@ -22,6 +23,60 @@ export function VideoStage() {
   const hasA = !!decks.A.hasVideo;
   const hasB = !!decks.B.hasVideo;
   const visible = (hasA || hasB) && videoMix.showStage;
+
+  // Position state — initial top-center, then user can drag
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem("vdj.videoStage.pos");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+  const [size, setSize] = useState<{ w: number; h: number }>(() => {
+    try {
+      const saved = localStorage.getItem("vdj.videoStage.size");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { w: 420, h: 236 };
+  });
+  const dragRef = useRef<{ ox: number; oy: number; px: number; py: number } | null>(null);
+  const resizeRef = useRef<{ ow: number; oh: number; px: number; py: number } | null>(null);
+
+  useEffect(() => {
+    if (pos) {
+      try { localStorage.setItem("vdj.videoStage.pos", JSON.stringify(pos)); } catch {}
+    }
+  }, [pos]);
+  useEffect(() => {
+    try { localStorage.setItem("vdj.videoStage.size", JSON.stringify(size)); } catch {}
+  }, [size]);
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (dragRef.current) {
+        const { ox, oy, px, py } = dragRef.current;
+        const nx = Math.max(0, Math.min(window.innerWidth - size.w, ox + (e.clientX - px)));
+        const ny = Math.max(0, Math.min(window.innerHeight - size.h, oy + (e.clientY - py)));
+        setPos({ x: nx, y: ny });
+      } else if (resizeRef.current) {
+        const { ow, oh, px, py } = resizeRef.current;
+        const nw = Math.max(220, Math.min(window.innerWidth - 20, ow + (e.clientX - px)));
+        const nh = Math.max(140, Math.min(window.innerHeight - 20, oh + (e.clientY - py)));
+        setSize({ w: nw, h: nh });
+      }
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      resizeRef.current = null;
+      document.body.style.userSelect = "";
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [size.w, size.h]);
 
   useEffect(() => {
     if (!visible) return;
@@ -114,16 +169,13 @@ export function VideoStage() {
 
   if (!visible) return null;
 
-  return (
-    <div
-      className="vdj-panel-inset"
-      style={{
+  const computedStyle: React.CSSProperties = pos
+    ? {
         position: "fixed",
-        left: "50%",
-        top: 72,
-        transform: "translateX(-50%)",
-        width: 420,
-        height: 236,
+        left: pos.x,
+        top: pos.y,
+        width: size.w,
+        height: size.h,
         zIndex: 40,
         padding: 4,
         boxShadow: "0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--accent)",
@@ -131,9 +183,48 @@ export function VideoStage() {
         borderRadius: 8,
         display: "flex",
         flexDirection: "column",
-      }}
+      }
+    : {
+        position: "fixed",
+        left: "50%",
+        top: 72,
+        transform: "translateX(-50%)",
+        width: size.w,
+        height: size.h,
+        zIndex: 40,
+        padding: 4,
+        boxShadow: "0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--accent)",
+        background: "#000",
+        borderRadius: 8,
+        display: "flex",
+        flexDirection: "column",
+      };
+
+  const startDrag = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const rect = containerRef.current?.getBoundingClientRect();
+    const ox = rect?.left ?? pos?.x ?? 0;
+    const oy = rect?.top ?? pos?.y ?? 0;
+    dragRef.current = { ox, oy, px: e.clientX, py: e.clientY };
+    document.body.style.userSelect = "none";
+    if (!pos) setPos({ x: ox, y: oy });
+  };
+
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeRef.current = { ow: size.w, oh: size.h, px: e.clientX, py: e.clientY };
+    document.body.style.userSelect = "none";
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="vdj-panel-inset"
+      style={computedStyle}
     >
       <div
+        onPointerDown={startDrag}
         style={{
           display: "flex",
           alignItems: "center",
@@ -143,12 +234,15 @@ export function VideoStage() {
           letterSpacing: "0.18em",
           color: "var(--accent)",
           fontWeight: 800,
+          cursor: "move",
+          userSelect: "none",
         }}
       >
-        <span>● VIDEO MIX</span>
+        <span>⋮⋮ ● VIDEO MIX</span>
         <button
           className="vdj-btn"
           style={{ padding: "1px 6px", fontSize: 9 }}
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={() =>
             useApp.getState().updateVideoMix({ showStage: false })
           }
@@ -162,6 +256,21 @@ export function VideoStage() {
         width={640}
         height={360}
         style={{ width: "100%", flex: 1, borderRadius: 4, background: "#000" }}
+      />
+      <div
+        onPointerDown={startResize}
+        style={{
+          position: "absolute",
+          right: 0,
+          bottom: 0,
+          width: 16,
+          height: 16,
+          cursor: "nwse-resize",
+          background:
+            "linear-gradient(135deg, transparent 50%, var(--accent) 50%, var(--accent) 70%, transparent 70%)",
+          borderBottomRightRadius: 8,
+        }}
+        title="Redimensionar"
       />
     </div>
   );
