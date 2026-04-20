@@ -3,6 +3,7 @@ import type { DeckId } from "@/state/store";
 import { useApp } from "@/state/store";
 import { getDeck, currentTime, seek, pause, play, setPlaybackRate } from "./deck";
 import { setMasterVolume } from "./engine";
+import { setXfaderPosition } from "@/state/controller";
 
 /** Jump N beats forward/backward keeping play state. */
 export function beatJump(id: DeckId, beats: number) {
@@ -115,8 +116,7 @@ export function autoMixTo(target: -1 | 1, seconds = 8) {
     const t = (performance.now() - t0) / (seconds * 1000);
     const k = Math.min(1, t);
     const v = start + (target - start) * k;
-    // call through controller to keep curve applied
-    import("@/state/controller").then(({ setXfaderPosition }) => setXfaderPosition(v));
+    setXfaderPosition(v);
     if (k < 1) autoMixRaf = requestAnimationFrame(step);
     else autoMixRaf = null;
   };
