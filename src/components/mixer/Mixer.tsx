@@ -18,7 +18,18 @@ export function Mixer() {
   }, []);
 
   return (
-    <div className="vdj-panel" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
+    <div
+      className="vdj-panel vdj-scroll"
+      style={{
+        padding: 12,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        height: "100%",
+        minHeight: 0,
+        overflow: "hidden auto",
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span className="vdj-label">MIXER</span>
         <span className="vdj-chip">{mixer.xfaderCurve.toUpperCase()}</span>

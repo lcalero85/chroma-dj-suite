@@ -39,6 +39,8 @@ export function Deck({ id, side }: DeckProps) {
   return (
     <div
       className="vdj-panel"
+      data-loaded={!!ds.duration && !ds.isPlaying}
+      data-playing={ds.isPlaying}
       style={{
         padding: 12,
         display: "flex",
@@ -46,6 +48,7 @@ export function Deck({ id, side }: DeckProps) {
         gap: 10,
         height: "100%",
         minHeight: 0,
+        overflow: "hidden",
       }}
     >
       {/* header */}
@@ -69,18 +72,30 @@ export function Deck({ id, side }: DeckProps) {
             {id}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div
               style={{
                 fontSize: 13,
                 fontWeight: 700,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                maxWidth: 260,
+                maxWidth: 200,
               }}
               title={ds.title}
-            >
-              {ds.title}
+              >
+                {ds.title}
+              </div>
+              {ds.duration > 0 && (
+                <span
+                  className="vdj-loaded-badge"
+                  data-tone={ds.isPlaying ? "live" : undefined}
+                  title={ds.isPlaying ? "Reproduciendo" : "Pista cargada"}
+                >
+                  <span className="dot" />
+                  {ds.isPlaying ? "LIVE" : "LOADED"}
+                </span>
+              )}
             </div>
             <div className="vdj-label" style={{ marginTop: 2 }}>
               {ds.artist || "—"}
