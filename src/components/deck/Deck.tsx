@@ -128,16 +128,19 @@ export function Deck({ id, side }: DeckProps) {
       {/* mini overview + main waveform */}
       <Waveform
         peaks={ds.peaks}
+        bands={ds.bands}
         position={ds.position}
         bpm={ds.bpm}
         duration={ds.duration}
         hotCues={ds.hotCues}
         height={28}
         variant="mini"
+        isPlaying={ds.isPlaying}
         onSeek={(p) => seekDeck(id, p)}
       />
       <Waveform
         peaks={ds.peaks}
+        bands={ds.bands}
         position={ds.position}
         bpm={ds.bpm}
         duration={ds.duration}
@@ -146,6 +149,7 @@ export function Deck({ id, side }: DeckProps) {
         hotCues={ds.hotCues}
         height={84}
         variant="main"
+        isPlaying={ds.isPlaying}
       />
 
       {/* time + jog row */}
