@@ -16,7 +16,13 @@ export type SkinId =
   | "studio"
   | "cyber"
   | "vinyl"
-  | "hacker";
+  | "hacker"
+  | "midnight"
+  | "sunset"
+  | "arctic"
+  | "blood"
+  | "gold"
+  | "ocean";
 
 export interface DeckState {
   trackId: string | null;
