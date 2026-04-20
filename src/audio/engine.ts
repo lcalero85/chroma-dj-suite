@@ -127,20 +127,70 @@ export function setMasterVolume(v: number) {
 }
 
 export function setLimiter(enabled: boolean) {
-  const { ctx, master, limiter, masterAnalyser, recorderDest } = getEngine();
+  const { ctx, master, limiter, masterAnalyser, recordTap } = getEngine();
   try {
     master.disconnect();
     limiter.disconnect();
     masterAnalyser.disconnect();
+    recordTap.disconnect();
   } catch {
     /* noop */
   }
   if (enabled) {
     master.connect(limiter);
     limiter.connect(masterAnalyser);
+    limiter.connect(recordTap);
   } else {
     master.connect(masterAnalyser);
+    master.connect(recordTap);
   }
   masterAnalyser.connect(ctx.destination);
-  masterAnalyser.connect(recorderDest);
+  recordTap.connect(getEngine().recorderDest);
 }
+
+// ===== Microphone (voice-over) =====
+export async function enableMic(): Promise<boolean> {
+  const { ctx, micGain } = getEngine();
+  if (_micStream) return true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false },
+    });
+    _micStream = stream;
+    _micSource = ctx.createMediaStreamSource(stream);
+    _micSource.connect(micGain);
+    return true;
+  } catch (e) {
+    console.error("Mic error", e);
+    return false;
+  }
+}
+
+export function disableMic() {
+  const { micGain, ctx } = getEngine();
+  micGain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+  if (_micSource) {
+    try { _micSource.disconnect(); } catch { /* noop */ }
+    _micSource = null;
+  }
+  if (_micStream) {
+    _micStream.getTracks().forEach((t) => t.stop());
+    _micStream = null;
+  }
+}
+
+export function setMicLevel(v: number) {
+  const { micGain, ctx } = getEngine();
+  micGain.gain.setTargetAtTime(Math.max(0, Math.min(2, v)), ctx.currentTime, 0.02);
+}
+
+/** Duck master when speaking. amount 0..1 (1 = -inf, 0 = no duck). */
+export function setMicDuck(amount: number) {
+  const { ctx, master } = getEngine();
+  // Apply duck on master gain pre-limiter via temporary gain node? Simpler: scale master output.
+  const k = 1 - Math.max(0, Math.min(0.9, amount));
+  master.gain.setTargetAtTime(k * (useAppMasterRef.current ?? 0.85), ctx.currentTime, 0.05);
+}
+
+// Lightweight ref to read current master without coupling to the store here.
+export const useAppMasterRef: { current: number | null } = { current: null };
