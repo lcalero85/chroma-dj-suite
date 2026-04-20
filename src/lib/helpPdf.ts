@@ -109,6 +109,62 @@ const SECTIONS: Section[] = [
       "Tap de grabación: limiter + micDuck → recordTap → ScriptProcessor (PCM 16-bit, WAV estéreo 44.1 kHz).",
     ],
   },
+  {
+    title: "Librería con carpetas (géneros y subgéneros)",
+    rows: [
+      "Sidebar izquierda en Library con árbol de carpetas anidadas.",
+      "Crea carpetas raíz con el botón 'Carpeta'.",
+      "Cada carpeta tiene botones para renombrar (lápiz), añadir subcarpeta y eliminar.",
+      "Arrastra y suelta una pista sobre una carpeta para asignarla allí (drag & drop).",
+      "Arrastra a 'Todas las pistas' para sacarla de cualquier carpeta.",
+      "Eliminar una carpeta también borra sus subcarpetas; las pistas vuelven a la raíz.",
+      "Filtro automático: al seleccionar una carpeta solo se muestran sus pistas.",
+      "Persistencia 100% local en IndexedDB (store 'folders').",
+    ],
+  },
+  {
+    title: "Mezcla de video",
+    rows: [
+      "Importa archivos de video (MP4, WebM, MOV) desde Library igual que audio.",
+      "Las pistas de video se marcan con un icono de película.",
+      "Carga el video en Deck A o Deck B con →A / →B o doble click.",
+      "Aparece automáticamente la pantalla flotante 'VIDEO MIX' (esquina inferior derecha).",
+      "El audio del video se reproduce a través de toda la cadena: EQ, filter, FX, master, grabación.",
+      "El crossfader de audio mezcla también el video (link activado por defecto).",
+      "Cada deck tiene un panel 'VIDEO FX' bajo los hot cues con 9 parámetros:",
+      "  · BLUR · BRIGHT · CONTRAST · SATURATE · HUE · INVERT · RGB shift · GLITCH · ZOOM",
+      "Botón RESET por deck para volver al estado neutral.",
+      "El video sigue al pitch/tempo del audio (rate match) y se sincroniza cada frame.",
+    ],
+  },
+  {
+    title: "Grabación de video MP4",
+    rows: [
+      "Cuando hay video cargado, aparece el botón 'Grabar video' en Recorder.",
+      "Captura el canvas central + audio master (incluye voice-over).",
+      "Encoder: MediaRecorder con MP4/H.264 si el navegador lo soporta, fallback a WebM.",
+      "Bitrate de video: 4 Mbps · 30 FPS · audio del master en tiempo real.",
+      "El archivo se guarda en IndexedDB y se reproduce/descarga desde la lista del Recorder.",
+      "La grabación de audio WAV (botón 'Grabar') sigue funcionando en paralelo y por separado.",
+    ],
+  },
+  {
+    title: "Levantar la app en local",
+    rows: [
+      "Requisitos: Node.js 20+ o Bun 1.1+, npm o bun, navegador Chromium reciente.",
+      "1. Clona el repositorio: git clone <url-del-repo> && cd <carpeta>",
+      "2. Instala dependencias:    bun install        (o npm install)",
+      "3. Modo desarrollo:         bun dev            (o npm run dev)",
+      "4. Abre el navegador en:    http://localhost:5173",
+      "5. Build de producción:     bun run build",
+      "6. Servir el build local:   bun run start      (sirve la carpeta dist)",
+      "Notas:",
+      "  · La app usa IndexedDB y localStorage del navegador, no necesita backend.",
+      "  · Para usar el micrófono el sitio debe ser localhost o https.",
+      "  · La grabación MP4 solo funciona en navegadores con soporte H.264 (Chrome/Edge).",
+      "  · Si vas a desplegar: hace falta servidor estático con HTTPS para mic + MediaRecorder.",
+    ],
+  },
 ];
 
 export function downloadHelpPdf() {

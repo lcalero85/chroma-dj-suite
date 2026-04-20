@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { TrackRecord, PlaylistRecord, RecordingRecord } from "@/lib/db";
+import type { TrackRecord, PlaylistRecord, RecordingRecord, FolderRecord } from "@/lib/db";
 import type { XfaderCurve } from "@/audio/crossfader";
 import type { CamelotKey } from "@/lib/camelot";
 import type { FxKind } from "@/audio/fx";
@@ -53,7 +53,28 @@ export interface DeckState {
   bands?: { lo: number[]; mid: number[]; hi: number[] } | null;
   reverse: boolean;
   slip: boolean;
+  // Video support
+  hasVideo?: boolean;
+  videoUrl?: string | null;
+  videoFx?: VideoFx;
 }
+
+export interface VideoFx {
+  blur: number;       // 0..20 px
+  brightness: number; // 0..2 (1 = normal)
+  contrast: number;   // 0..2
+  saturate: number;   // 0..2
+  hueRotate: number;  // 0..360 deg
+  invert: number;     // 0..1
+  rgbShift: number;   // 0..20 px
+  glitch: number;     // 0..1
+  zoom: number;       // 0.5..2
+}
+
+export const defaultVideoFx = (): VideoFx => ({
+  blur: 0, brightness: 1, contrast: 1, saturate: 1, hueRotate: 0,
+  invert: 0, rgbShift: 0, glitch: 0, zoom: 1,
+});
 
 export interface MixerState {
   master: number;
@@ -77,6 +98,12 @@ export interface RadioState {
   currentIndex: number;
   autoCrossfade: boolean;
   shuffle: boolean;
+}
+
+export interface VideoMixState {
+  videoXfader: number; // -1..1, follows audio xfader by default
+  linkAudioXfader: boolean;
+  showStage: boolean;
 }
 
 
@@ -126,6 +153,9 @@ const defaultDeck = (): DeckState => ({
   bands: null,
   reverse: false,
   slip: false,
+  hasVideo: false,
+  videoUrl: null,
+  videoFx: defaultVideoFx(),
 });
 
 interface AppState {
@@ -143,6 +173,9 @@ interface AppState {
   search: string;
   selectedPlaylistId: string | null;
   radio: RadioState;
+  videoMix: VideoMixState;
+  selectedFolderId: string | null;
+  folders: FolderRecord[];
 
   // setters
   updateDeck: (id: DeckId, patch: Partial<DeckState>) => void;
@@ -158,6 +191,10 @@ interface AppState {
   setSearch: (s: string) => void;
   setSelectedPlaylist: (id: string | null) => void;
   updateRadio: (patch: Partial<RadioState>) => void;
+  updateVideoMix: (patch: Partial<VideoMixState>) => void;
+  setSelectedFolder: (id: string | null) => void;
+  setFolders: (f: FolderRecord[]) => void;
+  updateVideoFx: (id: DeckId, patch: Partial<VideoFx>) => void;
 }
 
 const defaultSettings: SettingsState = {
@@ -218,6 +255,9 @@ export const useApp = create<AppState>()(
       search: "",
       selectedPlaylistId: null,
       radio: { enabled: false, queue: [], currentIndex: -1, autoCrossfade: true, shuffle: false },
+      videoMix: { videoXfader: 0, linkAudioXfader: true, showStage: true },
+      selectedFolderId: null,
+      folders: [],
 
       updateDeck: (id, patch) =>
         set((s) => ({ decks: { ...s.decks, [id]: { ...s.decks[id], ...patch } } })),
@@ -234,6 +274,19 @@ export const useApp = create<AppState>()(
       setSearch: (search) => set({ search }),
       setSelectedPlaylist: (selectedPlaylistId) => set({ selectedPlaylistId }),
       updateRadio: (patch) => set((s) => ({ radio: { ...s.radio, ...patch } })),
+      updateVideoMix: (patch) => set((s) => ({ videoMix: { ...s.videoMix, ...patch } })),
+      setSelectedFolder: (selectedFolderId) => set({ selectedFolderId }),
+      setFolders: (folders) => set({ folders }),
+      updateVideoFx: (id, patch) =>
+        set((s) => ({
+          decks: {
+            ...s.decks,
+            [id]: {
+              ...s.decks[id],
+              videoFx: { ...(s.decks[id].videoFx ?? defaultVideoFx()), ...patch },
+            },
+          },
+        })),
     }),
     {
       name: "vdj-pro-state",
@@ -242,6 +295,7 @@ export const useApp = create<AppState>()(
         settings: s.settings,
         mixer: s.mixer,
         radio: s.radio,
+        videoMix: s.videoMix,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppState>;
@@ -251,6 +305,7 @@ export const useApp = create<AppState>()(
           mixer: { ...current.mixer, ...(p.mixer ?? {}) },
           settings: { ...current.settings, ...(p.settings ?? {}) },
           radio: { ...current.radio, ...(p.radio ?? {}) },
+          videoMix: { ...current.videoMix, ...(p.videoMix ?? {}) },
         };
       },
     },

@@ -24,6 +24,7 @@ import { getDeck } from "@/audio/deck";
 import { formatTime } from "@/lib/format";
 import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown } from "lucide-react";
 import { keyName } from "@/lib/camelot";
+import { VideoFxPanel } from "../video/VideoFxPanel";
 
 interface DeckProps {
   id: DeckId;
@@ -229,6 +230,9 @@ export function Deck({ id, side }: DeckProps) {
 
       {/* pro controls: beat jump, slip, reverse, brake */}
       <ProControls id={id} />
+
+      {/* video FX (only when a video clip is loaded) */}
+      <VideoFxPanel id={id} />
 
       {/* deck VU */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

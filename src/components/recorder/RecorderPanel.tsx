@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/state/store";
 import { isRecording, recordingElapsed, startRecording, stopRecording } from "@/audio/recorder";
+import { isVideoRecording, videoRecordingElapsed, startVideoRecording, stopVideoRecording } from "@/audio/videoRecorder";
+import { videoStageRef } from "@/components/video/VideoStage";
 import { listRecordings, putRecording, deleteRecording, uid } from "@/lib/db";
 import { ensureRunning, VOICE_PRESETS } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Circle, Square, Download, Trash2, Mic, MicOff, Wand2, Keyboard } from "lucide-react";
+import { Circle, Square, Download, Trash2, Mic, MicOff, Wand2, Keyboard, Video } from "lucide-react";
 import { toast } from "sonner";
 import { setMicOn, setMicLevel, setMicDuck, setVoicePreset, setNumpadDeck } from "@/state/controller";
 
 function fileExt(mime: string) {
   if (mime.includes("wav")) return "wav";
-  if (mime.includes("mp4")) return "m4a";
+  if (mime.includes("mp4")) return "mp4";
+  if (mime.includes("webm") && mime.includes("video")) return "webm";
   if (mime.includes("ogg")) return "ogg";
   return "webm";
 }
@@ -18,6 +21,7 @@ function fileExt(mime: string) {
 function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecordings>>[number]; onDelete: () => Promise<void> }) {
   const url = useMemo(() => URL.createObjectURL(r.blob), [r.blob]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  const isVideo = r.mime.startsWith("video/");
 
   return (
     <div
@@ -31,10 +35,17 @@ function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecord
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
+        <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
+          {isVideo && <Video size={11} style={{ color: "var(--accent)" }} />}
+          {r.name}
+        </div>
         <div className="vdj-label">{formatTime(r.duration)} · {(r.blob.size / 1024 / 1024).toFixed(1)} MB · {fileExt(r.mime).toUpperCase()}</div>
       </div>
-      <audio src={url} controls preload="auto" style={{ height: 28, width: 320, maxWidth: "40%" }} />
+      {isVideo ? (
+        <video src={url} controls preload="metadata" style={{ height: 80, maxWidth: "40%", borderRadius: 4, background: "#000" }} />
+      ) : (
+        <audio src={url} controls preload="auto" style={{ height: 28, width: 320, maxWidth: "40%" }} />
+      )}
       <a className="vdj-btn" style={{ padding: "4px 6px" }} href={url} download={`${r.name}.${fileExt(r.mime)}`}>
         <Download size={12} />
       </a>
@@ -48,6 +59,7 @@ function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecord
 export function RecorderPanel() {
   const recordings = useApp((s) => s.recordings);
   const setRecordings = useApp((s) => s.setRecordings);
+  const hasVideo = useApp((s) => !!(s.decks.A.hasVideo || s.decks.B.hasVideo));
   const mixerRaw = useApp((s) => s.mixer);
   const mixer = {
     micOn: mixerRaw.micOn ?? false,
@@ -63,12 +75,13 @@ export function RecorderPanel() {
   }, [setRecordings]);
 
   const rec = isRecording();
+  const vrec = isVideoRecording();
 
   useEffect(() => {
-    if (!rec) return;
+    if (!rec && !vrec) return;
     const i = setInterval(() => force((x) => x + 1), 250);
     return () => clearInterval(i);
-  }, [rec]);
+  }, [rec, vrec]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
@@ -113,6 +126,58 @@ export function RecorderPanel() {
         <span className="vdj-readout" style={{ color: rec ? "var(--bad)" : "var(--text-3)", display: "flex", alignItems: "center" }}>
           {formatTime(recordingElapsed())}
         </span>
+
+        {/* Video record button (only when there's a video loaded on a deck) */}
+        {hasVideo && (
+          <>
+            <button
+              className="vdj-btn"
+              data-active={vrec}
+              data-tone="danger"
+              onClick={async () => {
+                await ensureRunning();
+                try {
+                  if (vrec) {
+                    const r = await stopVideoRecording();
+                    if (r) {
+                      await putRecording({
+                        id: uid(),
+                        name: `Video set ${new Date().toLocaleString()}`,
+                        blob: r.blob,
+                        mime: r.mime,
+                        duration: r.duration,
+                        createdAt: Date.now(),
+                      });
+                      setRecordings(await listRecordings());
+                      toast.success("Video grabado", { description: `Archivo ${r.ext.toUpperCase()} listo para descargar.` });
+                    }
+                  } else {
+                    const canvas = videoStageRef.current;
+                    if (!canvas) {
+                      toast.error("Activa la pantalla de video primero");
+                      return;
+                    }
+                    const ok = await startVideoRecording(canvas, 30);
+                    if (ok) toast("Grabando video…", { description: "Captura del mix de video + audio master." });
+                    else toast.error("No se pudo iniciar la grabación de video");
+                  }
+                } catch (error) {
+                  console.error(error);
+                  toast.error("Error en grabación de video");
+                }
+                force((x) => x + 1);
+              }}
+              style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 132, justifyContent: "center", minHeight: 40 }}
+              title="Grabar video MP4 (master + canvas)"
+            >
+              {vrec ? <Square size={12} /> : <Video size={14} />}
+              {vrec ? "Stop video" : "Grabar video"}
+            </button>
+            <span className="vdj-readout" style={{ color: vrec ? "var(--bad)" : "var(--text-3)", display: "flex", alignItems: "center" }}>
+              {formatTime(videoRecordingElapsed())}
+            </span>
+          </>
+        )}
 
         {/* Numpad target indicator */}
         <div className="vdj-panel-inset" style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}>

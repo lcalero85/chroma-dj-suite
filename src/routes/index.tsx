@@ -10,6 +10,7 @@ import { Drawer } from "@/components/console/Drawer";
 import { BottomTabs } from "@/components/console/BottomTabs";
 import { Deck } from "@/components/deck/Deck";
 import { Mixer } from "@/components/mixer/Mixer";
+import { VideoStage, VideoStageToggle } from "@/components/video/VideoStage";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -87,6 +88,8 @@ function Index() {
         <BottomTabs />
       </div>
       <Drawer />
+      <VideoStage />
+      <VideoStageToggle />
       <Toaster />
     </div>
   );
