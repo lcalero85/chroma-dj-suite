@@ -68,11 +68,25 @@ export function getEngine(): EngineHandles {
   _masterAnalyser.smoothingTimeConstant = 0.6;
 
   _recorderDest = _ctx.createMediaStreamDestination();
+  _recordTap = _ctx.createGain();
+  _recordTap.gain.value = 1;
+
+  // Mic chain (voice-over): micSource -> micGain -> micDuck -> limiter (post-EQ-of-master)
+  _micGain = _ctx.createGain();
+  _micGain.gain.value = 0; // off until enabled
+  _micDuck = _ctx.createGain();
+  _micDuck.gain.value = 1;
+  _micGain.connect(_micDuck);
 
   _master.connect(_limiter);
   _limiter.connect(_masterAnalyser);
   _masterAnalyser.connect(_ctx.destination);
-  _masterAnalyser.connect(_recorderDest);
+  // Dedicated record tap straight from limiter (avoids analyser quirks on some browsers)
+  _limiter.connect(_recordTap);
+  _recordTap.connect(_recorderDest);
+  // Mic also into final output and recording
+  _micDuck.connect(_ctx.destination);
+  _micDuck.connect(_recorderDest);
 
   _cueBus = _ctx.createGain();
   _cueBus.gain.value = 0;
@@ -89,6 +103,9 @@ export function getEngine(): EngineHandles {
     cueBus: _cueBus,
     cueAnalyser: _cueAnalyser,
     recorderDest: _recorderDest,
+    recordTap: _recordTap,
+    micGain: _micGain,
+    micDuck: _micDuck,
   };
 }
 
