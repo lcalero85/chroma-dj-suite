@@ -1,12 +1,14 @@
 import { openDB, type IDBPDatabase } from "idb";
 
+import type { CamelotKey } from "./camelot";
+
 export interface TrackRecord {
   id: string;
   title: string;
   artist: string;
   duration: number;
   bpm: number | null;
-  key: string | null;
+  key: CamelotKey | null;
   color: string;
   addedAt: number;
   lastPlayed: number | null;
