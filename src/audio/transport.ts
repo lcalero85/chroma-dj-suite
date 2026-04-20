@@ -26,18 +26,14 @@ export function brake(id: DeckId, seconds = 1.2) {
     const t = (performance.now() - t0) / 1000;
     if (t >= seconds) {
       pause(id);
-      // restore nominal rate so next play uses pitch-based rate
       setPlaybackRate(id, startRate);
       return;
     }
     const k = 1 - t / seconds;
     const r = Math.max(0.01, startRate * k * k);
     if (d.source) {
-      try {
-        const { ctx } = (d.source as AudioBufferSourceNode).context as unknown as { ctx: AudioContext };
-        void ctx;
-      } catch { /* noop */ }
-      d.source.playbackRate.setTargetAtTime(r, d.source.context.currentTime, 0.02);
+      const ac = d.source.context;
+      d.source.playbackRate.setTargetAtTime(r, ac.currentTime, 0.02);
     }
     requestAnimationFrame(tick);
   };
