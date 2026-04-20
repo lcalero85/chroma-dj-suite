@@ -119,10 +119,11 @@ export function VideoStage() {
       className="vdj-panel-inset"
       style={{
         position: "fixed",
-        right: 16,
-        bottom: 360,
-        width: 360,
-        height: 200,
+        left: "50%",
+        top: 72,
+        transform: "translateX(-50%)",
+        width: 420,
+        height: 236,
         zIndex: 40,
         padding: 4,
         boxShadow: "0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--accent)",
@@ -177,8 +178,9 @@ export function VideoStageToggle() {
       data-active
       style={{
         position: "fixed",
-        right: 16,
-        bottom: 360,
+        left: "50%",
+        top: 72,
+        transform: "translateX(-50%)",
         zIndex: 40,
         padding: "8px 14px",
         fontWeight: 800,
