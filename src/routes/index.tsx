@@ -81,8 +81,11 @@ function Index() {
         <div style={{ minHeight: 0 }}>
           <Deck id="B" side="right" />
         </div>
-        <div style={{ gridColumn: "1 / -1", minHeight: 0 }}>
-          <BottomTabs />
+        <div style={{ gridColumn: "1 / 2", minHeight: 0 }}>
+          <BottomTabs side="left" />
+        </div>
+        <div style={{ gridColumn: "3 / 4", minHeight: 0 }}>
+          <BottomTabs side="right" />
         </div>
       </div>
       <Drawer />
