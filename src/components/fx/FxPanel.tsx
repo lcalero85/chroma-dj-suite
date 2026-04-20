@@ -11,16 +11,16 @@ export function FxPanel() {
   const racks = useRef<Record<number, FxRackHandles>>({});
 
   useEffect(() => {
-    const { master } = getEngine();
+    const { master, limiter } = getEngine();
     // Build 3 racks chained on master send
     if (Object.keys(racks.current).length === 0) {
       [1, 2, 3].forEach((id) => {
         const r = createFxRack();
         racks.current[id] = r;
-        // Parallel send: master taps into the FX input; FX wet returns to master
-        // (so it routes through limiter + recorder tap correctly)
+        // Parallel send: tap master output, return wet into limiter input
+        // (avoids feedback loop while still going through recorder tap downstream)
         master.connect(r.input);
-        r.output.connect(master);
+        r.output.connect(limiter);
       });
       // Expose for keyboard shortcuts
       window.__vdjFxRacks = racks.current;
