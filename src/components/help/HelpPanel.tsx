@@ -1,6 +1,27 @@
+import { Download } from "lucide-react";
+import { downloadHelpPdf } from "@/lib/helpPdf";
+import { toast } from "sonner";
+
 export function HelpPanel() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 12, lineHeight: 1.6, color: "var(--text-2)" }}>
+      <button
+        className="vdj-btn"
+        data-tone="live"
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "8px 12px" }}
+        onClick={() => {
+          try {
+            downloadHelpPdf();
+            toast("Manual PDF descargado");
+          } catch (e) {
+            console.error(e);
+            toast("No se pudo generar el PDF");
+          }
+        }}
+      >
+        <Download size={14} /> Descargar manual PDF
+      </button>
+
       <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Inicio rápido</h3>
       <ol style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
         <li>Abre la pestaña <b>Library</b> e importa archivos de audio.</li>
@@ -11,10 +32,11 @@ export function HelpPanel() {
         <li>Encadena efectos en el panel <b>FX</b>.</li>
         <li>Graba tu sesión desde la pestaña <b>Recorder</b>.</li>
       </ol>
+
       <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Funciones Pro</h3>
       <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
         <li><b>Beat Jump</b>: salta ±1 / ±4 beats sin perder fase.</li>
-        <li><b>Slip</b>: marca acciones para volver a la posición original (visual).</li>
+        <li><b>Slip</b>: marca acciones para volver a la posición original.</li>
         <li><b>Reverse</b>: reproduce la pista al revés en tiempo real.</li>
         <li><b>Brake / Stop</b>: efecto de frenado de plato (lento o rápido).</li>
         <li><b>Quantize (QNT)</b>: cuantiza hot cues al beat más cercano.</li>
@@ -22,18 +44,33 @@ export function HelpPanel() {
         <li><b>Tap Tempo</b>: toca el botón TAP al ritmo para medir BPM.</li>
         <li><b>Auto-Mix</b>: barre el crossfader al deck contrario en 8s.</li>
         <li><b>Sleep Timer</b>: fade-out de master en 5/15/30/60 min.</li>
+        <li><b>Voice-Over</b>: activa el micrófono con ducking del master.</li>
       </ul>
+
       <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Atajos de teclado</h3>
       <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4, fontFamily: "var(--font-mono)", fontSize: 11 }}>
         <li><b>Space</b> Play/Pause A · <b>Shift Right</b> Play/Pause B</li>
-        <li><b>Q / W</b> Cue A / Cue B · <b>A / S</b> Sync A / Sync B</li>
+        <li><b>Q / W</b> Cue A / B · <b>A / S</b> Sync A / B</li>
         <li><b>1‑8</b> Hot cues A · <b>Shift+1‑8</b> Hot cues B</li>
         <li><b>[ ]</b> Beat jump A ±4 · <b>; '</b> Beat jump B ±4</li>
         <li><b>B / Shift+B</b> Brake A / B · <b>V / Shift+V</b> Reverse A / B</li>
-        <li><b>M</b> Auto-mix · <b>T</b> Tap tempo · <b>R</b> Rec start/stop</li>
+        <li><b>M</b> Auto-mix · <b>T</b> Tap tempo · <b>R</b> Rec · <b>N</b> Voice-over</li>
       </ul>
+
+      <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Teclado numérico (Numpad)</h3>
+      <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4, fontFamily: "var(--font-mono)", fontSize: 11 }}>
+        <li><b>Num 1‑8</b> Hot cues A · <b>Shift+Num 1‑8</b> Hot cues B</li>
+        <li><b>Num 9</b> Loop 4 beats · <b>Num 0</b> Loop ON/OFF · <b>Num .</b> Clear loop</li>
+        <li><b>Num + / −</b> Sampler pad 1 / 2</li>
+        <li><b>Num * / /</b> FX 1 / FX 2 toggle</li>
+        <li><b>Num Enter</b> Rec start / stop</li>
+      </ul>
+
       <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Sobre el motor</h3>
-      <p>Audio 100% Web Audio API. BPM detectado offline por onset + autocorrelación. Key inicial estimada y editable. Pistas, cues y grabaciones se guardan en IndexedDB; skin y settings en localStorage.</p>
+      <p>
+        Audio 100% Web Audio API. BPM detectado offline por onset + autocorrelación. Key inicial estimada y editable.
+        Pistas, cues y grabaciones se guardan en IndexedDB; skin y settings en localStorage.
+      </p>
     </div>
   );
 }
