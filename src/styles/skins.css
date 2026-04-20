@@ -339,6 +339,19 @@ html[data-skin="ocean"] {
   border-color: var(--accent);
   box-shadow: var(--beat-glow);
 }
+.vdj-btn[data-tone="live"] {
+  border-color: color-mix(in oklab, var(--good) 45%, var(--line));
+  color: color-mix(in oklab, var(--good) 80%, var(--text-1));
+}
+.vdj-btn[data-tone="live"]:hover {
+  border-color: color-mix(in oklab, var(--good) 70%, var(--line-strong));
+}
+.vdj-btn[data-tone="live"][data-active="true"] {
+  background: color-mix(in oklab, var(--good) 88%, var(--surface-1));
+  color: var(--surface-1);
+  border-color: var(--good);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--good) 35%, transparent), 0 0 18px color-mix(in oklab, var(--good) 50%, transparent);
+}
 .vdj-btn[data-tone="danger"][data-active="true"] {
   background: var(--bad);
   border-color: var(--bad);
@@ -529,4 +542,53 @@ html[data-skin="ocean"] {
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 6px currentColor;
+}
+
+/* Sonner themed like the DJ console */
+.toaster {
+  --normal-bg: var(--surface-2);
+  --normal-border: var(--line-strong);
+  --normal-text: var(--text-1);
+  --success-bg: color-mix(in oklab, var(--surface-2) 84%, var(--good));
+  --success-border: color-mix(in oklab, var(--good) 48%, var(--line));
+  --error-bg: color-mix(in oklab, var(--surface-2) 82%, var(--bad));
+  --error-border: color-mix(in oklab, var(--bad) 52%, var(--line));
+}
+.vdj-toast {
+  background: var(--surface-2) !important;
+  color: var(--text-1) !important;
+  border: 1px solid var(--line-strong) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--shadow-1), 0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent) !important;
+  backdrop-filter: blur(10px);
+}
+.vdj-toast[data-type="success"] {
+  border-color: color-mix(in oklab, var(--good) 45%, var(--line)) !important;
+  box-shadow: var(--shadow-1), 0 0 18px color-mix(in oklab, var(--good) 24%, transparent) !important;
+}
+.vdj-toast[data-type="error"] {
+  border-color: color-mix(in oklab, var(--bad) 45%, var(--line)) !important;
+  box-shadow: var(--shadow-1), 0 0 18px color-mix(in oklab, var(--bad) 24%, transparent) !important;
+}
+.vdj-toast-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.vdj-toast-description {
+  color: var(--text-2) !important;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.vdj-toast-action,
+.vdj-toast-cancel {
+  border-radius: var(--r-sm) !important;
+  border: 1px solid var(--line) !important;
+  background: var(--surface-3) !important;
+  color: var(--text-1) !important;
+}
+.vdj-toast-action:hover,
+.vdj-toast-cancel:hover {
+  background: var(--surface-4) !important;
 }
