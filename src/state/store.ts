@@ -50,6 +50,8 @@ export interface DeckState {
   loopEnd: number | null;
   loopActive: boolean;
   peaks: number[];
+  reverse: boolean;
+  slip: boolean;
 }
 
 export interface MixerState {
@@ -58,6 +60,10 @@ export interface MixerState {
   xfaderCurve: XfaderCurve;
   cueMix: number;
   limiter: boolean;
+  masterDeck: DeckId;
+  quantize: boolean;
+  autoMix: boolean;
+  sleepMinutes: number; // 0 = off
 }
 
 export interface FxState {
@@ -103,6 +109,8 @@ const defaultDeck = (): DeckState => ({
   loopEnd: null,
   loopActive: false,
   peaks: [],
+  reverse: false,
+  slip: false,
 });
 
 interface AppState {
@@ -167,6 +175,10 @@ export const useApp = create<AppState>()(
         xfaderCurve: "smooth",
         cueMix: 0.5,
         limiter: true,
+        masterDeck: "A",
+        quantize: false,
+        autoMix: false,
+        sleepMinutes: 0,
       },
       fx: [
         { id: 1, kind: "off", wet: 0, param1: 0.5, param2: 0.5 },
