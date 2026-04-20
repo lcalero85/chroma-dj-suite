@@ -112,20 +112,7 @@ export function Deck({ id, side }: DeckProps) {
         </div>
       </div>
 
-      <div
-        className="vdj-scroll"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          paddingRight: 4,
-        }}
-      >
-      {/* mini overview + main waveform */}
+      {/* Waveforms: always visible right under the header (outside the scroll) */}
       <Waveform
         peaks={ds.peaks}
         bands={ds.bands}
@@ -133,7 +120,7 @@ export function Deck({ id, side }: DeckProps) {
         bpm={ds.bpm}
         duration={ds.duration}
         hotCues={ds.hotCues}
-        height={28}
+        height={32}
         variant="mini"
         isPlaying={ds.isPlaying}
         onSeek={(p) => seekDeck(id, p)}
@@ -147,11 +134,24 @@ export function Deck({ id, side }: DeckProps) {
         loopStart={ds.loopStart}
         loopEnd={ds.loopEnd}
         hotCues={ds.hotCues}
-        height={84}
+        height={96}
         variant="main"
         isPlaying={ds.isPlaying}
       />
 
+      <div
+        className="vdj-scroll"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          paddingRight: 4,
+        }}
+      >
       {/* time + jog row */}
       <div style={{ display: "grid", gridTemplateColumns: side === "left" ? "1fr auto" : "auto 1fr", gap: 12, alignItems: "center" }}>
         {side === "left" && (

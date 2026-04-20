@@ -43,8 +43,9 @@ export function Waveform({
 
     const draw = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = wrap.clientWidth;
+      const w = wrap.clientWidth || wrap.parentElement?.clientWidth || 0;
       const h = height;
+      if (w <= 0) return;
       if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
         canvas.width = w * dpr;
         canvas.height = h * dpr;
@@ -198,15 +199,26 @@ export function Waveform({
       draw();
       rafRef.current = requestAnimationFrame(loop);
     };
-    // Animate continuously only when playing (or once otherwise)
+
+    // Re-draw on container resize (handles late layout when canvas mounts at 0 width)
+    const ro = new ResizeObserver(() => draw());
+    ro.observe(wrap);
+
+    // Animate continuously only when playing
     if (isPlaying) {
       rafRef.current = requestAnimationFrame(loop);
     } else {
       draw();
+      // also redraw on next frame to catch first-paint width
+      rafRef.current = requestAnimationFrame(() => {
+        draw();
+        rafRef.current = null;
+      });
     }
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+      ro.disconnect();
     };
   }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, height, variant, isPlaying]);
 
