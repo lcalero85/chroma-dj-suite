@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/state/store";
 import { ensureRunning, getEngine } from "@/audio/engine";
 import { startPositionPolling } from "@/state/controller";
@@ -19,12 +19,18 @@ let booted = false;
 
 function Index() {
   const skin = useApp((s) => s.skin);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-skin", skin);
   }, [skin]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (booted) return;
     booted = true;
     // Lazy boot of audio engine on first user gesture
@@ -42,7 +48,15 @@ function Index() {
     getEngine();
     startPositionPolling();
     installShortcuts();
-  }, []);
+  }, [mounted]);
+
+  if (!mounted) {
+    return (
+      <div className="vdj-app" style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+        <div style={{ fontSize: 14, letterSpacing: "0.2em", color: "var(--text-3)" }}>LOADING CONSOLE…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="vdj-app" style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
@@ -51,8 +65,8 @@ function Index() {
         style={{
           flex: 1,
           display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) 360px minmax(0,1fr)",
-          gridTemplateRows: "minmax(0, 1fr) minmax(220px, 38%)",
+          gridTemplateColumns: "minmax(0,1fr) 380px minmax(0,1fr)",
+          gridTemplateRows: "minmax(0, 1fr) minmax(240px, 36%)",
           gap: 10,
           padding: 10,
           minHeight: 0,
@@ -67,19 +81,12 @@ function Index() {
         <div style={{ minHeight: 0 }}>
           <Deck id="B" side="right" />
         </div>
-        <div style={{ gridColumn: "1 / span 1", minHeight: 0 }}>
+        <div style={{ gridColumn: "1 / span 1", gridColumnEnd: "span 3", minHeight: 0 }}>
           <BottomTabs />
-        </div>
-        <div style={{ gridColumn: "3 / span 1", minHeight: 0 }}>
-          <BottomTabsRight />
         </div>
       </div>
       <Drawer />
       <Toaster />
     </div>
   );
-}
-
-function BottomTabsRight() {
-  return <BottomTabs />;
 }
