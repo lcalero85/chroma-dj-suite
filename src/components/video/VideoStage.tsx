@@ -178,8 +178,9 @@ export function VideoStageToggle() {
       data-active
       style={{
         position: "fixed",
-        right: 16,
-        bottom: 360,
+        left: "50%",
+        top: 72,
+        transform: "translateX(-50%)",
         zIndex: 40,
         padding: "8px 14px",
         fontWeight: 800,
