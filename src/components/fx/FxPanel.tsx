@@ -11,16 +11,19 @@ export function FxPanel() {
   const racks = useRef<Record<number, FxRackHandles>>({});
 
   useEffect(() => {
-    const { master } = getEngine();
+    const { masterDuck, limiter } = getEngine();
     // Build 3 racks chained on master send
     if (Object.keys(racks.current).length === 0) {
       [1, 2, 3].forEach((id) => {
         const r = createFxRack();
         racks.current[id] = r;
-        // Insert in parallel: master also gets fed; here we simply tap master output
-        master.connect(r.input);
-        r.output.connect(getEngine().ctx.destination);
+        // Parallel send: tap post-duck master, return wet into limiter input
+        // (avoids feedback loop while still going through recorder tap downstream)
+        masterDuck.connect(r.input);
+        r.output.connect(limiter);
       });
+      // Expose for keyboard shortcuts
+      window.__vdjFxRacks = racks.current;
     }
     return () => {
       // keep alive across renders

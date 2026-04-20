@@ -65,6 +65,9 @@ export interface MixerState {
   quantize: boolean;
   autoMix: boolean;
   sleepMinutes: number; // 0 = off
+  micOn: boolean;
+  micLevel: number; // 0..2
+  micDuck: number;  // 0..0.9
 }
 
 export interface FxState {
@@ -181,6 +184,9 @@ export const useApp = create<AppState>()(
         quantize: false,
         autoMix: false,
         sleepMinutes: 0,
+        micOn: false,
+        micLevel: 1,
+        micDuck: 0.4,
       },
       fx: [
         { id: 1, kind: "off", wet: 0, param1: 0.5, param2: 0.5 },
