@@ -11,15 +11,15 @@ export function FxPanel() {
   const racks = useRef<Record<number, FxRackHandles>>({});
 
   useEffect(() => {
-    const { master, limiter } = getEngine();
+    const { masterDuck, limiter } = getEngine();
     // Build 3 racks chained on master send
     if (Object.keys(racks.current).length === 0) {
       [1, 2, 3].forEach((id) => {
         const r = createFxRack();
         racks.current[id] = r;
-        // Parallel send: tap master output, return wet into limiter input
+        // Parallel send: tap post-duck master, return wet into limiter input
         // (avoids feedback loop while still going through recorder tap downstream)
-        master.connect(r.input);
+        masterDuck.connect(r.input);
         r.output.connect(limiter);
       });
       // Expose for keyboard shortcuts
