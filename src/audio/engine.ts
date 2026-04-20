@@ -14,6 +14,17 @@ let _micGain: GainNode | null = null;
 let _micDuck: GainNode | null = null;
 let _micSource: MediaStreamAudioSourceNode | null = null;
 let _micStream: MediaStream | null = null;
+let _micFxIn: GainNode | null = null;
+let _micFxOut: GainNode | null = null;
+let _micHp: BiquadFilterNode | null = null;
+let _micPeak: BiquadFilterNode | null = null;
+let _micShaper: WaveShaperNode | null = null;
+let _micShaperWet: GainNode | null = null;
+let _micShaperDry: GainNode | null = null;
+let _micDelay: DelayNode | null = null;
+let _micDelayFb: GainNode | null = null;
+let _micDelayWet: GainNode | null = null;
+let _micDelayDry: GainNode | null = null;
 
 export interface EngineHandles {
   ctx: AudioContext;
@@ -27,7 +38,10 @@ export interface EngineHandles {
   recordTap: GainNode;
   micGain: GainNode;
   micDuck: GainNode;
+  micAnalyser: AnalyserNode;
 }
+
+let _micAnalyser: AnalyserNode | null = null;
 
 export function getEngine(): EngineHandles {
   if (_ctx && _master && _masterDuck && _limiter && _masterAnalyser && _cueBus && _cueAnalyser && _recorderDest && _recordTap && _micGain && _micDuck) {
