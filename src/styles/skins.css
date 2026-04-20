@@ -198,6 +198,105 @@ html[data-skin="hacker"] {
   --beat-glow: 0 0 16px oklch(0.85 0.22 145 / 0.8);
 }
 
+/* 11. Midnight Blue */
+html[data-skin="midnight"] {
+  --accent: oklch(0.72 0.18 250);
+  --accent-2: oklch(0.78 0.14 220);
+  --surface-1: oklch(0.09 0.03 260);
+  --surface-2: oklch(0.14 0.04 260);
+  --surface-3: oklch(0.2 0.05 260);
+  --surface-4: oklch(0.27 0.06 260);
+  --text-1: oklch(0.96 0.02 250);
+  --text-2: oklch(0.72 0.05 250);
+  --line: oklch(0.72 0.18 250 / 0.18);
+  --line-strong: oklch(0.72 0.18 250 / 0.35);
+  --beat-glow: 0 0 18px oklch(0.72 0.18 250 / 0.7);
+}
+
+/* 12. Sunset Vibes */
+html[data-skin="sunset"] {
+  --accent: oklch(0.78 0.2 50);
+  --accent-2: oklch(0.66 0.22 0);
+  --surface-1: oklch(0.13 0.05 30);
+  --surface-2: oklch(0.18 0.06 25);
+  --surface-3: oklch(0.24 0.07 20);
+  --surface-4: oklch(0.32 0.08 20);
+  --text-1: oklch(0.97 0.04 60);
+  --text-2: oklch(0.78 0.08 40);
+  --line: oklch(0.78 0.2 50 / 0.22);
+  --line-strong: oklch(0.66 0.22 0 / 0.35);
+  --r-lg: 16px;
+  --beat-glow: 0 0 20px oklch(0.78 0.2 50 / 0.7), 0 0 40px oklch(0.66 0.22 0 / 0.4);
+}
+
+/* 13. Arctic Ice */
+html[data-skin="arctic"] {
+  --accent: oklch(0.55 0.18 230);
+  --accent-2: oklch(0.6 0.14 200);
+  --surface-1: oklch(0.97 0.01 220);
+  --surface-2: oklch(0.93 0.015 220);
+  --surface-3: oklch(0.87 0.02 220);
+  --surface-4: oklch(0.78 0.03 220);
+  --text-1: oklch(0.2 0.04 240);
+  --text-2: oklch(0.42 0.04 230);
+  --text-3: oklch(0.55 0.03 230);
+  --line: oklch(0.2 0.04 240 / 0.1);
+  --line-strong: oklch(0.2 0.04 240 / 0.22);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px oklch(0.55 0.18 230 / 0.18);
+  --r-md: 10px;
+  --r-lg: 18px;
+  --beat-glow: 0 0 14px oklch(0.55 0.18 230 / 0.55);
+}
+
+/* 14. Blood Moon */
+html[data-skin="blood"] {
+  --accent: oklch(0.62 0.25 25);
+  --accent-2: oklch(0.5 0.2 15);
+  --surface-1: oklch(0.06 0.01 20);
+  --surface-2: oklch(0.11 0.02 20);
+  --surface-3: oklch(0.17 0.03 20);
+  --surface-4: oklch(0.24 0.04 20);
+  --text-1: oklch(0.95 0.04 30);
+  --text-2: oklch(0.7 0.08 25);
+  --line: oklch(0.62 0.25 25 / 0.22);
+  --line-strong: oklch(0.62 0.25 25 / 0.45);
+  --beat-glow: 0 0 18px oklch(0.62 0.25 25 / 0.85);
+}
+
+/* 15. Gold Master */
+html[data-skin="gold"] {
+  --accent: oklch(0.82 0.15 85);
+  --accent-2: oklch(0.7 0.16 70);
+  --surface-1: oklch(0.08 0.005 80);
+  --surface-2: oklch(0.13 0.008 80);
+  --surface-3: oklch(0.19 0.012 80);
+  --surface-4: oklch(0.26 0.018 80);
+  --text-1: oklch(0.95 0.05 85);
+  --text-2: oklch(0.78 0.08 80);
+  --line: oklch(0.82 0.15 85 / 0.2);
+  --line-strong: oklch(0.82 0.15 85 / 0.4);
+  --r-md: 6px;
+  --r-lg: 12px;
+  --font-display: Georgia, "Times New Roman", serif;
+  --beat-glow: 0 0 18px oklch(0.82 0.15 85 / 0.7);
+}
+
+/* 16. Deep Ocean */
+html[data-skin="ocean"] {
+  --accent: oklch(0.78 0.14 195);
+  --accent-2: oklch(0.7 0.16 175);
+  --surface-1: oklch(0.1 0.04 215);
+  --surface-2: oklch(0.15 0.05 210);
+  --surface-3: oklch(0.21 0.06 205);
+  --surface-4: oklch(0.28 0.07 200);
+  --text-1: oklch(0.96 0.03 195);
+  --text-2: oklch(0.74 0.07 195);
+  --line: oklch(0.78 0.14 195 / 0.22);
+  --line-strong: oklch(0.78 0.14 195 / 0.4);
+  --r-lg: 16px;
+  --beat-glow: 0 0 16px oklch(0.78 0.14 195 / 0.7);
+}
+
 /* Common console primitives — use the skin tokens above */
 .vdj-app {
   background: var(--surface-1);
