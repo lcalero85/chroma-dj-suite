@@ -4,8 +4,9 @@ import { listTracks, putTrack, deleteTrack, uid, type TrackRecord } from "@/lib/
 import { loadTrackToDeck } from "@/state/controller";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Upload, Trash2, Search } from "lucide-react";
+import { Upload, Trash2, Search, Radio } from "lucide-react";
 import { toast } from "sonner";
+import { radioAdd } from "@/state/controller";
 
 export function LibraryPanel() {
   const tracks = useApp((s) => s.tracks);
@@ -136,6 +137,14 @@ export function LibraryPanel() {
                   </button>{" "}
                   <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => loadTrackToDeck("B", t.id)}>
                     →B
+                  </button>{" "}
+                  <button
+                    className="vdj-btn"
+                    style={{ padding: "2px 6px", fontSize: 10 }}
+                    title="Añadir a cola de Radio (Deck A)"
+                    onClick={() => radioAdd(t.id)}
+                  >
+                    <Radio size={10} />
                   </button>{" "}
                   <button
                     className="vdj-btn"

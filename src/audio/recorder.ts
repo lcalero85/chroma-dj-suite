@@ -2,7 +2,6 @@ import { ensureRunning, getEngine } from "./engine";
 
 let processor: ScriptProcessorNode | null = null;
 let monitor: GainNode | null = null;
-let captureSource: MediaStreamAudioSourceNode | null = null;
 let leftChunks: Float32Array[] = [];
 let rightChunks: Float32Array[] = [];
 let startTs = 0;
@@ -25,7 +24,8 @@ function encodeWav(left: Float32Array, right: Float32Array, rate: number) {
   const bytesPerSample = 2;
   const channels = 2;
   const blockAlign = channels * bytesPerSample;
-  const buffer = new ArrayBuffer(44 + frames * blockAlign);
+  const dataLen = frames * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataLen);
   const view = new DataView(buffer);
 
   const writeString = (offset: number, value: string) => {
@@ -33,7 +33,7 @@ function encodeWav(left: Float32Array, right: Float32Array, rate: number) {
   };
 
   writeString(0, "RIFF");
-  view.setUint32(4, 36 + frames * blockAlign, true);
+  view.setUint32(4, 36 + dataLen, true);
   writeString(8, "WAVE");
   writeString(12, "fmt ");
   view.setUint32(16, 16, true);
@@ -44,7 +44,7 @@ function encodeWav(left: Float32Array, right: Float32Array, rate: number) {
   view.setUint16(32, blockAlign, true);
   view.setUint16(34, 16, true);
   writeString(36, "data");
-  view.setUint32(40, frames * blockAlign, true);
+  view.setUint32(40, dataLen, true);
 
   let offset = 44;
   for (let i = 0; i < frames; i++) {
@@ -59,62 +59,46 @@ function encodeWav(left: Float32Array, right: Float32Array, rate: number) {
 }
 
 function cleanup() {
-  if (captureSource) {
-    try {
-      captureSource.disconnect();
-    } catch {
-      /* noop */
-    }
-  }
   if (processor) {
-    try {
-      processor.disconnect();
-    } catch {
-      /* noop */
-    }
+    try { processor.disconnect(); } catch { /* noop */ }
   }
   if (monitor) {
-    try {
-      monitor.disconnect();
-    } catch {
-      /* noop */
-    }
+    try { monitor.disconnect(); } catch { /* noop */ }
   }
   processor = null;
   monitor = null;
-  captureSource = null;
   active = false;
 }
 
 export async function startRecording(): Promise<void> {
   await ensureRunning();
-  const { ctx, recorderDest } = getEngine();
+  const { ctx, recordTap } = getEngine();
   if (active) return;
 
   leftChunks = [];
   rightChunks = [];
   sampleRate = ctx.sampleRate;
 
+  // ScriptProcessor must be connected to destination to be alive,
+  // but we route it through a silent gain so it doesn't double the audio.
   const node = ctx.createScriptProcessor(4096, 2, 2);
   const sink = ctx.createGain();
-  const source = ctx.createMediaStreamSource(recorderDest.stream);
   sink.gain.value = 0;
 
   node.onaudioprocess = (event) => {
     if (!active) return;
     const input = event.inputBuffer;
-    if (input.length === 0) return;
     const left = new Float32Array(input.getChannelData(0));
     const right = input.numberOfChannels > 1 ? new Float32Array(input.getChannelData(1)) : new Float32Array(left);
     leftChunks.push(left);
     rightChunks.push(right);
   };
 
-  source.connect(node);
+  // Real audio routing: recordTap (master+mic) -> ScriptProcessor -> silent sink -> destination
+  recordTap.connect(node);
   node.connect(sink);
   sink.connect(ctx.destination);
 
-  captureSource = source;
   processor = node;
   monitor = sink;
   active = true;
@@ -133,6 +117,12 @@ export async function stopRecording(): Promise<{ blob: Blob; mime: string; durat
   if (!active) return null;
   const duration = (Date.now() - startTs) / 1000;
   active = false;
+
+  // Disconnect tap from processor first so no more chunks come in
+  try {
+    const { recordTap } = getEngine();
+    recordTap.disconnect(processor!);
+  } catch { /* noop */ }
 
   const left = mergeChunks(leftChunks);
   const right = mergeChunks(rightChunks);
