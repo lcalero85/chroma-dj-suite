@@ -3,6 +3,7 @@ import { setLimiter, setMasterVolume, setXfaderPosition } from "@/state/controll
 import { MixerChannel } from "./MixerChannel";
 import { Knob } from "../console/Knob";
 import { VuMeter } from "../console/VuMeter";
+import { MasterPro } from "./MasterPro";
 import { getEngine } from "@/audio/engine";
 import { useEffect, useRef, useState } from "react";
 
@@ -30,6 +31,8 @@ export function Mixer() {
       </div>
 
       <CrossfaderSection />
+
+      <MasterPro />
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>

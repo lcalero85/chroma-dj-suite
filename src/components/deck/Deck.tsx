@@ -19,6 +19,7 @@ import { Waveform } from "./Waveform";
 import { JogWheel } from "./JogWheel";
 import { Fader } from "../console/Fader";
 import { VuMeter } from "../console/VuMeter";
+import { ProControls } from "./ProControls";
 import { getDeck } from "@/audio/deck";
 import { formatTime } from "@/lib/format";
 import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown } from "lucide-react";
@@ -193,6 +194,9 @@ export function Deck({ id, side }: DeckProps) {
           </div>
         </div>
       </div>
+
+      {/* pro controls: beat jump, slip, reverse, brake */}
+      <ProControls id={id} />
 
       {/* deck VU */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
