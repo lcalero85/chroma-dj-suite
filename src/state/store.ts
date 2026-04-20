@@ -68,7 +68,17 @@ export interface MixerState {
   micOn: boolean;
   micLevel: number; // 0..2
   micDuck: number;  // 0..0.9
+  micPreset: string; // voice preset id
+  numpadDeck: DeckId; // which deck the numpad targets (A or B)
 }
+export interface RadioState {
+  enabled: boolean;
+  queue: string[]; // track ids
+  currentIndex: number;
+  autoCrossfade: boolean;
+  shuffle: boolean;
+}
+
 
 export interface FxState {
   id: 1 | 2 | 3;
@@ -128,10 +138,11 @@ interface AppState {
   playlists: PlaylistRecord[];
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
-  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder";
+  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio";
   drawer: null | "settings" | "skins" | "help";
   search: string;
   selectedPlaylistId: string | null;
+  radio: RadioState;
 
   // setters
   updateDeck: (id: DeckId, patch: Partial<DeckState>) => void;
@@ -146,6 +157,7 @@ interface AppState {
   setDrawer: (d: AppState["drawer"]) => void;
   setSearch: (s: string) => void;
   setSelectedPlaylist: (id: string | null) => void;
+  updateRadio: (patch: Partial<RadioState>) => void;
 }
 
 const defaultSettings: SettingsState = {
@@ -187,6 +199,8 @@ export const useApp = create<AppState>()(
         micOn: false,
         micLevel: 1,
         micDuck: 0.4,
+        micPreset: "off",
+        numpadDeck: "A",
       },
       fx: [
         { id: 1, kind: "off", wet: 0, param1: 0.5, param2: 0.5 },
@@ -203,6 +217,7 @@ export const useApp = create<AppState>()(
       drawer: null,
       search: "",
       selectedPlaylistId: null,
+      radio: { enabled: false, queue: [], currentIndex: -1, autoCrossfade: true, shuffle: false },
 
       updateDeck: (id, patch) =>
         set((s) => ({ decks: { ...s.decks, [id]: { ...s.decks[id], ...patch } } })),
@@ -218,6 +233,7 @@ export const useApp = create<AppState>()(
       setDrawer: (drawer) => set({ drawer }),
       setSearch: (search) => set({ search }),
       setSelectedPlaylist: (selectedPlaylistId) => set({ selectedPlaylistId }),
+      updateRadio: (patch) => set((s) => ({ radio: { ...s.radio, ...patch } })),
     }),
     {
       name: "vdj-pro-state",
@@ -225,6 +241,7 @@ export const useApp = create<AppState>()(
         skin: s.skin,
         settings: s.settings,
         mixer: s.mixer,
+        radio: s.radio,
       }),
     },
   ),
