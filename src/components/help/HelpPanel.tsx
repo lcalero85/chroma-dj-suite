@@ -44,7 +44,9 @@ export function HelpPanel() {
         <li><b>Tap Tempo</b>: toca el botón TAP al ritmo para medir BPM.</li>
         <li><b>Auto-Mix</b>: barre el crossfader al deck contrario en 8s.</li>
         <li><b>Sleep Timer</b>: fade-out de master en 5/15/30/60 min.</li>
-        <li><b>Voice-Over</b>: activa el micrófono con ducking del master.</li>
+        <li><b>Voice-Over</b>: activa el micrófono con ducking del master + 10 efectos de voz (radio, teléfono, robot, eco, monstruo…).</li>
+        <li><b>Modo Radio</b>: cola de pistas en Deck A que suenan una tras otra automáticamente, con shuffle y auto-mix.</li>
+        <li><b>Numpad selector</b>: el teclado numérico controla el deck que elijas (A o B); pulsa <b>`</b> para alternar.</li>
       </ul>
 
       <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Atajos de teclado</h3>
@@ -55,15 +57,31 @@ export function HelpPanel() {
         <li><b>[ ]</b> Beat jump A ±4 · <b>; '</b> Beat jump B ±4</li>
         <li><b>B / Shift+B</b> Brake A / B · <b>V / Shift+V</b> Reverse A / B</li>
         <li><b>M</b> Auto-mix · <b>T</b> Tap tempo · <b>R</b> Rec · <b>N</b> Voice-over</li>
+        <li><b>L</b> Radio: siguiente pista · <b>`</b> Alternar deck destino del numpad (A↔B)</li>
       </ul>
 
       <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Teclado numérico (Numpad)</h3>
       <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4, fontFamily: "var(--font-mono)", fontSize: 11 }}>
-        <li><b>Num 1‑8</b> Hot cues A · <b>Shift+Num 1‑8</b> Hot cues B</li>
-        <li><b>Num 9</b> Loop 4 beats · <b>Num 0</b> Loop ON/OFF · <b>Num .</b> Clear loop</li>
+        <li><b>Num 1‑8</b> Hot cues del deck activo · <b>Shift+Num 1‑8</b> Hot cues del otro deck</li>
+        <li><b>Num 9</b> Loop 4 beats · <b>Num 0</b> Loop ON/OFF · <b>Num .</b> Clear loop (Shift = otro deck)</li>
         <li><b>Num + / −</b> Sampler pad 1 / 2</li>
         <li><b>Num * / /</b> FX 1 / FX 2 toggle</li>
         <li><b>Num Enter</b> Rec start / stop</li>
+        <li>Cambia el deck destino con <b>`</b> o desde el panel Recorder.</li>
+      </ul>
+
+      <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Modo Radio</h3>
+      <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+        <li>Pestaña <b>Radio</b>: cola de reproducción para Deck A.</li>
+        <li>Añade pistas desde Library con el botón <b>📻</b>.</li>
+        <li>Activa <b>RADIO ON</b>: las pistas avanzan solas al terminar.</li>
+        <li>Modos: <b>Aleatorio</b> (shuffle) · <b>Auto-Mix</b> · <b>Siguiente</b> manual (tecla <b>L</b>).</li>
+      </ul>
+
+      <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Voice-Over: 10 efectos</h3>
+      <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4, fontFamily: "var(--font-mono)", fontSize: 11 }}>
+        <li>Sin efecto · Locutor radio · Cálido club · Teléfono · Megáfono</li>
+        <li>Eco salón · Doblador · Robot · Estadio · Susurro · Monstruo</li>
       </ul>
 
       <h3 style={{ color: "var(--text-1)", margin: 0, fontSize: 14 }}>Sobre el motor</h3>
