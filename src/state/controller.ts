@@ -29,9 +29,10 @@ import {
 } from "@/audio/deck";
 import { applyCrossfader } from "@/audio/crossfader";
 import { detectBPM, extractPeaks, extractBandPeaks } from "@/audio/analysis/bpm";
-import { getTrack, putTrack, type TrackRecord } from "@/lib/db";
+import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord } from "@/lib/db";
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
+import { setVideo, clearVideo, syncVideo, getVideo, isVideoBlob } from "@/audio/videoDeck";
 
 let pollStarted = false;
 
@@ -46,6 +47,10 @@ export function startPositionPolling() {
       const t = currentTime(id);
       const dur = d.buffer.duration;
       const ds = state.decks[id];
+      // Sync video element if any
+      if (ds.hasVideo) {
+        syncVideo(id, t, d.isPlaying, d.playbackRate);
+      }
       // loop
       if (
         ds.loopActive &&
@@ -79,6 +84,18 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
   const arr = await t.blob.arrayBuffer();
   const buffer = await ctx.decodeAudioData(arr.slice(0));
   loadBuffer(deckId, buffer);
+
+  // Video handling
+  const isVideo = (t.kind === "video") || isVideoBlob(t.blob);
+  if (isVideo) {
+    try {
+      await setVideo(deckId, t.blob);
+    } catch (e) {
+      console.warn("Video load failed", e);
+    }
+  } else {
+    clearVideo(deckId);
+  }
 
   let peaks = t.peaks;
   if (!peaks || peaks.length === 0) {
@@ -121,6 +138,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     loopStart: null,
     loopEnd: null,
     loopActive: false,
+    hasVideo: isVideo,
   });
   toast(`Cargada en Deck ${deckId}`, { description: t.title });
 }
