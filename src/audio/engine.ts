@@ -8,6 +8,11 @@ let _masterAnalyser: AnalyserNode | null = null;
 let _cueBus: GainNode | null = null;
 let _cueAnalyser: AnalyserNode | null = null;
 let _recorderDest: MediaStreamAudioDestinationNode | null = null;
+let _recordTap: GainNode | null = null;
+let _micGain: GainNode | null = null;
+let _micDuck: GainNode | null = null;
+let _micSource: MediaStreamAudioSourceNode | null = null;
+let _micStream: MediaStream | null = null;
 
 export interface EngineHandles {
   ctx: AudioContext;
@@ -17,10 +22,13 @@ export interface EngineHandles {
   cueBus: GainNode;
   cueAnalyser: AnalyserNode;
   recorderDest: MediaStreamAudioDestinationNode;
+  recordTap: GainNode;
+  micGain: GainNode;
+  micDuck: GainNode;
 }
 
 export function getEngine(): EngineHandles {
-  if (_ctx && _master && _limiter && _masterAnalyser && _cueBus && _cueAnalyser && _recorderDest) {
+  if (_ctx && _master && _limiter && _masterAnalyser && _cueBus && _cueAnalyser && _recorderDest && _recordTap && _micGain && _micDuck) {
     return {
       ctx: _ctx,
       master: _master,
@@ -29,6 +37,9 @@ export function getEngine(): EngineHandles {
       cueBus: _cueBus,
       cueAnalyser: _cueAnalyser,
       recorderDest: _recorderDest,
+      recordTap: _recordTap,
+      micGain: _micGain,
+      micDuck: _micDuck,
     };
   }
   if (typeof window === "undefined") {
