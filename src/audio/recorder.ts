@@ -2,6 +2,7 @@ import { ensureRunning, getEngine } from "./engine";
 
 let processor: ScriptProcessorNode | null = null;
 let monitor: GainNode | null = null;
+let captureSource: MediaStreamAudioSourceNode | null = null;
 let leftChunks: Float32Array[] = [];
 let rightChunks: Float32Array[] = [];
 let startTs = 0;
@@ -58,13 +59,14 @@ function encodeWav(left: Float32Array, right: Float32Array, rate: number) {
 }
 
 function cleanup() {
-  const { recordTap } = getEngine();
-  if (processor) {
+  if (captureSource) {
     try {
-      recordTap.disconnect(processor);
+      captureSource.disconnect();
     } catch {
       /* noop */
     }
+  }
+  if (processor) {
     try {
       processor.disconnect();
     } catch {
@@ -80,12 +82,13 @@ function cleanup() {
   }
   processor = null;
   monitor = null;
+  captureSource = null;
   active = false;
 }
 
 export async function startRecording(): Promise<void> {
   await ensureRunning();
-  const { ctx, recordTap } = getEngine();
+  const { ctx, recorderDest } = getEngine();
   if (active) return;
 
   leftChunks = [];
@@ -94,6 +97,7 @@ export async function startRecording(): Promise<void> {
 
   const node = ctx.createScriptProcessor(4096, 2, 2);
   const sink = ctx.createGain();
+  const source = ctx.createMediaStreamSource(recorderDest.stream);
   sink.gain.value = 0;
 
   node.onaudioprocess = (event) => {
@@ -106,10 +110,11 @@ export async function startRecording(): Promise<void> {
     rightChunks.push(right);
   };
 
-  recordTap.connect(node);
+  source.connect(node);
   node.connect(sink);
   sink.connect(ctx.destination);
 
+  captureSource = source;
   processor = node;
   monitor = sink;
   active = true;
