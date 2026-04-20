@@ -22,6 +22,8 @@ export function FxPanel() {
         master.connect(r.input);
         r.output.connect(master);
       });
+      // Expose for keyboard shortcuts
+      window.__vdjFxRacks = racks.current;
     }
     return () => {
       // keep alive across renders

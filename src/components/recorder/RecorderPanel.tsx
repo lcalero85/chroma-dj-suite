@@ -4,12 +4,14 @@ import { isRecording, recordingElapsed, startRecording, stopRecording } from "@/
 import { listRecordings, putRecording, deleteRecording, uid } from "@/lib/db";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Circle, Square, Download, Trash2 } from "lucide-react";
+import { Circle, Square, Download, Trash2, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
+import { setMicOn, setMicLevel, setMicDuck } from "@/state/controller";
 
 export function RecorderPanel() {
   const recordings = useApp((s) => s.recordings);
   const setRecordings = useApp((s) => s.setRecordings);
+  const mixer = useApp((s) => s.mixer);
   const [, force] = useState(0);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function RecorderPanel() {
                 toast("Grabación guardada");
               }
             } else {
-              startRecording();
+              await startRecording();
               toast("Grabando…");
             }
             force((x) => x + 1);
@@ -57,6 +59,47 @@ export function RecorderPanel() {
         <span className="vdj-readout" style={{ color: rec ? "var(--bad)" : "var(--text-3)" }}>
           {formatTime(recordingElapsed())}
         </span>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            className="vdj-btn"
+            data-active={mixer.micOn}
+            data-tone={mixer.micOn ? "live" : undefined}
+            title="Voice-over (micrófono en vivo)"
+            onClick={async () => {
+              const ok = await setMicOn(!mixer.micOn);
+              if (ok && !mixer.micOn) toast("Micrófono activo");
+              else if (mixer.micOn) toast("Micrófono apagado");
+            }}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            {mixer.micOn ? <Mic size={12} /> : <MicOff size={12} />}
+            VOICE
+          </button>
+          <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            LVL
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.01}
+              value={mixer.micLevel}
+              onChange={(e) => setMicLevel(parseFloat(e.target.value))}
+              style={{ width: 70 }}
+            />
+          </label>
+          <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            DUCK
+            <input
+              type="range"
+              min={0}
+              max={0.9}
+              step={0.01}
+              value={mixer.micDuck}
+              onChange={(e) => setMicDuck(parseFloat(e.target.value))}
+              style={{ width: 70 }}
+            />
+          </label>
+        </div>
       </div>
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, overflow: "auto", padding: 6 }}>
         {recordings.length === 0 && (
