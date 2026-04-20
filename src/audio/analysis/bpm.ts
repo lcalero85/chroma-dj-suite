@@ -63,3 +63,64 @@ export async function extractPeaks(buffer: AudioBuffer, count = 1024): Promise<n
   const m = Math.max(...peaks, 0.0001);
   return peaks.map((p) => p / m);
 }
+
+/**
+ * Extract per-band peak envelopes (lo/mid/hi) for a colorized waveform.
+ * Renders the buffer through three offline biquad filters and downsamples
+ * each band into `count` normalized peaks (0..1).
+ */
+export interface BandPeaks {
+  lo: number[];
+  mid: number[];
+  hi: number[];
+}
+
+export async function extractBandPeaks(buffer: AudioBuffer, count = 1024): Promise<BandPeaks> {
+  const targetRate = 8000;
+  const dur = Math.min(buffer.duration, 600);
+  const length = Math.floor(targetRate * dur);
+
+  async function renderBand(type: BiquadFilterType, freq: number, q = 0.707): Promise<Float32Array> {
+    const offline = new OfflineAudioContext(1, length, targetRate);
+    const src = offline.createBufferSource();
+    src.buffer = buffer;
+    const f = offline.createBiquadFilter();
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    src.connect(f);
+    f.connect(offline.destination);
+    src.start(0);
+    const rendered = await offline.startRendering();
+    return rendered.getChannelData(0);
+  }
+
+  const [loData, midData, hiData] = await Promise.all([
+    renderBand("lowpass", 200),
+    renderBand("bandpass", 1500, 0.7),
+    renderBand("highpass", 4000),
+  ]);
+
+  function downsample(data: Float32Array): number[] {
+    const blockSize = Math.max(1, Math.floor(data.length / count));
+    const out: number[] = new Array(count);
+    for (let i = 0; i < count; i++) {
+      let max = 0;
+      const start = i * blockSize;
+      const end = Math.min(start + blockSize, data.length);
+      for (let j = start; j < end; j++) {
+        const v = Math.abs(data[j]);
+        if (v > max) max = v;
+      }
+      out[i] = max;
+    }
+    const m = Math.max(...out, 0.0001);
+    return out.map((v) => v / m);
+  }
+
+  return {
+    lo: downsample(loData),
+    mid: downsample(midData),
+    hi: downsample(hiData),
+  };
+}

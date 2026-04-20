@@ -14,6 +14,7 @@ export interface TrackRecord {
   lastPlayed: number | null;
   blob: Blob;
   peaks?: number[];
+  bands?: { lo: number[]; mid: number[]; hi: number[] };
   hotCues?: { id: number; pos: number; color: string; label?: string }[];
 }
 
