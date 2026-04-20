@@ -4,6 +4,11 @@ import {
   ensureRunning,
   setMasterVolume as engSetMaster,
   setLimiter as engSetLimiter,
+  enableMic as engEnableMic,
+  disableMic as engDisableMic,
+  setMicLevel as engSetMicLevel,
+  setMicDuck as engSetMicDuck,
+  useAppMasterRef,
 } from "@/audio/engine";
 import {
   getDeck,
@@ -189,7 +194,41 @@ export function nudgeDeck(id: DeckId, deltaSec: number) {
 
 export function setMasterVolume(v: number) {
   engSetMaster(v);
+  useAppMasterRef.current = v;
   useApp.getState().updateMixer({ master: v });
+}
+
+export async function setMicOn(on: boolean): Promise<boolean> {
+  await ensureRunning();
+  if (on) {
+    const ok = await engEnableMic();
+    if (!ok) {
+      toast("No se pudo activar el micrófono");
+      return false;
+    }
+    const lvl = useApp.getState().mixer.micLevel;
+    engSetMicLevel(lvl);
+    const duck = useApp.getState().mixer.micDuck;
+    if (useAppMasterRef.current === null) useAppMasterRef.current = useApp.getState().mixer.master;
+    engSetMicDuck(duck);
+    useApp.getState().updateMixer({ micOn: true });
+    return true;
+  } else {
+    engDisableMic();
+    engSetMicDuck(0);
+    useApp.getState().updateMixer({ micOn: false });
+    return true;
+  }
+}
+
+export function setMicLevel(v: number) {
+  engSetMicLevel(v);
+  useApp.getState().updateMixer({ micLevel: v });
+}
+
+export function setMicDuck(v: number) {
+  if (useApp.getState().mixer.micOn) engSetMicDuck(v);
+  useApp.getState().updateMixer({ micDuck: v });
 }
 
 export function setLimiter(on: boolean) {
@@ -257,13 +296,15 @@ export function loopIn(id: DeckId) {
 export function loopOut(id: DeckId) {
   const ds = useApp.getState().decks[id];
   if (ds.loopStart === null) return;
-  const end = currentTime(id);
+  let end = currentTime(id);
+  if (end <= ds.loopStart + 0.05) end = ds.loopStart + 0.25;
   useApp.getState().updateDeck(id, { loopEnd: end, loopActive: true });
 }
 export function loopHalve(id: DeckId) {
   const ds = useApp.getState().decks[id];
   if (ds.loopStart === null || ds.loopEnd === null) return;
   const len = (ds.loopEnd - ds.loopStart) / 2;
+  if (len < 0.02) return;
   useApp.getState().updateDeck(id, { loopEnd: ds.loopStart + len });
 }
 export function loopDouble(id: DeckId) {
@@ -271,4 +312,11 @@ export function loopDouble(id: DeckId) {
   if (ds.loopStart === null || ds.loopEnd === null) return;
   const len = (ds.loopEnd - ds.loopStart) * 2;
   useApp.getState().updateDeck(id, { loopEnd: ds.loopStart + len });
+}
+
+export function toggleLoop(id: DeckId) {
+  const ds = useApp.getState().decks[id];
+  if (ds.loopStart !== null && ds.loopEnd !== null) {
+    useApp.getState().updateDeck(id, { loopActive: !ds.loopActive });
+  }
 }
