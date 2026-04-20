@@ -16,6 +16,9 @@ export interface TrackRecord {
   peaks?: number[];
   bands?: { lo: number[]; mid: number[]; hi: number[] };
   hotCues?: { id: number; pos: number; color: string; label?: string }[];
+  folderId?: string | null;
+  kind?: "audio" | "video";
+  mime?: string;
 }
 
 export interface PlaylistRecord {
@@ -23,6 +26,14 @@ export interface PlaylistRecord {
   name: string;
   trackIds: string[];
   createdAt: number;
+}
+
+export interface FolderRecord {
+  id: string;
+  name: string;
+  parentId: string | null;
+  createdAt: number;
+  color?: string;
 }
 
 export interface RecordingRecord {
@@ -44,12 +55,13 @@ let _db: IDBPDatabase | null = null;
 
 export async function getDB() {
   if (_db) return _db;
-  _db = await openDB("vdj-pro", 1, {
+  _db = await openDB("vdj-pro", 2, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("tracks")) db.createObjectStore("tracks", { keyPath: "id" });
       if (!db.objectStoreNames.contains("playlists")) db.createObjectStore("playlists", { keyPath: "id" });
       if (!db.objectStoreNames.contains("recordings")) db.createObjectStore("recordings", { keyPath: "id" });
       if (!db.objectStoreNames.contains("samples")) db.createObjectStore("samples", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("folders")) db.createObjectStore("folders", { keyPath: "id" });
     },
   });
   return _db;
@@ -109,6 +121,19 @@ export async function putSample(s: SampleRecord) {
 export async function deleteSample(id: string) {
   const db = await getDB();
   await db.delete("samples", id);
+}
+
+export async function listFolders(): Promise<FolderRecord[]> {
+  const db = await getDB();
+  return db.getAll("folders");
+}
+export async function putFolder(f: FolderRecord) {
+  const db = await getDB();
+  await db.put("folders", f);
+}
+export async function deleteFolder(id: string) {
+  const db = await getDB();
+  await db.delete("folders", id);
 }
 
 export function uid() {
