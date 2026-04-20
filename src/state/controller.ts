@@ -8,6 +8,8 @@ import {
   disableMic as engDisableMic,
   setMicLevel as engSetMicLevel,
   setMicDuck as engSetMicDuck,
+  applyVoicePreset,
+  VOICE_PRESETS,
   useAppMasterRef,
 } from "@/audio/engine";
 import {
@@ -55,6 +57,11 @@ export function startPositionPolling() {
         seek(id, ds.loopStart);
       }
       const pos = dur > 0 ? Math.min(1, t / dur) : 0;
+      // Radio auto-advance: when Deck A is the radio engine and track ended
+      if (id === "A" && state.radio.enabled && dur > 0 && ds.isPlaying && t >= dur - 0.25) {
+        // schedule next track
+        void radioNext();
+      }
       if (Math.abs((ds.position ?? 0) - pos) > 0.0005 || ds.isPlaying !== d.isPlaying) {
         useApp.getState().updateDeck(id, { position: pos, isPlaying: d.isPlaying });
       }
@@ -325,4 +332,86 @@ export function toggleLoop(id: DeckId) {
   if (ds.loopStart !== null && ds.loopEnd !== null) {
     useApp.getState().updateDeck(id, { loopActive: !ds.loopActive });
   }
+}
+
+// ===== Voice-over presets =====
+export function setVoicePreset(presetId: string) {
+  const p = VOICE_PRESETS.find((x) => x.id === presetId) ?? VOICE_PRESETS[0];
+  applyVoicePreset(p);
+  useApp.getState().updateMixer({ micPreset: p.id });
+}
+
+// ===== Numpad target deck =====
+export function setNumpadDeck(id: DeckId) {
+  useApp.getState().updateMixer({ numpadDeck: id });
+  toast(`Numpad → Deck ${id}`);
+}
+
+// ===== Radio mode =====
+export function radioEnable(on: boolean) {
+  useApp.getState().updateRadio({ enabled: on });
+  if (on) toast.success("Modo Radio activado", { description: "Las pistas en cola sonarán una tras otra en Deck A." });
+  else toast("Modo Radio apagado");
+}
+
+export function radioAdd(trackId: string) {
+  const r = useApp.getState().radio;
+  if (r.queue.includes(trackId)) return;
+  useApp.getState().updateRadio({ queue: [...r.queue, trackId] });
+  toast("Añadida a la cola de Radio");
+}
+
+export function radioRemove(idx: number) {
+  const r = useApp.getState().radio;
+  const next = r.queue.filter((_, i) => i !== idx);
+  let cur = r.currentIndex;
+  if (idx < cur) cur -= 1;
+  else if (idx === cur) cur = -1;
+  useApp.getState().updateRadio({ queue: next, currentIndex: cur });
+}
+
+export function radioMove(idx: number, dir: -1 | 1) {
+  const r = useApp.getState().radio;
+  const ni = idx + dir;
+  if (ni < 0 || ni >= r.queue.length) return;
+  const next = [...r.queue];
+  [next[idx], next[ni]] = [next[ni], next[idx]];
+  useApp.getState().updateRadio({ queue: next });
+}
+
+export function radioClear() {
+  useApp.getState().updateRadio({ queue: [], currentIndex: -1 });
+}
+
+let radioBusy = false;
+export async function radioNext(): Promise<void> {
+  if (radioBusy) return;
+  radioBusy = true;
+  try {
+    const r = useApp.getState().radio;
+    if (r.queue.length === 0) {
+      useApp.getState().updateRadio({ currentIndex: -1 });
+      return;
+    }
+    let next: number;
+    if (r.shuffle) {
+      next = Math.floor(Math.random() * r.queue.length);
+      if (r.queue.length > 1 && next === r.currentIndex) next = (next + 1) % r.queue.length;
+    } else {
+      next = (r.currentIndex + 1) % r.queue.length;
+    }
+    const trackId = r.queue[next];
+    useApp.getState().updateRadio({ currentIndex: next });
+    await loadTrackToDeck("A", trackId);
+    await togglePlay("A");
+  } finally {
+    setTimeout(() => { radioBusy = false; }, 600);
+  }
+}
+
+export async function radioPlayIndex(idx: number): Promise<void> {
+  const r = useApp.getState().radio;
+  if (idx < 0 || idx >= r.queue.length) return;
+  useApp.getState().updateRadio({ currentIndex: idx - 1 });
+  await radioNext();
 }
