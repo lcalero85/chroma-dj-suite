@@ -195,7 +195,15 @@ export function setXfaderPosition(pos: number) {
 }
 
 export function addHotCue(id: DeckId, slot: number) {
-  const t = currentTime(id);
+  const quantize = useApp.getState().mixer.quantize;
+  let t = currentTime(id);
+  if (quantize) {
+    const ds = useApp.getState().decks[id];
+    if (ds.bpm) {
+      const beat = 60 / ds.bpm;
+      t = Math.round(t / beat) * beat;
+    }
+  }
   const palette = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
   const ds = useApp.getState().decks[id];
   const cues = [...ds.hotCues.filter((c) => c.id !== slot), { id: slot, pos: t, color: palette[slot % 8] }];
