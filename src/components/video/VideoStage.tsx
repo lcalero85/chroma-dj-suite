@@ -255,7 +255,16 @@ export function VideoStage() {
         ref={canvasRef}
         width={640}
         height={360}
-        style={{ width: "100%", flex: 1, borderRadius: 4, background: "#000" }}
+        style={{
+          width: "100%",
+          height: "100%",
+          flex: 1,
+          minHeight: 0,
+          objectFit: "contain",
+          borderRadius: 4,
+          background: "#000",
+          display: "block",
+        }}
       />
       <div
         onPointerDown={startResize}
