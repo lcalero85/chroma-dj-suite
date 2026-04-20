@@ -45,7 +45,13 @@ export function startPositionPolling() {
       const dur = d.buffer.duration;
       const ds = state.decks[id];
       // loop
-      if (ds.loopActive && ds.loopStart !== null && ds.loopEnd !== null && t >= ds.loopEnd) {
+      if (
+        ds.loopActive &&
+        ds.loopStart !== null &&
+        ds.loopEnd !== null &&
+        ds.loopEnd > ds.loopStart &&
+        (t >= ds.loopEnd || t < ds.loopStart - 0.05)
+      ) {
         seek(id, ds.loopStart);
       }
       const pos = dur > 0 ? Math.min(1, t / dur) : 0;
