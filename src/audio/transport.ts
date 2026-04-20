@@ -44,38 +44,29 @@ export function brake(id: DeckId, seconds = 1.2) {
   requestAnimationFrame(tick);
 }
 
-/** Toggle reverse playback by flipping playbackRate sign is not supported in
- *  Web Audio. We emulate by swapping the buffer with a reversed copy. */
-const reversedCache = new WeakMap<AudioBuffer, AudioBuffer>();
+/** Toggle reverse: maintain a per-deck pair (forward, reversed) and swap. */
+const deckBuffers = new Map<DeckId, { forward: AudioBuffer; reversed: AudioBuffer | null }>();
 export function setReverse(id: DeckId, on: boolean) {
   const d = getDeck(id);
   if (!d.buffer) return;
-  const wasPlaying = d.isPlaying;
-  const pos = currentTime(id);
   const dur = d.buffer.duration;
-  const original = d.buffer;
-  // We always store the canonical (forward) buffer in the reversed map's key;
-  // toggling means swapping in/out the reversed twin.
-  let target: AudioBuffer;
-  if (on) {
-    let rev = reversedCache.get(original);
-    if (!rev) {
-      rev = reverseBuffer(original);
-      reversedCache.set(original, rev);
-      reversedCache.set(rev, original);
-    }
-    target = rev;
-  } else {
-    target = reversedCache.get(original) ?? original;
-    // when toggling off, ensure we land on the forward buffer
-    if (target.duration === original.duration && reversedCache.get(original) && target !== original) {
-      // we are currently on reversed; the "forward" twin is its mapped value
-      target = reversedCache.get(original) === original ? original : (reversedCache.get(original) ?? original);
-    }
+  const pos = currentTime(id);
+  let pair = deckBuffers.get(id);
+  if (!pair || (pair.forward !== d.buffer && pair.reversed !== d.buffer)) {
+    pair = { forward: d.buffer, reversed: null };
+    deckBuffers.set(id, pair);
   }
+  const isCurrentlyReversed = d.buffer === pair.reversed;
+  if (on === isCurrentlyReversed) {
+    useApp.getState().updateDeck(id, { reverse: on });
+    return;
+  }
+  if (on && !pair.reversed) pair.reversed = reverseBuffer(pair.forward);
+  const wasPlaying = d.isPlaying;
   if (wasPlaying) pause(id);
+  const target = on ? pair.reversed! : pair.forward;
   d.buffer = target;
-  const newPos = on ? Math.max(0, dur - pos) : Math.max(0, dur - pos);
+  const newPos = Math.max(0, Math.min(dur - 0.05, dur - pos));
   d.startOffset = newPos;
   if (wasPlaying) play(id, newPos);
   useApp.getState().updateDeck(id, { reverse: on });
