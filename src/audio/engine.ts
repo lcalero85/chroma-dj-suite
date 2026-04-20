@@ -3,6 +3,7 @@
 
 let _ctx: AudioContext | null = null;
 let _master: GainNode | null = null;
+let _masterDuck: GainNode | null = null;
 let _limiter: DynamicsCompressorNode | null = null;
 let _masterAnalyser: AnalyserNode | null = null;
 let _cueBus: GainNode | null = null;
@@ -17,6 +18,7 @@ let _micStream: MediaStream | null = null;
 export interface EngineHandles {
   ctx: AudioContext;
   master: GainNode;
+  masterDuck: GainNode;
   limiter: DynamicsCompressorNode;
   masterAnalyser: AnalyserNode;
   cueBus: GainNode;
@@ -28,10 +30,11 @@ export interface EngineHandles {
 }
 
 export function getEngine(): EngineHandles {
-  if (_ctx && _master && _limiter && _masterAnalyser && _cueBus && _cueAnalyser && _recorderDest && _recordTap && _micGain && _micDuck) {
+  if (_ctx && _master && _masterDuck && _limiter && _masterAnalyser && _cueBus && _cueAnalyser && _recorderDest && _recordTap && _micGain && _micDuck) {
     return {
       ctx: _ctx,
       master: _master,
+      masterDuck: _masterDuck,
       limiter: _limiter,
       masterAnalyser: _masterAnalyser,
       cueBus: _cueBus,
@@ -55,6 +58,8 @@ export function getEngine(): EngineHandles {
 
   _master = _ctx.createGain();
   _master.gain.value = 0.85;
+  _masterDuck = _ctx.createGain();
+  _masterDuck.gain.value = 1;
 
   _limiter = _ctx.createDynamicsCompressor();
   _limiter.threshold.value = -1;
@@ -78,7 +83,8 @@ export function getEngine(): EngineHandles {
   _micDuck.gain.value = 1;
   _micGain.connect(_micDuck);
 
-  _master.connect(_limiter);
+  _master.connect(_masterDuck);
+  _masterDuck.connect(_limiter);
   _limiter.connect(_masterAnalyser);
   _masterAnalyser.connect(_ctx.destination);
   // Dedicated record tap straight from limiter (avoids analyser quirks on some browsers)
@@ -98,6 +104,7 @@ export function getEngine(): EngineHandles {
   return {
     ctx: _ctx,
     master: _master,
+    masterDuck: _masterDuck,
     limiter: _limiter,
     masterAnalyser: _masterAnalyser,
     cueBus: _cueBus,
@@ -127,9 +134,9 @@ export function setMasterVolume(v: number) {
 }
 
 export function setLimiter(enabled: boolean) {
-  const { ctx, master, limiter, masterAnalyser, recordTap } = getEngine();
+  const { ctx, masterDuck, limiter, masterAnalyser, recordTap } = getEngine();
   try {
-    master.disconnect();
+    masterDuck.disconnect();
     limiter.disconnect();
     masterAnalyser.disconnect();
     recordTap.disconnect();
@@ -137,12 +144,12 @@ export function setLimiter(enabled: boolean) {
     /* noop */
   }
   if (enabled) {
-    master.connect(limiter);
+    masterDuck.connect(limiter);
     limiter.connect(masterAnalyser);
     limiter.connect(recordTap);
   } else {
-    master.connect(masterAnalyser);
-    master.connect(recordTap);
+    masterDuck.connect(masterAnalyser);
+    masterDuck.connect(recordTap);
   }
   masterAnalyser.connect(ctx.destination);
   recordTap.connect(getEngine().recorderDest);
@@ -186,11 +193,10 @@ export function setMicLevel(v: number) {
 
 /** Duck master when speaking. amount 0..1 (1 = -inf, 0 = no duck). */
 export function setMicDuck(amount: number) {
-  const { ctx, master } = getEngine();
-  // Apply duck on master gain pre-limiter via temporary gain node? Simpler: scale master output.
+  const { ctx, masterDuck } = getEngine();
   const k = 1 - Math.max(0, Math.min(0.9, amount));
-  master.gain.setTargetAtTime(k * (useAppMasterRef.current ?? 0.85), ctx.currentTime, 0.05);
+  masterDuck.gain.setTargetAtTime(k, ctx.currentTime, 0.08);
 }
 
-// Lightweight ref to read current master without coupling to the store here.
+// Kept for compatibility (no-op tracking object).
 export const useAppMasterRef: { current: number | null } = { current: null };
