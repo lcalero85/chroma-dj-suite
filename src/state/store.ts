@@ -50,6 +50,7 @@ export interface DeckState {
   loopEnd: number | null;
   loopActive: boolean;
   peaks: number[];
+  bands?: { lo: number[]; mid: number[]; hi: number[] } | null;
   reverse: boolean;
   slip: boolean;
 }
@@ -109,6 +110,7 @@ const defaultDeck = (): DeckState => ({
   loopEnd: null,
   loopActive: false,
   peaks: [],
+  bands: null,
   reverse: false,
   slip: false,
 });

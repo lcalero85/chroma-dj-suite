@@ -21,7 +21,7 @@ import {
   nudge,
 } from "@/audio/deck";
 import { applyCrossfader } from "@/audio/crossfader";
-import { detectBPM, extractPeaks } from "@/audio/analysis/bpm";
+import { detectBPM, extractPeaks, extractBandPeaks } from "@/audio/analysis/bpm";
 import { getTrack, putTrack, type TrackRecord } from "@/lib/db";
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
@@ -66,6 +66,14 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
   if (!peaks || peaks.length === 0) {
     peaks = await extractPeaks(buffer, 1024);
   }
+  let bands = t.bands;
+  if (!bands || !bands.lo || bands.lo.length === 0) {
+    try {
+      bands = await extractBandPeaks(buffer, 1024);
+    } catch {
+      bands = undefined;
+    }
+  }
   let bpm = t.bpm;
   if (!bpm) {
     toast("Analizando BPM…");
@@ -76,7 +84,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     }
   }
   const key = t.key ?? pseudoDetectKey(t.id);
-  const updated: TrackRecord = { ...t, bpm, key, peaks, lastPlayed: Date.now() };
+  const updated: TrackRecord = { ...t, bpm, key, peaks, bands, lastPlayed: Date.now() };
   await putTrack(updated);
 
   useApp.getState().updateDeck(deckId, {
@@ -89,6 +97,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     bpm,
     key,
     peaks,
+    bands: bands ?? null,
     hotCues: t.hotCues ?? [],
     cuePoint: 0,
     loopStart: null,
