@@ -112,6 +112,19 @@ export function Deck({ id, side }: DeckProps) {
         </div>
       </div>
 
+      <div
+        className="vdj-scroll"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          paddingRight: 4,
+        }}
+      >
       {/* mini overview + main waveform */}
       <Waveform
         peaks={ds.peaks}
@@ -219,6 +232,7 @@ export function Deck({ id, side }: DeckProps) {
         <div style={{ flex: 1 }}>
           <VuMeter analyser={handle.analyser} orientation="horizontal" width={6} height={140} />
         </div>
+      </div>
       </div>
     </div>
   );
