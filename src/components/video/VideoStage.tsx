@@ -2,6 +2,10 @@ import { useEffect, useRef } from "react";
 import { useApp, defaultVideoFx } from "@/state/store";
 import { getVideo } from "@/audio/videoDeck";
 
+// Singleton ref so the recorder (or other modules) can grab the canvas without
+// prop-drilling. Updated whenever the VideoStage mounts/unmounts.
+export const videoStageRef: { current: HTMLCanvasElement | null } = { current: null };
+
 /**
  * VideoStage renders the central video preview by drawing both decks' video
  * elements onto a single canvas every animation frame, mixed by the video
@@ -23,6 +27,7 @@ export function VideoStage() {
     if (!visible) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
+    videoStageRef.current = canvas;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -101,7 +106,10 @@ export function VideoStage() {
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (videoStageRef.current === canvas) videoStageRef.current = null;
+    };
   }, [visible, videoMix.linkAudioXfader, videoMix.videoXfader, audioXf]);
 
   if (!visible) return null;
