@@ -433,3 +433,60 @@ export async function radioPlayIndex(idx: number): Promise<void> {
   useApp.getState().updateRadio({ currentIndex: idx - 1 });
   await radioNext();
 }
+
+// ===== Folders =====
+export async function refreshFolders() {
+  const f = await listFolders();
+  useApp.getState().setFolders(f);
+}
+
+export async function createFolder(name: string, parentId: string | null = null): Promise<FolderRecord> {
+  const f: FolderRecord = {
+    id: Math.random().toString(36).slice(2, 11) + Date.now().toString(36),
+    name: name.trim() || "Nueva carpeta",
+    parentId,
+    createdAt: Date.now(),
+  };
+  await putFolder(f);
+  await refreshFolders();
+  return f;
+}
+
+export async function renameFolder(id: string, name: string) {
+  const all = await listFolders();
+  const f = all.find((x) => x.id === id);
+  if (!f) return;
+  await putFolder({ ...f, name });
+  await refreshFolders();
+}
+
+export async function removeFolder(id: string) {
+  // Recursively delete children + unset folderId on tracks
+  const all = await listFolders();
+  const toDelete = new Set<string>();
+  const collect = (parent: string) => {
+    toDelete.add(parent);
+    all.filter((x) => x.parentId === parent).forEach((c) => collect(c.id));
+  };
+  collect(id);
+  for (const fid of toDelete) {
+    await dbDeleteFolder(fid);
+  }
+  // Move tracks in deleted folders to root
+  const tracks = useApp.getState().tracks;
+  for (const t of tracks) {
+    if (t.folderId && toDelete.has(t.folderId)) {
+      await putTrack({ ...t, folderId: null });
+    }
+  }
+  await refreshFolders();
+}
+
+export async function moveTrackToFolder(trackId: string, folderId: string | null) {
+  const t = await getTrack(trackId);
+  if (!t) return;
+  await putTrack({ ...t, folderId });
+}
+
+// Re-exports for convenience
+export { getVideo };
