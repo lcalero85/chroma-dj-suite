@@ -31,6 +31,11 @@ export function getEngine(): EngineHandles {
       recorderDest: _recorderDest,
     };
   }
+  if (typeof window === "undefined") {
+    // SSR guard: throw a typed error that callers can catch, or rely on
+    // the mounted-gate in routes/index.tsx to skip rendering audio components.
+    throw new Error("AudioEngine not available during SSR");
+  }
   const Ctx =
     (window as unknown as { AudioContext: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
       .AudioContext ||
