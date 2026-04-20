@@ -9,6 +9,8 @@ import {
   clearLoop,
   toggleLoop,
   setMicOn,
+  setNumpadDeck,
+  radioNext,
 } from "@/state/controller";
 import { isRecording, startRecording, stopRecording } from "@/audio/recorder";
 import { ensureRunning } from "@/audio/engine";
@@ -57,6 +59,17 @@ export function installShortcuts() {
       await setMicOn(!cur);
       return;
     }
+    // Backquote: toggle numpad target deck (A <-> B)
+    if (e.code === "Backquote") {
+      const cur = useApp.getState().mixer.numpadDeck;
+      setNumpadDeck(cur === "A" ? "B" : "A");
+      return;
+    }
+    // KeyL: radio next
+    if (e.code === "KeyL" && !e.shiftKey) {
+      void radioNext();
+      return;
+    }
     // Beat jump: [/] for deck A, ;/' for deck B
     if (e.code === "BracketLeft") { beatJump("A", -4); return; }
     if (e.code === "BracketRight") { beatJump("A", 4); return; }
@@ -84,29 +97,32 @@ export function installShortcuts() {
     }
 
     // ===== NUMPAD =====
-    // Numpad 1-8: hot cues deck A (Shift => deck B)
+    // Numpad 1-8: hot cues on the selected numpadDeck (Shift overrides to the OTHER deck)
+    const numpadDeck = useApp.getState().mixer.numpadDeck;
+    const otherDeck: DeckId = numpadDeck === "A" ? "B" : "A";
     const np = e.code.match(/^Numpad([1-8])$/);
     if (np) {
       const slot = parseInt(np[1]) - 1;
-      const deck: DeckId = e.shiftKey ? "B" : "A";
+      const deck: DeckId = e.shiftKey ? otherDeck : numpadDeck;
       const cue = useApp.getState().decks[deck].hotCues.find((c) => c.id === slot);
       if (cue) jumpHotCue(deck, slot); else addHotCue(deck, slot);
       return;
     }
-    // Numpad 0: toggle loop on/off (Shift => deck B)
+    // Numpad 0: toggle loop on/off (Shift => other deck)
     if (e.code === "Numpad0") {
-      toggleLoop(e.shiftKey ? "B" : "A");
+      toggleLoop(e.shiftKey ? otherDeck : numpadDeck);
       return;
     }
-    // Numpad 9: 4-beat loop (Shift => deck B)
+    // Numpad 9: 4-beat loop (Shift => other deck)
     if (e.code === "Numpad9") {
-      setLoop(e.shiftKey ? "B" : "A", 4);
-      toast(`Loop 4 beats deck ${e.shiftKey ? "B" : "A"}`);
+      const deck: DeckId = e.shiftKey ? otherDeck : numpadDeck;
+      setLoop(deck, 4);
+      toast(`Loop 4 beats deck ${deck}`);
       return;
     }
     // NumpadDecimal: clear loop
     if (e.code === "NumpadDecimal") {
-      clearLoop(e.shiftKey ? "B" : "A");
+      clearLoop(e.shiftKey ? otherDeck : numpadDeck);
       return;
     }
     // NumpadAdd / NumpadSubtract: trigger sampler pads 0 / 1
