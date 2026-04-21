@@ -6,6 +6,7 @@ import { loadTrackToDeck } from "@/state/controller";
 import { useApp } from "@/state/store";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 
 interface ScResult {
   id: number;
@@ -19,10 +20,10 @@ interface ScResult {
 
 type Provider = "soundcloud" | "spotify" | "beatport";
 
-const PROVIDERS: { id: Provider; name: string; color: string; mixable: boolean; note: string }[] = [
-  { id: "soundcloud", name: "SoundCloud", color: "#ff5500", mixable: true, note: "Búsqueda y mezcla completa" },
-  { id: "spotify", name: "Spotify", color: "#1db954", mixable: false, note: "API no permite mezcla DJ (DRM)" },
-  { id: "beatport", name: "Beatport", color: "#a4ff00", mixable: false, note: "Solo apps con licencia comercial" },
+const PROVIDERS: { id: Provider; name: string; color: string; mixable: boolean; noteKey: "onlineNoteSC" | "onlineNoteSpot" | "onlineNoteBP" }[] = [
+  { id: "soundcloud", name: "SoundCloud", color: "#ff5500", mixable: true, noteKey: "onlineNoteSC" },
+  { id: "spotify", name: "Spotify", color: "#1db954", mixable: false, noteKey: "onlineNoteSpot" },
+  { id: "beatport", name: "Beatport", color: "#a4ff00", mixable: false, noteKey: "onlineNoteBP" },
 ];
 
 async function fetchAudioAsBlob(transcodingUrl: string): Promise<Blob> {
