@@ -125,72 +125,56 @@ async function withDb<T>(op: (db: IDBPDatabase) => Promise<T>): Promise<T> {
 }
 
 export async function listTracks(): Promise<TrackRecord[]> {
-  const db = await getDB();
-  return db.getAll("tracks");
+  return withDb((db) => db.getAll("tracks") as Promise<TrackRecord[]>);
 }
 export async function putTrack(t: TrackRecord) {
-  const db = await getDB();
-  await db.put("tracks", t);
+  await withDb((db) => db.put("tracks", t));
 }
 export async function getTrack(id: string): Promise<TrackRecord | undefined> {
-  const db = await getDB();
-  return db.get("tracks", id);
+  return withDb((db) => db.get("tracks", id) as Promise<TrackRecord | undefined>);
 }
 export async function deleteTrack(id: string) {
-  const db = await getDB();
-  await db.delete("tracks", id);
+  await withDb((db) => db.delete("tracks", id));
 }
 
 export async function listPlaylists(): Promise<PlaylistRecord[]> {
-  const db = await getDB();
-  return db.getAll("playlists");
+  return withDb((db) => db.getAll("playlists") as Promise<PlaylistRecord[]>);
 }
 export async function putPlaylist(p: PlaylistRecord) {
-  const db = await getDB();
-  await db.put("playlists", p);
+  await withDb((db) => db.put("playlists", p));
 }
 export async function deletePlaylist(id: string) {
-  const db = await getDB();
-  await db.delete("playlists", id);
+  await withDb((db) => db.delete("playlists", id));
 }
 
 export async function listRecordings(): Promise<RecordingRecord[]> {
-  const db = await getDB();
-  return db.getAll("recordings");
+  return withDb((db) => db.getAll("recordings") as Promise<RecordingRecord[]>);
 }
 export async function putRecording(r: RecordingRecord) {
-  const db = await getDB();
-  await db.put("recordings", r);
+  await withDb((db) => db.put("recordings", r));
 }
 export async function deleteRecording(id: string) {
-  const db = await getDB();
-  await db.delete("recordings", id);
+  await withDb((db) => db.delete("recordings", id));
 }
 
 export async function listSamples(): Promise<SampleRecord[]> {
-  const db = await getDB();
-  return db.getAll("samples");
+  return withDb((db) => db.getAll("samples") as Promise<SampleRecord[]>);
 }
 export async function putSample(s: SampleRecord) {
-  const db = await getDB();
-  await db.put("samples", s);
+  await withDb((db) => db.put("samples", s));
 }
 export async function deleteSample(id: string) {
-  const db = await getDB();
-  await db.delete("samples", id);
+  await withDb((db) => db.delete("samples", id));
 }
 
 export async function listFolders(): Promise<FolderRecord[]> {
-  const db = await getDB();
-  return db.getAll("folders");
+  return withDb((db) => db.getAll("folders") as Promise<FolderRecord[]>);
 }
 export async function putFolder(f: FolderRecord) {
-  const db = await getDB();
-  await db.put("folders", f);
+  await withDb((db) => db.put("folders", f));
 }
 export async function deleteFolder(id: string) {
-  const db = await getDB();
-  await db.delete("folders", id);
+  await withDb((db) => db.delete("folders", id));
 }
 
 export function uid() {
