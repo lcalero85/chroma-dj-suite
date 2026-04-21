@@ -35,6 +35,7 @@ function FolderNode({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(folder.name);
   const [hover, setHover] = useState(false);
+  const tr = useT();
 
   return (
     <div>
