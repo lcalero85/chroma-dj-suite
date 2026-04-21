@@ -15,6 +15,8 @@ export interface MixPreset {
   emoji: string;
   /** Built-in presets cannot be deleted (only duplicated). */
   builtin?: boolean;
+  /** Grouping category for the UI ("general" or a music genre). */
+  category?: PresetCategory;
   /** EQ in -1..1 range. Undefined → leave as-is. */
   hi?: number;
   mid?: number;
@@ -26,6 +28,32 @@ export interface MixPreset {
   /** Optional FX slot to enable on the master rack. */
   fx?: { slot: 1 | 2 | 3; kind: FxKind; wet: number; param1: number; param2: number };
 }
+
+export type PresetCategory =
+  | "general"
+  | "reggaeton"
+  | "pop"
+  | "electronica"
+  | "rap"
+  | "rock";
+
+export const CATEGORY_LABELS: Record<PresetCategory, string> = {
+  general: "General",
+  reggaeton: "Reggaetón",
+  pop: "Pop",
+  electronica: "Electrónica",
+  rap: "Rap / Hip-Hop",
+  rock: "Rock",
+};
+
+export const CATEGORY_ORDER: PresetCategory[] = [
+  "general",
+  "reggaeton",
+  "pop",
+  "electronica",
+  "rap",
+  "rock",
+];
 
 export const DEFAULT_MIX_PRESETS: MixPreset[] = [
   {
