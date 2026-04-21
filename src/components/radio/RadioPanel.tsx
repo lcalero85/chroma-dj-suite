@@ -265,7 +265,7 @@ function SegmentsView({
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, padding: 8, overflow: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
         {!activeSegment && (
           <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)", fontSize: 12 }}>
-            Selecciona o crea un segmento.
+            {tr("radioSelectOrCreate")}
           </div>
         )}
         {activeSegment && (
@@ -281,21 +281,21 @@ function SegmentsView({
               <button
                 className="vdj-btn"
                 onClick={() => void loadSegmentToRadio(activeSegment.id, "replace")}
-                title="Cargar este segmento como cola de Radio"
+                title={tr("radioLoadToQueueTip")}
               >
-                <Play size={11} /> Cargar a cola
+                <Play size={11} /> {tr("radioLoadToQueue")}
               </button>
               <button
                 className="vdj-btn"
                 onClick={() => void loadSegmentToRadio(activeSegment.id, "append")}
-                title="Añadir al final de la cola actual"
+                title={tr("radioAppendTip")}
               >
-                <Plus size={11} /> Añadir
+                <Plus size={11} /> {tr("radioAppend")}
               </button>
               <button
                 className="vdj-btn"
                 onClick={() => {
-                  if (confirm(`¿Eliminar segmento "${activeSegment.name}"?`)) {
+                  if (confirm(tr("radioDeleteSegmentConfirm", { name: activeSegment.name }))) {
                     deleteSegment(activeSegment.id);
                     setActiveSegmentId(null);
                   }
@@ -307,7 +307,7 @@ function SegmentsView({
 
             <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <span className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Clock size={11} /> Programar
+                <Clock size={11} /> {tr("radioSchedule")}
               </span>
               <input
                 type="time"
@@ -322,15 +322,15 @@ function SegmentsView({
                   checked={activeSegment.recurring ?? true}
                   onChange={(e) => setSegmentSchedule(activeSegment.id, activeSegment.scheduledAt ?? null, e.target.checked)}
                 />
-                Diario
+                {tr("radioDaily")}
               </label>
               {activeSegment.scheduledAt && (
                 <button className="vdj-btn" onClick={() => setSegmentSchedule(activeSegment.id, null, activeSegment.recurring ?? true)}>
-                  <X size={10} /> Quitar
+                  <X size={10} /> {tr("radioRemove")}
                 </button>
               )}
               <span className="vdj-label" style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-3)" }}>
-                Se activa solo si la Radio está ON
+                {tr("radioOnlyIfRadioOn")}
               </span>
             </div>
 
@@ -346,7 +346,7 @@ function SegmentsView({
             >
               {activeSegment.trackIds.length === 0 && (
                 <div style={{ padding: 16, textAlign: "center", color: "var(--text-3)", fontSize: 11 }}>
-                  Vacío. Usa el buscador abajo o el selector <b>+ Segmento</b> en Library para añadir pistas.
+                  {tr("radioSegmentEmpty")}
                 </div>
               )}
               {activeSegment.trackIds.map((tid, idx) => {
@@ -355,7 +355,7 @@ function SegmentsView({
                   <div key={tid + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px", borderTop: "1px solid var(--line)" }}>
                     <span className="vdj-readout" style={{ minWidth: 24, textAlign: "right", color: "var(--text-3)" }}>{String(idx + 1).padStart(2, "0")}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t?.title ?? "(pista eliminada)"}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t?.title ?? tr("radioDeletedTrack")}</div>
                       <div className="vdj-label">{t?.artist || "—"} · {t ? formatTime(t.duration) : "0:00"}</div>
                     </div>
                     <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => removeTrackFromSegment(activeSegment.id, tid)}>
