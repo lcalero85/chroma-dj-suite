@@ -70,6 +70,29 @@ export function SettingsPanel() {
           onChange={(e) => update({ autoGainOnImport: e.target.checked })}
         />
       </Row>
+      <Row label="Decks visibles">
+        <select
+          className="vdj-btn"
+          value={settings.enabledDecks ?? 2}
+          onChange={(e) => update({ enabledDecks: Number(e.target.value) as 2 | 4 })}
+          style={{ padding: "6px 8px" }}
+        >
+          <option value={2}>2 decks (A + B)</option>
+          <option value={4}>4 decks (A + B + C + D)</option>
+        </select>
+      </Row>
+      <Row label="Estilo de waveform">
+        <select
+          className="vdj-btn"
+          value={settings.waveformStyle ?? "classic"}
+          onChange={(e) => update({ waveformStyle: e.target.value as "classic" | "bars" | "dual" })}
+          style={{ padding: "6px 8px" }}
+        >
+          <option value="classic">Clásico (relleno)</option>
+          <option value="bars">Barras separadas</option>
+          <option value="dual">Dual (Serato)</option>
+        </select>
+      </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <ShortcutsSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
