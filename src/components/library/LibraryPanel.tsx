@@ -82,13 +82,13 @@ function FolderNode({
         ) : (
           <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{folder.name}</span>
         )}
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Renombrar" onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Rename" onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
           <Pencil size={9} />
         </button>
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Subcarpeta" onClick={async (e) => { e.stopPropagation(); const n = window.prompt("Nombre de la subcarpeta"); if (n) { await createFolder(n, folder.id); setExpanded({ ...expanded, [folder.id]: true }); } }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Subfolder" onClick={async (e) => { e.stopPropagation(); const n = window.prompt("Subfolder name"); if (n) { await createFolder(n, folder.id); setExpanded({ ...expanded, [folder.id]: true }); } }}>
           <FolderPlus size={9} />
         </button>
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Eliminar" onClick={async (e) => { e.stopPropagation(); if (confirm(`Eliminar carpeta "${folder.name}" y sus subcarpetas? Las pistas se moverán a la raíz.`)) { await removeFolder(folder.id); if (selectedId === folder.id) onSelect(null); } }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Delete" onClick={async (e) => { e.stopPropagation(); if (confirm(`Delete folder "${folder.name}" and its subfolders? Tracks will move to root.`)) { await removeFolder(folder.id); if (selectedId === folder.id) onSelect(null); } }}>
           <Trash2 size={9} />
         </button>
       </div>
@@ -455,12 +455,12 @@ export function LibraryPanel() {
               marginBottom: 4,
             }}
           >
-            <Folder size={11} /> Todas las pistas
+            <Folder size={11} /> {tr("libAllTracks")}
             <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-3)" }}>{tracks.length}</span>
           </div>
           {rootFolders.length === 0 && (
             <div style={{ fontSize: 10, color: "var(--text-3)", padding: 6, textAlign: "center" }}>
-              Crea carpetas para organizar por géneros y subgéneros.
+              {tr("libCreateFoldersHint")}
             </div>
           )}
           {rootFolders.map((f) => (
@@ -484,11 +484,11 @@ export function LibraryPanel() {
           <thead>
             <tr style={{ color: "var(--text-3)", textAlign: "left" }}>
               <th style={{ padding: 6, fontWeight: 600, width: 18 }}></th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Título</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Artista</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>BPM</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Key</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Tiempo</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColTitle")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColArtist")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColBpm")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColKey")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColTime")}</th>
               <th style={{ padding: 6, fontWeight: 600 }}></th>
             </tr>
           </thead>
@@ -496,7 +496,7 @@ export function LibraryPanel() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={7} style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>
-                  Tu librería está vacía. Importa archivos de audio para comenzar.
+                  {tr("libEmpty")}
                 </td>
               </tr>
             )}
@@ -531,7 +531,7 @@ export function LibraryPanel() {
                   <button
                     className="vdj-btn"
                     style={{ padding: "2px 6px", fontSize: 10 }}
-                    title="Añadir a cola de Radio (Deck A)"
+                    title={tr("libAddToRadioTip")}
                     onClick={() => radioAdd(t.id)}
                   >
                     <Radio size={10} />
@@ -539,7 +539,7 @@ export function LibraryPanel() {
                   {segments.length > 0 && (
                     <select
                       className="vdj-btn"
-                      title="Añadir a un segmento"
+                      title={tr("libAddToSegmentTip")}
                       style={{ padding: "2px 4px", fontSize: 10, maxWidth: 100 }}
                       value=""
                       onChange={(e) => {
@@ -547,11 +547,11 @@ export function LibraryPanel() {
                         if (!sid) return;
                         addTrackToSegment(sid, t.id);
                         const seg = segments.find((s) => s.id === sid);
-                        toast(`Añadida a "${seg?.name ?? "segmento"}"`);
+                        toast(tr("libAddedToSegment", { name: seg?.name ?? "segmento" }));
                         e.target.value = "";
                       }}
                     >
-                      <option value="">+ Segmento</option>
+                      <option value="">{tr("libAddToSegmentPlaceholder")}</option>
                       {segments.map((s) => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
