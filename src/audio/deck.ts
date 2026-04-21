@@ -74,13 +74,20 @@ export function getDeck(id: DeckId): DeckHandles {
   // Anything panned to the center (most lead vocals) cancels out.
   // Dry/Wet ramp lets us blend smoothly between original and instrumental.
   const splitter = ctx.createChannelSplitter(2);
-  const merger = ctx.createChannelMerger(2);
   const invert = ctx.createGain();
   invert.gain.value = -1;
-  // L straight, R inverted → both channels carry (L - R), summed = side signal (instrumental-ish)
-  splitter.connect(merger, 0, 0);
+  // True (L - R) mono side signal: sum L (positive) and R (inverted) into a single mono node,
+  // then duplicate that mono signal to both output channels via a merger.
+  const sideMono = ctx.createGain();
+  sideMono.channelCount = 1;
+  sideMono.channelCountMode = "explicit";
+  sideMono.channelInterpretation = "speakers";
+  splitter.connect(sideMono, 0);          // +L
   splitter.connect(invert, 1);
-  invert.connect(merger, 0, 1);
+  invert.connect(sideMono);               // -R
+  const merger = ctx.createChannelMerger(2);
+  sideMono.connect(merger, 0, 0);          // mono side → Left
+  sideMono.connect(merger, 0, 1);          // mono side → Right
 
   const vocalDry = ctx.createGain();
   vocalDry.gain.value = 1;
