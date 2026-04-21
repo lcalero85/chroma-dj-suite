@@ -115,6 +115,11 @@ export interface RadioSegment {
   scheduledAt?: string | null;
   /** If true, run the schedule once per day. */
   recurring?: boolean;
+  /** Days of the week the schedule applies to. 0=Sunday..6=Saturday. If empty/undefined → every day. */
+  scheduledDays?: number[];
+  /** Optional jingle track id played every N tracks while this segment is active in the queue. */
+  jingleTrackId?: string | null;
+  jingleEvery?: number;
   createdAt: number;
 }
 
@@ -161,8 +166,23 @@ export interface SettingsState {
   defaultKeyLock: boolean;
   shortcuts: Record<string, string>;
   appName: string;
-  lang: "en" | "es";
+  lang: "en" | "es" | "pt" | "fr" | "it";
   appMode: "basic" | "advanced";
+  /** Session stats opt-in (default true). */
+  trackStats?: boolean;
+  /** Auto-reconnect live stream on error. */
+  streamAutoReconnect?: boolean;
+  /** Lower-third overlay on video stage. */
+  videoLowerThird?: boolean;
+  /** Auto-gain on import. */
+  autoGainOnImport?: boolean;
+}
+
+export interface SessionStats {
+  startedAt: number;
+  tracksPlayed: number;
+  totalSeconds: number;
+  topTracks: { trackId: string; count: number }[];
 }
 
 const defaultDeck = (): DeckState => ({
