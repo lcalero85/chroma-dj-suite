@@ -65,7 +65,7 @@ async function importToLibrary(item: ScResult): Promise<TrackRecord> {
 
 export function OnlinePanel() {
   const setTracks = useApp((s) => s.setTracks);
-  const t = useT();
+  const tr = useT();
   const [provider, setProvider] = useState<Provider>("soundcloud");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -79,8 +79,8 @@ export function OnlinePanel() {
   const search = async () => {
     if (provider !== "soundcloud") {
       const name = provider === "spotify" ? "Spotify" : "Beatport";
-      toast(t("onlineProviderNotMixable", { name }), {
-        description: t("onlineProviderNotMixableDesc"),
+      toast(tr("onlineProviderNotMixable", { name }), {
+        description: tr("onlineProviderNotMixableDesc"),
       });
       return;
     }
@@ -91,9 +91,9 @@ export function OnlinePanel() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "search failed");
       setResults(j.items as ScResult[]);
-      if ((j.items as ScResult[]).length === 0) toast(t("onlineNoResults"));
+      if ((j.items as ScResult[]).length === 0) toast(tr("onlineNoResults"));
     } catch (e) {
-      toast.error(t("onlineSearchError"), { description: String(e) });
+      toast.error(tr("onlineSearchError"), { description: String(e) });
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export function OnlinePanel() {
       await audio.play();
       audio.onended = () => setPreviewId(null);
     } catch {
-      toast.error(t("onlineCouldNotPreview"));
+      toast.error(tr("onlineCouldNotPreview"));
       setPreviewId(null);
     }
   };
@@ -126,7 +126,7 @@ export function OnlinePanel() {
       setTracks(await listTracks());
       await loadTrackToDeck(deck, rec.id);
     } catch (e) {
-      toast.error(t("onlineFailedLoadDeck", { deck }), { description: String(e) });
+      toast.error(tr("onlineFailedLoadDeck", { deck }), { description: String(e) });
     } finally {
       setBusyId(null);
     }
@@ -139,7 +139,7 @@ export function OnlinePanel() {
       setTracks(await listTracks());
       toast.success(t("onlineSavedTitle"), { description: item.title });
     } catch (e) {
-      toast.error(t("onlineCouldNotSave"), { description: String(e) });
+      toast.error(tr("onlineCouldNotSave"), { description: String(e) });
     } finally {
       setBusyId(null);
     }
@@ -155,7 +155,7 @@ export function OnlinePanel() {
             className="vdj-btn"
             data-active={provider === p.id}
             onClick={() => setProvider(p.id)}
-            title={t(p.noteKey)}
+            title={tr(p.noteKey)}
             style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             <span style={{ width: 8, height: 8, borderRadius: 8, background: p.color }} />
@@ -175,23 +175,23 @@ export function OnlinePanel() {
             onKeyDown={(e) => { if (e.key === "Enter") void search(); }}
             placeholder={
               provider === "soundcloud"
-                ? t("onlineSearchSCPlaceholder")
-                : t("onlineSearchOtherPlaceholder")
+                ? tr("onlineSearchSCPlaceholder")
+                : tr("onlineSearchOtherPlaceholder")
             }
             disabled={provider !== "soundcloud"}
             style={{ flex: 1, background: "transparent", border: 0, color: "var(--text-1)", outline: "none", fontSize: 12 }}
           />
         </div>
         <button className="vdj-btn" onClick={() => void search()} disabled={loading || provider !== "soundcloud"}>
-          {loading ? <Loader2 size={12} className="vdj-spin" /> : <Search size={12} />} {t("onlineSearchBtn")}
+          {loading ? <Loader2 size={12} className="vdj-spin" /> : <Search size={12} />} {tr("onlineSearchBtn")}
         </button>
       </div>
 
       {provider !== "soundcloud" && (
         <div className="vdj-panel-inset" style={{ padding: 14, fontSize: 11, color: "var(--text-2)", lineHeight: 1.5 }}>
-          {t("onlineNotMixable", { name: provider === "spotify" ? "Spotify" : "Beatport" })}
+          {tr("onlineNotMixable", { name: provider === "spotify" ? "Spotify" : "Beatport" })}
           <br />
-          {t("onlineUseSoundCloud")}
+          {tr("onlineUseSoundCloud")}
         </div>
       )}
 
@@ -200,8 +200,8 @@ export function OnlinePanel() {
           {results.length === 0 && !loading && (
             <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)", fontSize: 12 }}>
               <Cloud size={20} style={{ opacity: 0.4, marginBottom: 6 }} />
-              <div>{t("onlineEmptyHint")}</div>
-              <div style={{ fontSize: 10, marginTop: 6, opacity: 0.7 }}>{t("onlineEmptySubHint")}</div>
+              <div>{tr("onlineEmptyHint")}</div>
+              <div style={{ fontSize: 10, marginTop: 6, opacity: 0.7 }}>{tr("onlineEmptySubHint")}</div>
             </div>
           )}
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -232,10 +232,10 @@ export function OnlinePanel() {
                     <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => void loadDeck(t, "B")} disabled={busyId === t.id}>
                       {busyId === t.id ? <Loader2 size={9} className="vdj-spin" /> : "→B"}
                     </button>{" "}
-                    <button className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10 }} title={t("onlineSaveTip")} onClick={() => void saveOnly(t)} disabled={busyId === t.id}>
+                    <button className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10 }} title={tr("onlineSaveTip")} onClick={() => void saveOnly(t)} disabled={busyId === t.id}>
                       <Download size={10} />
                     </button>{" "}
-                    <a className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10, display: "inline-flex" }} href={t.permalink} target="_blank" rel="noreferrer" title={t("onlineOpenInSC")}>
+                    <a className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10, display: "inline-flex" }} href={t.permalink} target="_blank" rel="noreferrer" title={tr("onlineOpenInSC")}>
                       <ExternalLink size={10} />
                     </a>
                   </td>
