@@ -6,6 +6,8 @@ export interface SamplerSlot {
   name: string;
   buffer: AudioBuffer | null;
   color: string;
+  /** 0..1.5 — per-pad volume so samples can sit on top of the mix */
+  volume: number;
 }
 
 const slots: SamplerSlot[] = [];
@@ -21,6 +23,7 @@ export function initSampler(banks = 4, padsPerBank = 16) {
         name: `Pad ${i + 1}`,
         buffer: null,
         color: palette[i % palette.length],
+        volume: 0.85,
       });
     }
   }
@@ -42,6 +45,11 @@ export async function loadSampleFromBlob(slotId: number, blob: Blob, name: strin
   }
 }
 
+export function setSlotVolume(slotId: number, v: number) {
+  const slot = slots.find((s) => s.id === slotId);
+  if (slot) slot.volume = Math.max(0, Math.min(1.5, v));
+}
+
 export function triggerSlot(slotId: number, gain = 1) {
   const slot = slots.find((s) => s.id === slotId);
   if (!slot || !slot.buffer) return;
@@ -49,7 +57,7 @@ export function triggerSlot(slotId: number, gain = 1) {
   const src = ctx.createBufferSource();
   src.buffer = slot.buffer;
   const g = ctx.createGain();
-  g.gain.value = gain;
+  g.gain.value = gain * slot.volume;
   src.connect(g);
   g.connect(master);
   src.start();
