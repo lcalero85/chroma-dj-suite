@@ -257,7 +257,7 @@ export function Deck({ id, side }: DeckProps) {
                     e.preventDefault();
                     addHotCue(id, i);
                   }}
-                  title={cue ? `Jump to cue ${i + 1}` : `Set cue ${i + 1}`}
+                  title={cue ? t("jumpToCue", { n: i + 1 }) : t("setCue", { n: i + 1 })}
                 >
                   {i + 1}
                 </div>
@@ -383,10 +383,10 @@ function PitchSection({ id }: { id: DeckId }) {
         </div>
         <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.min(1, ds.pitch + 0.02))} title="Pitch +">
+            <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.min(1, ds.pitch + 0.02))} title={t("pitchUp")}>
               <ChevronUp size={10} />
             </button>
-            <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.max(-1, ds.pitch - 0.02))} title="Pitch -">
+            <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.max(-1, ds.pitch - 0.02))} title={t("pitchDown")}>
               <ChevronDown size={10} />
             </button>
           </div>

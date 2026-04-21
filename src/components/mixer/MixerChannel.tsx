@@ -5,8 +5,10 @@ import { Fader } from "../console/Fader";
 import { VuMeter } from "../console/VuMeter";
 import { getDeck } from "@/audio/deck";
 import { Headphones } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 export function MixerChannel({ id }: { id: DeckId }) {
+  const t = useT();
   const ds = useApp((s) => s.decks[id]);
   const handle = getDeck(id);
   return (
@@ -29,18 +31,18 @@ export function MixerChannel({ id }: { id: DeckId }) {
           letterSpacing: "0.1em",
         }}
       >
-        CH {id}
+        {t("chLabel")} {id}
       </div>
-      <Knob value={ds.gain} min={0} max={2} defaultValue={1} size={36} label="GAIN" onChange={(v) => setDeckGain(id, v)} />
-      <Knob value={ds.hi} min={-1} max={1} defaultValue={0} size={36} label="HI" bipolar onChange={(v) => setDeckEQ(id, "hi", v)} />
-      <Knob value={ds.mid} min={-1} max={1} defaultValue={0} size={36} label="MID" bipolar onChange={(v) => setDeckEQ(id, "mid", v)} />
-      <Knob value={ds.lo} min={-1} max={1} defaultValue={0} size={36} label="LO" bipolar onChange={(v) => setDeckEQ(id, "lo", v)} />
-      <Knob value={ds.filter} min={-1} max={1} defaultValue={0} size={36} label="FILTER" bipolar onChange={(v) => setDeckFilter(id, v)} />
+      <Knob value={ds.gain} min={0} max={2} defaultValue={1} size={36} label={t("chGain")} onChange={(v) => setDeckGain(id, v)} />
+      <Knob value={ds.hi} min={-1} max={1} defaultValue={0} size={36} label={t("chHi")} bipolar onChange={(v) => setDeckEQ(id, "hi", v)} />
+      <Knob value={ds.mid} min={-1} max={1} defaultValue={0} size={36} label={t("chMid")} bipolar onChange={(v) => setDeckEQ(id, "mid", v)} />
+      <Knob value={ds.lo} min={-1} max={1} defaultValue={0} size={36} label={t("chLo")} bipolar onChange={(v) => setDeckEQ(id, "lo", v)} />
+      <Knob value={ds.filter} min={-1} max={1} defaultValue={0} size={36} label={t("chFilter")} bipolar onChange={(v) => setDeckFilter(id, v)} />
       <button
         className="vdj-btn"
         data-active={ds.pflCue}
         onClick={() => setDeckCue(id, !ds.pflCue)}
-        title="Cue / PFL"
+        title={t("cuePfl")}
         style={{ padding: "4px 8px" }}
       >
         <Headphones size={12} />

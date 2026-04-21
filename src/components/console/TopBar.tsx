@@ -83,25 +83,25 @@ export function TopBar() {
             className="vdj-loaded-badge"
             data-tone="live"
             style={{ display: "inline-flex", alignItems: "center", gap: 4, animation: "vdj-pulse 1.2s infinite" }}
-            title={`Transmitiendo · ${liveKb} enviados`}
+            title={t("streamingTooltip", { x: liveKb })}
           >
-            <Wifi size={11} /> ON AIR · {liveKb}
+            <Wifi size={11} /> {t("onAir")} · {liveKb}
           </span>
         )}
         {stream.status === "connecting" && (
-          <span className="vdj-chip" style={{ display: "inline-flex", alignItems: "center", gap: 4 }} title={stream.lastError ?? "Conectando…"}>
-            <Wifi size={11} /> Conectando…
+          <span className="vdj-chip" style={{ display: "inline-flex", alignItems: "center", gap: 4 }} title={stream.lastError ?? t("connecting")}>
+            <Wifi size={11} /> {t("connecting")}
           </span>
         )}
         {next && (
           <span
             className="vdj-chip"
-            title={`Próximo segmento programado: ${next.segment.name}`}
+            title={t("nextSegmentTooltip", { name: next.segment.name })}
             style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
           >
             <Clock size={11} />
             <span style={{ width: 8, height: 8, borderRadius: 2, background: next.segment.color }} />
-            {next.segment.name} · {formatMinutes(next.minutesUntil)}
+            {next.segment.name} · {formatMinutes(next.minutesUntil, t)}
           </span>
         )}
       </div>
@@ -109,10 +109,10 @@ export function TopBar() {
       <div
         className="vdj-panel-inset"
         style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
-        title="Selecciona el deck que controla el teclado numérico (` para alternar)"
+        title={t("numpadTip")}
       >
         <Keyboard size={12} />
-        <span className="vdj-label">NUMPAD →</span>
+        <span className="vdj-label">{t("numpadArrow")}</span>
         {(enabledDecks === 4 ? (["A", "B", "C", "D"] as const) : (["A", "B"] as const)).map((d) => (
           <button
             key={d}
@@ -124,10 +124,10 @@ export function TopBar() {
             {d}
           </button>
         ))}
-        <span className="vdj-label" style={{ opacity: 0.7 }}>(`)</span>
+        <span className="vdj-label" style={{ opacity: 0.7 }}>{t("numpadBacktickHint")}</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
-        <button className="vdj-btn" onClick={() => setShowShortcuts(true)} title="Atajos (?)">
+        <button className="vdj-btn" onClick={() => setShowShortcuts(true)} title={t("shortcutsBtnTitle")}>
           <Keyboard size={12} /> ?
         </button>
         <button className="vdj-btn" data-active={drawer === "skins"} onClick={() => setDrawer(drawer === "skins" ? null : "skins")}>
@@ -145,10 +145,10 @@ export function TopBar() {
   );
 }
 
-function formatMinutes(min: number): string {
-  if (min < 1) return "ahora";
-  if (min < 60) return `${Math.round(min)}m`;
+function formatMinutes(min: number, t: (k: import("@/lib/i18n").DictKey) => string): string {
+  if (min < 1) return t("nowShort");
+  if (min < 60) return `${Math.round(min)}${t("minutesShort")}`;
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  return m > 0 ? `${h}${t("hoursShort")} ${m}${t("minutesShort")}` : `${h}${t("hoursShort")}`;
 }

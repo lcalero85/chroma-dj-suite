@@ -2,8 +2,10 @@ import { useApp } from "@/state/store";
 import { autoMixTo, setSleepTimer, tap } from "@/audio/transport";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 export function MasterPro() {
+  const t = useT();
   const mixer = useApp((s) => s.mixer);
   const decks = useApp((s) => s.decks);
   const setMasterDeck = (d: "A" | "B") => useApp.getState().updateMixer({ masterDeck: d });
@@ -20,7 +22,7 @@ export function MasterPro() {
   const onAutoMix = () => {
     const target = mixer.xfader >= 0 ? -1 : 1;
     const ok = autoMixTo(target, 8);
-    if (ok) toast(`Auto-mix → Deck ${target === -1 ? "A" : "B"} (8s)`);
+    if (ok) toast(t("automixToast", { deck: target === -1 ? "A" : "B" }));
   };
 
   const sleepOptions = [0, 5, 15, 30, 60];
@@ -28,22 +30,22 @@ export function MasterPro() {
   return (
     <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span className="vdj-label">MASTER CLOCK</span>
+        <span className="vdj-label">{t("masterClock")}</span>
         <span className="vdj-readout" style={{ fontSize: 12, color: "var(--accent)" }}>
           {masterBpm ? masterBpm.toFixed(1) : "--.--"} BPM
         </span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
-        <button className="vdj-btn" data-active={mixer.masterDeck === "A"} style={{ fontSize: 9 }} onClick={() => setMasterDeck("A")}>MST A</button>
-        <button className="vdj-btn" data-active={mixer.masterDeck === "B"} style={{ fontSize: 9 }} onClick={() => setMasterDeck("B")}>MST B</button>
-        <button className="vdj-btn" data-active={mixer.quantize} style={{ fontSize: 9 }} onClick={toggleQuantize} title="Snap cues/loops to beat">QNT</button>
+        <button className="vdj-btn" data-active={mixer.masterDeck === "A"} style={{ fontSize: 9 }} onClick={() => setMasterDeck("A")}>{t("masterDeckA")}</button>
+        <button className="vdj-btn" data-active={mixer.masterDeck === "B"} style={{ fontSize: 9 }} onClick={() => setMasterDeck("B")}>{t("masterDeckB")}</button>
+        <button className="vdj-btn" data-active={mixer.quantize} style={{ fontSize: 9 }} onClick={toggleQuantize} title={t("snapCuesLoops")}>{t("quantizeBtn")}</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, alignItems: "center" }}>
-        <button className="vdj-btn" style={{ fontSize: 9 }} onClick={onTap} title="Tap tempo">TAP {tappedBpm ? tappedBpm.toFixed(1) : ""}</button>
-        <button className="vdj-btn" style={{ fontSize: 9 }} onClick={onAutoMix} title="Auto crossfade to other deck">AUTO MIX</button>
+        <button className="vdj-btn" style={{ fontSize: 9 }} onClick={onTap} title={t("tapTempoTitle")}>{t("tapBtn")} {tappedBpm ? tappedBpm.toFixed(1) : ""}</button>
+        <button className="vdj-btn" style={{ fontSize: 9 }} onClick={onAutoMix} title={t("autoMixTitle")}>{t("autoMixBtn")}</button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span className="vdj-label">SLEEP TIMER</span>
+        <span className="vdj-label">{t("sleepTimer")}</span>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 3 }}>
           {sleepOptions.map((m) => (
             <button
@@ -53,10 +55,10 @@ export function MasterPro() {
               style={{ fontSize: 9, padding: "3px 0" }}
               onClick={() => {
                 setSleepTimer(m);
-                toast(m === 0 ? "Sleep timer off" : `Sleep en ${m} min`);
+                toast(m === 0 ? t("sleepTimerOff") : t("sleepTimerSet", { m }));
               }}
             >
-              {m === 0 ? "OFF" : `${m}m`}
+              {m === 0 ? t("sleepOff") : `${m}${t("sleepMinSuffix")}`}
             </button>
           ))}
         </div>
