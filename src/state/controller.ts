@@ -177,6 +177,18 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     hasVideo: isVideo,
   });
   toast(`Cargada en Deck ${deckId}`, { description: t.title });
+
+  // Track stats + play count
+  sessionStats.tracksPlayed += 1;
+  sessionStats.topTracks.set(t.id, (sessionStats.topTracks.get(t.id) ?? 0) + 1);
+  void putTrack({ ...updated, playCount: (t.playCount ?? 0) + 1 });
+
+  // Push now-playing metadata to live stream if running
+  if (deckId === "A" || deckId === "B") {
+    try {
+      void updateStreamMetadata(t.title, t.artist);
+    } catch { /* noop */ }
+  }
 }
 
 export async function togglePlay(id: DeckId) {
