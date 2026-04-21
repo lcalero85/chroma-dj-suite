@@ -27,9 +27,12 @@ import {
   setCue,
   nudge,
   setVocalCut as engSetVocalCut,
+  setAutoGainDb,
+  getAutoGainDb,
 } from "@/audio/deck";
 import { applyCrossfader } from "@/audio/crossfader";
 import { detectBPM, extractPeaks, extractBandPeaks } from "@/audio/analysis/bpm";
+import { analyzeLoudness, dbToGain } from "@/audio/analysis/loudness";
 import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord } from "@/lib/db";
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
