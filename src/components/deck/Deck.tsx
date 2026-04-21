@@ -29,6 +29,7 @@ import { keyName } from "@/lib/camelot";
 import { VideoFxPanel } from "../video/VideoFxPanel";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT, t as tGlobal } from "@/lib/i18n";
 
 interface DeckProps {
   id: DeckId;
@@ -41,6 +42,7 @@ export function Deck({ id, side }: DeckProps) {
 
   const handle = getDeck(id);
   const [dragOver, setDragOver] = useState(false);
+  const t = useT();
 
   return (
     <div
@@ -64,7 +66,7 @@ export function Deck({ id, side }: DeckProps) {
         if (!tid) return;
         e.preventDefault();
         e.stopPropagation();
-        void loadTrackToDeck(id, tid).then(() => toast(`Cargada en Deck ${id}`));
+        void loadTrackToDeck(id, tid).then(() => toast(`${tGlobal("loadedToast")} ${id}`));
       }}
       style={{
         padding: 12,
@@ -99,7 +101,7 @@ export function Deck({ id, side }: DeckProps) {
             background: "color-mix(in oklab, var(--accent) 6%, transparent)",
           }}
         >
-          SOLTAR PARA CARGAR EN DECK {id}
+          {t("dropToLoad")} {id}
         </div>
       )}
       {/* header */}
@@ -141,10 +143,10 @@ export function Deck({ id, side }: DeckProps) {
                 <span
                   className="vdj-loaded-badge"
                   data-tone={ds.isPlaying ? "live" : undefined}
-                  title={ds.isPlaying ? "Reproduciendo" : "Pista cargada"}
+                  title={ds.isPlaying ? t("playing") : t("trackLoaded")}
                 >
                   <span className="dot" />
-                  {ds.isPlaying ? "LIVE" : "LOADED"}
+                  {ds.isPlaying ? t("live") : t("loaded")}
                 </span>
               )}
             </div>
@@ -233,7 +235,7 @@ export function Deck({ id, side }: DeckProps) {
       {/* hot cues + loops */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <div className="vdj-label" style={{ marginBottom: 6 }}>Hot Cues</div>
+          <div className="vdj-label" style={{ marginBottom: 6 }}>{t("hotCues")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4 }}>
             {Array.from({ length: 8 }).map((_, i) => {
               const cue = ds.hotCues.find((c) => c.id === i);
@@ -257,7 +259,7 @@ export function Deck({ id, side }: DeckProps) {
           </div>
         </div>
         <div>
-          <div className="vdj-label" style={{ marginBottom: 6 }}>Loops</div>
+          <div className="vdj-label" style={{ marginBottom: 6 }}>{t("loops")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4 }}>
             {[1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8, 16].map((b) => (
               <button
@@ -288,7 +290,7 @@ export function Deck({ id, side }: DeckProps) {
 
       {/* deck VU */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span className="vdj-label">SIGNAL</span>
+        <span className="vdj-label">{t("signal")}</span>
         <div style={{ flex: 1 }}>
           <VuMeter analyser={handle.analyser} orientation="horizontal" width={6} height={140} />
         </div>
