@@ -5,6 +5,7 @@ import { getDeck, currentTime, seek, pause, play, setPlaybackRate } from "./deck
 import { setMasterVolume } from "./engine";
 import { setXfaderPosition } from "@/state/controller";
 import { toast } from "sonner";
+import { t } from "@/lib/i18n";
 
 /** Jump N beats forward/backward keeping play state. */
 export function beatJump(id: DeckId, beats: number) {

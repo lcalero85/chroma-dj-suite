@@ -36,6 +36,7 @@ import { analyzeLoudness, dbToGain } from "@/audio/analysis/loudness";
 import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord } from "@/lib/db";
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
+import { t as tI18n } from "@/lib/i18n";
 import { setVideo, clearVideo, syncVideo, getVideo, isVideoBlob } from "@/audio/videoDeck";
 import { startStream as engStartStream, stopStream as engStopStream, setStreamStatusListener, isStreaming, updateStreamMetadata, scheduleReconnect } from "@/audio/iceStreamer";
 import type { RadioSegment } from "./store";
