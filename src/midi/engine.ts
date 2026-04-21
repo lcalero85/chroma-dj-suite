@@ -66,8 +66,8 @@ export async function initMidi(): Promise<boolean> {
   if (!isMidiSupported()) return false;
   if (access) return true;
   try {
-    const nav = navigator as Navigator & { requestMIDIAccess: (opts?: { sysex?: boolean }) => Promise<MidiAccessLike> };
-    const a = await nav.requestMIDIAccess({ sysex: false });
+    const nav = navigator as Navigator & { requestMIDIAccess: (opts?: { sysex?: boolean }) => Promise<unknown> };
+    const a = (await nav.requestMIDIAccess({ sysex: false })) as MidiAccessLike;
     access = a;
     a.onstatechange = () => {
       // Re-attempt selection on hot-plug
