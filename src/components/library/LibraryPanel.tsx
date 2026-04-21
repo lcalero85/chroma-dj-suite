@@ -180,7 +180,7 @@ export function LibraryPanel() {
       await putTrack(rec);
     }
     setTracks(await listTracks());
-    toast(`${files.length} pista(s) añadidas`);
+    toast(tr("libTracksAdded", { n: files.length }));
   };
 
   // ===== Import folder (with subfolders) using webkitdirectory =====
@@ -215,10 +215,10 @@ export function LibraryPanel() {
     const arr = Array.from(files);
     const accepted = arr.filter((f) => /^(audio|video)\//.test(f.type) || /\.(mp3|wav|flac|m4a|aac|ogg|opus|webm|mp4|mov|mkv)$/i.test(f.name));
     if (accepted.length === 0) {
-      toast("No se encontraron archivos de audio/video en la carpeta");
+      toast(tr("libNoAudioFound"));
       return;
     }
-    toast(`Importando ${accepted.length} archivo(s) de la carpeta…`);
+    toast(tr("libImportingFolder", { n: accepted.length }));
 
     let imported = 0;
     for (const f of accepted) {
@@ -271,7 +271,7 @@ export function LibraryPanel() {
 
     setTracks(await listTracks());
     await refreshFolders();
-    toast.success(`${imported} pista(s) añadidas desde la carpeta`);
+    toast.success(tr("libImportedFromFolder", { n: imported }));
   };
 
   // Aggregate tags across the library for quick chips.
@@ -300,14 +300,14 @@ export function LibraryPanel() {
   const onDropToFolder = async (trackId: string, folderId: string | null) => {
     await moveTrackToFolder(trackId, folderId);
     setTracks(await listTracks());
-    toast("Pista movida");
+    toast(tr("libTrackMoved"));
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button className="vdj-btn" onClick={() => fileRef.current?.click()}>
-          <Upload size={12} /> Importar
+          <Upload size={12} /> {tr("libImport")}
         </button>
         <input
           ref={fileRef}
@@ -320,9 +320,9 @@ export function LibraryPanel() {
         <button
           className="vdj-btn"
           onClick={() => folderRef.current?.click()}
-          title="Importar todas las pistas de una carpeta (incluye subcarpetas)"
+          title={tr("libImportFolderTip")}
         >
-          <FolderSearch size={12} /> Buscar carpeta
+          <FolderSearch size={12} /> {tr("libImportFolder")}
         </button>
         <input
           ref={folderRef}
@@ -336,12 +336,12 @@ export function LibraryPanel() {
         <button
           className="vdj-btn"
           onClick={async () => {
-            const n = window.prompt("Nombre del género o carpeta");
+            const n = window.prompt(tr("libNewFolderPrompt"));
             if (n) await createFolder(n, null);
           }}
-          title="Nueva carpeta raíz"
+          title={tr("libNewRootFolderTip")}
         >
-          <FolderPlus size={12} /> Carpeta
+          <FolderPlus size={12} /> {tr("libNewFolder")}
         </button>
         <div
           className="vdj-panel-inset"
@@ -351,7 +351,7 @@ export function LibraryPanel() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar pistas…"
+            placeholder={tr("libSearchPlaceholder")}
             style={{
               flex: 1,
               background: "transparent",
@@ -362,12 +362,12 @@ export function LibraryPanel() {
             }}
           />
         </div>
-        <span className="vdj-chip">{filtered.length} pistas</span>
+        <span className="vdj-chip">{filtered.length} {tr("libTracksCount")}</span>
         <button
           className="vdj-btn"
           data-active={showFilters}
           onClick={() => setShowFilters((v) => !v)}
-          title="Filtros avanzados (BPM, key, tags)"
+          title={tr("libFiltersTip")}
         >
           <SlidersHorizontal size={12} />
         </button>
@@ -396,13 +396,13 @@ export function LibraryPanel() {
             />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="vdj-label">Compatible con</span>
+            <span className="vdj-label">{tr("libCompatibleWith")}</span>
             <select
               value={compatibleWith}
               onChange={(e) => setCompatibleWith(e.target.value as CamelotKey | "")}
               style={{ background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
             >
-              <option value="">— cualquier key —</option>
+              <option value="">{tr("libAnyKey")}</option>
               {["1A","1B","2A","2B","3A","3B","4A","4B","5A","5B","6A","6B","7A","7B","8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"].map((k) => (
                 <option key={k} value={k}>{k}</option>
               ))}
@@ -411,7 +411,7 @@ export function LibraryPanel() {
           {allTags.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
               <Tag size={11} style={{ color: "var(--text-3)" }} />
-              <button className="vdj-btn" data-active={tagFilter === ""} style={{ padding: "1px 6px", fontSize: 10 }} onClick={() => setTagFilter("")}>Todos</button>
+              <button className="vdj-btn" data-active={tagFilter === ""} style={{ padding: "1px 6px", fontSize: 10 }} onClick={() => setTagFilter("")}>{tr("libAllTags")}</button>
               {allTags.map((tag) => (
                 <button
                   key={tag}
