@@ -10,6 +10,11 @@ type Session = {
   contentType: string;
   bytesSent: number;
   closed: boolean;
+  /** Upstream base + admin auth used for metadata updates. */
+  serverUrl: string;
+  mount: string;
+  username: string;
+  password: string;
 };
 
 const sessions = new Map<string, Session>();
@@ -64,6 +69,10 @@ export const Route = createFileRoute("/api/stream/ingest")({
               contentType: body.contentType,
               bytesSent: 0,
               closed: false,
+              serverUrl: base,
+              mount,
+              username: body.username || "source",
+              password: body.password,
             });
           },
         });
@@ -138,6 +147,31 @@ export const Route = createFileRoute("/api/stream/ingest")({
         try { sess.controller.close(); } catch { /* noop */ }
         sessions.delete(sessionId);
         return jsonResponse({ ok: true, bytesSent: sess.bytesSent });
+      },
+
+      // Update Icecast stream metadata (now-playing title/artist).
+      PATCH: async ({ request }) => {
+        const url = new URL(request.url);
+        const sessionId = url.searchParams.get("sessionId");
+        if (!sessionId) return jsonResponse({ error: "missing sessionId" }, 400);
+        const sess = sessions.get(sessionId);
+        if (!sess || sess.closed) return jsonResponse({ error: "no session" }, 404);
+        let body: { title?: string; artist?: string };
+        try {
+          body = await request.json();
+        } catch {
+          return jsonResponse({ error: "invalid json" }, 400);
+        }
+        const song = [body.artist, body.title].filter(Boolean).join(" - ").trim();
+        if (!song) return jsonResponse({ ok: true });
+        const auth = "Basic " + btoa(`${sess.username}:${sess.password}`);
+        const adminUrl = `${sess.serverUrl}/admin/metadata?mount=${encodeURIComponent(sess.mount)}&mode=updinfo&song=${encodeURIComponent(song)}`;
+        try {
+          const r = await fetch(adminUrl, { method: "GET", headers: { Authorization: auth } });
+          return jsonResponse({ ok: r.ok, status: r.status });
+        } catch (err) {
+          return jsonResponse({ error: String(err) }, 502);
+        }
       },
     },
   },
