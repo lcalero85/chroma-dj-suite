@@ -25,16 +25,20 @@ export const defaultMidiSettings: MidiSettings = {
   customBindings: [],
 };
 
-type MidiAccessAny = unknown & { inputs: Map<string, MIDIInput>; outputs: Map<string, MIDIOutput>; onstatechange: ((e: unknown) => void) | null };
-type MIDIInput = { id: string; name: string | null; manufacturer?: string | null; onmidimessage: ((e: MIDIMessageEvent) => void) | null };
-type MIDIOutput = { id: string; name: string | null; send: (data: number[] | Uint8Array) => void };
-type MIDIMessageEvent = { data: Uint8Array; receivedTime?: number };
+type MidiInputLike = { id: string; name: string | null; onmidimessage: ((e: { data: Uint8Array }) => void) | null };
+type MidiOutputLike = { id: string; name: string | null; send: (data: number[] | Uint8Array) => void };
+type MapLike<T> = { get: (id: string) => T | undefined; values: () => Iterable<T>; forEach: (cb: (v: T) => void) => void };
+type MidiAccessLike = {
+  inputs: MapLike<MidiInputLike>;
+  outputs: MapLike<MidiOutputLike>;
+  onstatechange: ((e: unknown) => void) | null;
+};
 
 interface DeviceInfo { id: string; name: string; }
 
-let access: MidiAccessAny | null = null;
-let currentInput: MIDIInput | null = null;
-let currentOutput: MIDIOutput | null = null;
+let access: MidiAccessLike | null = null;
+let currentInput: MidiInputLike | null = null;
+let currentOutput: MidiOutputLike | null = null;
 let learning: { resolve: (b: MidiBinding | null) => void } | null = null;
 let activityListeners: ((b: MidiBinding) => void)[] = [];
 let unsubLed: (() => void) | null = null;
@@ -62,9 +66,10 @@ export async function initMidi(): Promise<boolean> {
   if (!isMidiSupported()) return false;
   if (access) return true;
   try {
-    const nav = navigator as Navigator & { requestMIDIAccess: (opts?: { sysex?: boolean }) => Promise<MidiAccessAny> };
-    access = await nav.requestMIDIAccess({ sysex: false });
-    access.onstatechange = () => {
+    const nav = navigator as Navigator & { requestMIDIAccess: (opts?: { sysex?: boolean }) => Promise<MidiAccessLike> };
+    const a = await nav.requestMIDIAccess({ sysex: false });
+    access = a;
+    a.onstatechange = () => {
       // Re-attempt selection on hot-plug
       const settings = getMidiSettings();
       if (settings.enabled) attachDevices(settings);
@@ -79,7 +84,11 @@ export async function initMidi(): Promise<boolean> {
   }
 }
 
-function findDevice<T extends { id: string; name: string | null }>(map: Map<string, T>, idOrMatch: string | null, fallbackMatch: string | null): T | null {
+function findDevice<T extends { id: string; name: string | null }>(
+  map: MapLike<T>,
+  idOrMatch: string | null,
+  fallbackMatch: string | null,
+): T | null {
   if (idOrMatch) {
     const direct = map.get(idOrMatch);
     if (direct) return direct;
@@ -243,7 +252,7 @@ function bindingMatches(a: { type: string; channel: number; data1: number }, b: 
   return a.type === b.type && a.channel === b.channel && a.data1 === b.data1;
 }
 
-function onMessage(e: MIDIMessageEvent) {
+function onMessage(e: { data: Uint8Array }) {
   const [status, data1Raw, data2Raw = 0] = e.data;
   const channel = status & 0x0F;
   const cmd = status & 0xF0;

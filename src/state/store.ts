@@ -269,6 +269,7 @@ export const useApp = create<AppState>()(
       videoMix: { videoXfader: 0, linkAudioXfader: true, showStage: true },
       selectedFolderId: null,
       folders: [],
+      midi: defaultMidiSettings,
 
       updateDeck: (id, patch) =>
         set((s) => ({ decks: { ...s.decks, [id]: { ...s.decks[id], ...patch } } })),
