@@ -63,6 +63,13 @@ export function SettingsPanel() {
           <option value={50}>±50%</option>
         </select>
       </Row>
+      <Row label="Auto-nivelar volumen (Auto-gain)">
+        <input
+          type="checkbox"
+          checked={settings.autoGainOnImport ?? true}
+          onChange={(e) => update({ autoGainOnImport: e.target.checked })}
+        />
+      </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <ShortcutsSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
