@@ -6,6 +6,7 @@ import type { CamelotKey } from "@/lib/camelot";
 import type { FxKind } from "@/audio/fx";
 import { defaultMidiSettings, type MidiSettings } from "@/midi/engine";
 import { defaultShortcutMap } from "@/lib/shortcutDefs";
+import { DEFAULT_MIX_PRESETS, type MixPreset } from "@/lib/mixPresets";
 
 export type MidiState = MidiSettings & { _devicesVersion?: number };
 void defaultMidiSettings;
@@ -247,6 +248,7 @@ interface AppState {
   midi: MidiState;
   segments: RadioSegment[];
   stream: StreamConfig;
+  mixPresets: MixPreset[];
 
   // setters
   updateDeck: (id: DeckId, patch: Partial<DeckState>) => void;
@@ -270,6 +272,9 @@ interface AppState {
   upsertSegment: (s: RadioSegment) => void;
   removeSegment: (id: string) => void;
   updateStream: (patch: Partial<StreamConfig>) => void;
+  setMixPresets: (p: MixPreset[]) => void;
+  upsertMixPreset: (p: MixPreset) => void;
+  removeMixPreset: (id: string) => void;
 }
 
 const defaultSettings: SettingsState = {
