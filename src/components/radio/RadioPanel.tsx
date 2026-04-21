@@ -82,6 +82,7 @@ function QueueView({
   updateRadio: ReturnType<typeof useApp.getState>["updateRadio"];
   trackById: (id: string) => ReturnType<typeof useApp.getState>["tracks"][number] | undefined;
 }) {
+  const tr = useT();
   return (
     <>
       {/* Controls */}
@@ -94,11 +95,11 @@ function QueueView({
           style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 130, minHeight: 38, justifyContent: "center", fontWeight: 800, letterSpacing: "0.08em" }}
         >
           <Radio size={14} />
-          {radio.enabled ? "RADIO ON" : "RADIO OFF"}
+          {radio.enabled ? tr("radioOn") : tr("radioOff")}
         </button>
 
         {radio.enabled && (
-          <span className="vdj-loaded-badge" data-tone="live" style={{ animation: "vdj-pulse 1.2s infinite" }}>● TRANSMITIENDO</span>
+          <span className="vdj-loaded-badge" data-tone="live" style={{ animation: "vdj-pulse 1.2s infinite" }}>{tr("radioBroadcasting")}</span>
         )}
 
         <button
@@ -106,9 +107,9 @@ function QueueView({
           onClick={() => void radioNext()}
           disabled={radio.queue.length === 0}
           style={{ display: "flex", alignItems: "center", gap: 6 }}
-          title="Siguiente pista (L)"
+          title={tr("radioNextTip")}
         >
-          <SkipForward size={12} /> Siguiente
+          <SkipForward size={12} /> {tr("radioNext")}
         </button>
 
         <button
@@ -117,7 +118,7 @@ function QueueView({
           onClick={() => updateRadio({ shuffle: !radio.shuffle })}
           style={{ display: "flex", alignItems: "center", gap: 6 }}
         >
-          <Shuffle size={12} /> Aleatorio
+          <Shuffle size={12} /> {tr("radioShuffle")}
         </button>
 
         <button
@@ -125,13 +126,13 @@ function QueueView({
           data-active={radio.autoCrossfade}
           onClick={() => updateRadio({ autoCrossfade: !radio.autoCrossfade })}
           style={{ display: "flex", alignItems: "center", gap: 6 }}
-          title="Encadenar pistas automáticamente"
+          title={tr("radioAutoMixTip")}
         >
-          <Power size={12} /> Auto-Mix
+          <Power size={12} /> {tr("radioAutoMix")}
         </button>
 
         <span className="vdj-chip" style={{ marginLeft: "auto" }}>
-          {radio.queue.length} en cola · Deck A
+          {tr("radioInQueueDeckA", { n: radio.queue.length })}
         </span>
 
         {radio.queue.length > 0 && (
@@ -139,11 +140,11 @@ function QueueView({
             className="vdj-btn"
             onClick={() => {
               radioClear();
-              toast("Cola vaciada");
+              toast(tr("radioQueueClearedToast"));
             }}
             style={{ display: "flex", alignItems: "center", gap: 4 }}
           >
-            <Trash2 size={12} /> Vaciar
+            <Trash2 size={12} /> {tr("radioClear")}
           </button>
         )}
       </div>
@@ -152,7 +153,7 @@ function QueueView({
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, overflow: "auto", padding: 6 }}>
         {radio.queue.length === 0 && (
           <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)", fontSize: 12 }}>
-            Cola vacía. Añade pistas desde Library con el botón <b>📻</b> o carga un segmento.
+            {tr("radioEmptyQueue")}
           </div>
         )}
         {radio.queue.map((tid, idx) => {
