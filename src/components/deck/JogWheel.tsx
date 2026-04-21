@@ -5,14 +5,17 @@ interface JogWheelProps {
   bpm: number | null;
   size?: number;
   onScratch?: (deltaSec: number) => void;
+  onScratchStart?: () => void;
+  onScratchEnd?: () => void;
   onNudge?: (delta: number) => void;
 }
 
-export function JogWheel({ spinning, bpm, size = 220, onScratch, onNudge }: JogWheelProps) {
+export function JogWheel({ spinning, bpm, size = 220, onScratch, onScratchStart, onScratchEnd, onNudge }: JogWheelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const angle = useRef(0);
   const last = useRef(performance.now());
   const dragLast = useRef<{ x: number; y: number } | null>(null);
+  const scratchActive = useRef(false);
 
   useEffect(() => {
     let raf = 0;
