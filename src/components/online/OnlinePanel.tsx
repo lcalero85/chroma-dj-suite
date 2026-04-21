@@ -155,7 +155,7 @@ export function OnlinePanel() {
             className="vdj-btn"
             data-active={provider === p.id}
             onClick={() => setProvider(p.id)}
-            title={p.note}
+            title={t(p.noteKey)}
             style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             <span style={{ width: 8, height: 8, borderRadius: 8, background: p.color }} />
@@ -175,23 +175,23 @@ export function OnlinePanel() {
             onKeyDown={(e) => { if (e.key === "Enter") void search(); }}
             placeholder={
               provider === "soundcloud"
-                ? "Buscar en SoundCloud (artista, título…)"
-                : "Solo SoundCloud permite mezcla DJ"
+                ? t("onlineSearchSCPlaceholder")
+                : t("onlineSearchOtherPlaceholder")
             }
             disabled={provider !== "soundcloud"}
             style={{ flex: 1, background: "transparent", border: 0, color: "var(--text-1)", outline: "none", fontSize: 12 }}
           />
         </div>
         <button className="vdj-btn" onClick={() => void search()} disabled={loading || provider !== "soundcloud"}>
-          {loading ? <Loader2 size={12} className="vdj-spin" /> : <Search size={12} />} Buscar
+          {loading ? <Loader2 size={12} className="vdj-spin" /> : <Search size={12} />} {t("onlineSearchBtn")}
         </button>
       </div>
 
       {provider !== "soundcloud" && (
         <div className="vdj-panel-inset" style={{ padding: 14, fontSize: 11, color: "var(--text-2)", lineHeight: 1.5 }}>
-          <strong>{provider === "spotify" ? "Spotify" : "Beatport"}</strong> no permite mezcla DJ desde su API pública por restricciones de DRM y licencias.
+          {t("onlineNotMixable", { name: provider === "spotify" ? "Spotify" : "Beatport" })}
           <br />
-          Para mezclar online, usa <strong>SoundCloud</strong>. Para usar contenido de Spotify/Beatport, descarga los archivos y arrástralos a tu librería local.
+          {t("onlineUseSoundCloud")}
         </div>
       )}
 
@@ -200,8 +200,8 @@ export function OnlinePanel() {
           {results.length === 0 && !loading && (
             <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)", fontSize: 12 }}>
               <Cloud size={20} style={{ opacity: 0.4, marginBottom: 6 }} />
-              <div>Busca canciones en SoundCloud y cárgalas directo a tus decks.</div>
-              <div style={{ fontSize: 10, marginTop: 6, opacity: 0.7 }}>Las pistas se descargan a tu librería local para mezclar con todos los FX.</div>
+              <div>{t("onlineEmptyHint")}</div>
+              <div style={{ fontSize: 10, marginTop: 6, opacity: 0.7 }}>{t("onlineEmptySubHint")}</div>
             </div>
           )}
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -232,10 +232,10 @@ export function OnlinePanel() {
                     <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => void loadDeck(t, "B")} disabled={busyId === t.id}>
                       {busyId === t.id ? <Loader2 size={9} className="vdj-spin" /> : "→B"}
                     </button>{" "}
-                    <button className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10 }} title="Guardar en librería" onClick={() => void saveOnly(t)} disabled={busyId === t.id}>
+                    <button className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10 }} title={t("onlineSaveTip")} onClick={() => void saveOnly(t)} disabled={busyId === t.id}>
                       <Download size={10} />
                     </button>{" "}
-                    <a className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10, display: "inline-flex" }} href={t.permalink} target="_blank" rel="noreferrer" title="Abrir en SoundCloud">
+                    <a className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10, display: "inline-flex" }} href={t.permalink} target="_blank" rel="noreferrer" title={t("onlineOpenInSC")}>
                       <ExternalLink size={10} />
                     </a>
                   </td>
