@@ -83,13 +83,13 @@ function FolderNode({
         ) : (
           <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{folder.name}</span>
         )}
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Rename" onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title={tr("libRename")} onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
           <Pencil size={9} />
         </button>
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Subfolder" onClick={async (e) => { e.stopPropagation(); const n = window.prompt("Subfolder name"); if (n) { await createFolder(n, folder.id); setExpanded({ ...expanded, [folder.id]: true }); } }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title={tr("libSubfolder")} onClick={async (e) => { e.stopPropagation(); const n = window.prompt(tr("libSubfolderPrompt")); if (n) { await createFolder(n, folder.id); setExpanded({ ...expanded, [folder.id]: true }); } }}>
           <FolderPlus size={9} />
         </button>
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Delete" onClick={async (e) => { e.stopPropagation(); if (confirm(`Delete folder "${folder.name}" and its subfolders? Tracks will move to root.`)) { await removeFolder(folder.id); if (selectedId === folder.id) onSelect(null); } }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title={tr("libDelete")} onClick={async (e) => { e.stopPropagation(); if (confirm(tr("libDeleteFolderConfirm", { name: folder.name }))) { await removeFolder(folder.id); if (selectedId === folder.id) onSelect(null); } }}>
           <Trash2 size={9} />
         </button>
       </div>
