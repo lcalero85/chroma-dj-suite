@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getSoundCloudClientId, invalidateSoundCloudClientId } from "@/lib/scClientId";
 
-const FALLBACK_CLIENT_ID = "a3e059563d7fd3372b49b37f00a00bcf";
-function getClientId(): string {
-  return process.env.SOUNDCLOUD_CLIENT_ID || FALLBACK_CLIENT_ID;
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+async function resolveStream(t: string, clientId: string) {
+  const resolveUrl = `${t}${t.includes("?") ? "&" : "?"}client_id=${clientId}`;
+  return fetch(resolveUrl, {
+    headers: { "User-Agent": UA, Accept: "application/json" },
+  });
 }
 
 // Resolves a SoundCloud "transcoding" URL into the actual MP3 URL and proxies
@@ -15,17 +21,14 @@ export const Route = createFileRoute("/api/soundcloud/stream")({
         const url = new URL(request.url);
         const t = url.searchParams.get("t"); // transcoding url (already encoded)
         if (!t) return Response.json({ error: "missing t" }, { status: 400 });
-
-        const clientId = getClientId();
-        const resolveUrl = `${t}${t.includes("?") ? "&" : "?"}client_id=${clientId}`;
         try {
-          const r1 = await fetch(resolveUrl, {
-            headers: {
-              "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-              Accept: "application/json",
-            },
-          });
+          let clientId = await getSoundCloudClientId();
+          let r1 = await resolveStream(t, clientId);
+          if (r1.status === 401 || r1.status === 403) {
+            invalidateSoundCloudClientId();
+            clientId = await getSoundCloudClientId(true);
+            r1 = await resolveStream(t, clientId);
+          }
           if (!r1.ok) {
             const body = await r1.text();
             return Response.json(
@@ -37,10 +40,7 @@ export const Route = createFileRoute("/api/soundcloud/stream")({
           if (!j.url) return Response.json({ error: "no_stream_url" }, { status: 502 });
 
           const r2 = await fetch(j.url, {
-            headers: {
-              "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            },
+            headers: { "User-Agent": UA },
           });
           if (!r2.ok || !r2.body) {
             return Response.json({ error: "stream_fetch_failed", status: r2.status }, { status: 502 });
