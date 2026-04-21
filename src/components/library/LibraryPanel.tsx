@@ -4,9 +4,9 @@ import { listTracks, putTrack, deleteTrack, uid, type TrackRecord, type FolderRe
 import { loadTrackToDeck, refreshFolders, createFolder, renameFolder, removeFolder, moveTrackToFolder } from "@/state/controller";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film } from "lucide-react";
+import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film, Disc3 } from "lucide-react";
 import { toast } from "sonner";
-import { radioAdd } from "@/state/controller";
+import { radioAdd, addTrackToSegment } from "@/state/controller";
 
 function FolderNode({
   folder,
@@ -115,6 +115,7 @@ export function LibraryPanel() {
   const folders = useApp((s) => s.folders);
   const selectedFolderId = useApp((s) => s.selectedFolderId);
   const setSelectedFolder = useApp((s) => s.setSelectedFolder);
+  const segments = useApp((s) => s.segments);
   const fileRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -343,6 +344,27 @@ export function LibraryPanel() {
                   >
                     <Radio size={10} />
                   </button>{" "}
+                  {segments.length > 0 && (
+                    <select
+                      className="vdj-btn"
+                      title="Añadir a un segmento"
+                      style={{ padding: "2px 4px", fontSize: 10, maxWidth: 100 }}
+                      value=""
+                      onChange={(e) => {
+                        const sid = e.target.value;
+                        if (!sid) return;
+                        addTrackToSegment(sid, t.id);
+                        const seg = segments.find((s) => s.id === sid);
+                        toast(`Añadida a "${seg?.name ?? "segmento"}"`);
+                        e.target.value = "";
+                      }}
+                    >
+                      <option value="">+ Segmento</option>
+                      {segments.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  )}{" "}
                   <button
                     className="vdj-btn"
                     style={{ padding: "2px 6px", fontSize: 10 }}

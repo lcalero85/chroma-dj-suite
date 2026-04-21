@@ -7,11 +7,11 @@ import {
 } from "@/state/controller";
 import {
   Radio, Play, SkipForward, Trash2, ChevronUp, ChevronDown, Shuffle, Power,
-  Plus, Pencil, Clock, ListMusic, Wifi, WifiOff, Disc3, X,
+  Plus, Pencil, Clock, ListMusic, Wifi, WifiOff, Disc3, X, Search,
 } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type Tab = "queue" | "segments" | "live";
 
@@ -342,7 +342,7 @@ function SegmentsView({
             >
               {activeSegment.trackIds.length === 0 && (
                 <div style={{ padding: 16, textAlign: "center", color: "var(--text-3)", fontSize: 11 }}>
-                  Arrastra pistas desde Library aquí, o usa el botón <b>📻</b> en cada pista para añadirla a la cola.
+                  Vacío. Usa el buscador abajo o el selector <b>+ Segmento</b> en Library para añadir pistas.
                 </div>
               )}
               {activeSegment.trackIds.map((tid, idx) => {
@@ -361,9 +361,69 @@ function SegmentsView({
                 );
               })}
             </div>
+
+            <TrackPicker segmentId={activeSegment.id} excludeIds={activeSegment.trackIds} tracks={tracks} />
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function TrackPicker({
+  segmentId,
+  excludeIds,
+  tracks,
+}: {
+  segmentId: string;
+  excludeIds: string[];
+  tracks: ReturnType<typeof useApp.getState>["tracks"];
+}) {
+  const [q, setQ] = useState("");
+  const filtered = useMemo(() => {
+    const ex = new Set(excludeIds);
+    const ql = q.toLowerCase().trim();
+    return tracks
+      .filter((t) => !ex.has(t.id))
+      .filter((t) => !ql || t.title.toLowerCase().includes(ql) || t.artist.toLowerCase().includes(ql))
+      .slice(0, 50);
+  }, [tracks, excludeIds, q]);
+
+  return (
+    <div className="vdj-panel-inset" style={{ padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <Search size={11} />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar pista para añadir al segmento…"
+          style={{ flex: 1, background: "transparent", border: 0, color: "var(--text-1)", outline: "none", fontSize: 12 }}
+        />
+        <span className="vdj-chip">{filtered.length}</span>
+      </div>
+      {q && (
+        <div style={{ maxHeight: 180, overflow: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+          {filtered.length === 0 && (
+            <div style={{ padding: 8, fontSize: 10, color: "var(--text-3)", textAlign: "center" }}>Sin resultados</div>
+          )}
+          {filtered.map((t) => (
+            <button
+              key={t.id}
+              className="vdj-btn"
+              onClick={() => {
+                addTrackToSegment(segmentId, t.id);
+                toast(`+ ${t.title}`);
+              }}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", justifyContent: "flex-start" }}
+            >
+              <Plus size={10} />
+              <span style={{ flex: 1, fontSize: 11, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {t.title} <span style={{ color: "var(--text-3)" }}>— {t.artist || "—"}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
