@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useApp } from "@/state/store";
 import { ensureRunning, getEngine } from "@/audio/engine";
-import { startPositionPolling } from "@/state/controller";
+import { startPositionPolling, startSegmentScheduler, initStreamStatus } from "@/state/controller";
 import { installShortcuts } from "@/lib/shortcuts";
 import { bootMidi } from "@/midi/engine";
 import { Toaster } from "@/components/ui/sonner";
@@ -51,6 +51,8 @@ function Index() {
     startPositionPolling();
     installShortcuts();
     void bootMidi();
+    initStreamStatus();
+    startSegmentScheduler();
   }, [mounted]);
 
   if (!mounted) {
