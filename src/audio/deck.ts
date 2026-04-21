@@ -19,6 +19,10 @@ export interface DeckHandles {
   xfaderGain: GainNode;  // crossfader contribution
   cueGain: GainNode;     // PFL send to cue bus
   analyser: AnalyserNode;
+  // Vocal-cut bus: parallel dry/wet center-channel cancellation
+  vocalDry: GainNode;
+  vocalWet: GainNode;
+  vocalSum: GainNode;
 }
 
 export type DeckId = "A" | "B" | "C" | "D";
@@ -65,11 +69,35 @@ export function getDeck(id: DeckId): DeckHandles {
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 512;
 
-  // Routing: hi→mid→lo→filter→channelGain→[fader→xfaderGain→master, cueGain→cueBus, analyser]
+  // ===== Vocal-cut bus =====
+  // Center-channel cancellation: split L/R, invert one channel, sum to mono.
+  // Anything panned to the center (most lead vocals) cancels out.
+  // Dry/Wet ramp lets us blend smoothly between original and instrumental.
+  const splitter = ctx.createChannelSplitter(2);
+  const merger = ctx.createChannelMerger(2);
+  const invert = ctx.createGain();
+  invert.gain.value = -1;
+  // L straight, R inverted → both channels carry (L - R), summed = side signal (instrumental-ish)
+  splitter.connect(merger, 0, 0);
+  splitter.connect(invert, 1);
+  invert.connect(merger, 0, 1);
+
+  const vocalDry = ctx.createGain();
+  vocalDry.gain.value = 1;
+  const vocalWet = ctx.createGain();
+  vocalWet.gain.value = 0;
+  const vocalSum = ctx.createGain();
+
+  // Routing: hi→mid→lo→filter→[dry, splitter→merger→wet]→sum→channelGain→...
   hi.connect(mid);
   mid.connect(lo);
   lo.connect(filter);
-  filter.connect(channelGain);
+  filter.connect(vocalDry);
+  filter.connect(splitter);
+  merger.connect(vocalWet);
+  vocalDry.connect(vocalSum);
+  vocalWet.connect(vocalSum);
+  vocalSum.connect(channelGain);
   channelGain.connect(fader);
   fader.connect(xfaderGain);
   xfaderGain.connect(master);
@@ -93,6 +121,9 @@ export function getDeck(id: DeckId): DeckHandles {
     xfaderGain,
     cueGain,
     analyser,
+    vocalDry,
+    vocalWet,
+    vocalSum,
   };
   decks[id] = d;
   return d;
@@ -228,6 +259,19 @@ export function setXfaderGain(id: DeckId, v: number) {
   const d = getDeck(id);
   const { ctx } = getEngine();
   d.xfaderGain.gain.setTargetAtTime(Math.max(0, Math.min(1, v)), ctx.currentTime, 0.01);
+}
+
+/** Vocal removal amount, 0 = original, 1 = full karaoke. Smooth ~150ms ramp. */
+export function setVocalCut(id: DeckId, amount: number) {
+  const d = getDeck(id);
+  const { ctx } = getEngine();
+  const a = Math.max(0, Math.min(1, amount));
+  // Equal-power-ish crossfade with bass compensation: keep dry partially even at full kill
+  const wet = a;
+  const dry = 1 - a * 0.85;
+  const tau = 0.15;
+  d.vocalWet.gain.setTargetAtTime(wet, ctx.currentTime, tau);
+  d.vocalDry.gain.setTargetAtTime(dry, ctx.currentTime, tau);
 }
 
 export function nudge(id: DeckId, deltaSec: number) {
