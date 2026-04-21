@@ -247,6 +247,23 @@ const SECTIONS_EN: Section[] = [
     ],
   },
   {
+    title: "Radio segments (themed blocks)",
+    intro: "Create themed blocks (Romantic, Reggae, Salsa, Top 40…) and schedule them to fire automatically at a given time.",
+    rows: [
+      "Radio tab → Segments sub-tab → '+ New segment'.",
+      "Give the segment a name and color (e.g. 'Romantic' in red, 'Reggae' in green).",
+      "Add tracks two ways: (1) from Library using the '+ Segment' menu on each row, (2) inside the segment using the built-in search.",
+      "Schedule the trigger time in 24h format (HH:MM). Ex: 21:00 fires the Romantic block every night at 9pm.",
+      "Load mode: 'Replace' (overwrites the current queue) or 'Append' (queues at the end).",
+      "When the scheduled time hits and Radio is ON, segment tracks are loaded into Deck A's queue and start playing back-to-back.",
+      "The scheduler polls every 30 seconds and each segment only fires once per scheduled minute.",
+      "Manual trigger: ▶ button on the segment loads it into the queue immediately.",
+      "Auto-Mix friendly: if Auto-Mix is on, segment tracks crossfade automatically.",
+      "Shuffle friendly: enabling Random shuffles the segment order on load.",
+      "Programming tip: chain segments at different times for a radio-style schedule (e.g. 18:00 Reggae, 20:00 Salsa, 22:00 Romantic).",
+    ],
+  },
+  {
     title: "Vocal Cut (karaoke per deck)",
     rows: [
       "Each deck has a VOCAL slider under the hot cues / pro controls.",
