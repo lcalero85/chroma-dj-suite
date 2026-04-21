@@ -297,6 +297,96 @@ html[data-skin="ocean"] {
   --beat-glow: 0 0 16px oklch(0.78 0.14 195 / 0.7);
 }
 
+/* 17. Lava Flow */
+html[data-skin="lava"] {
+  --accent: oklch(0.72 0.22 40);
+  --accent-2: oklch(0.62 0.24 25);
+  --surface-1: oklch(0.08 0.02 30);
+  --surface-2: oklch(0.13 0.04 30);
+  --surface-3: oklch(0.19 0.06 35);
+  --surface-4: oklch(0.27 0.08 40);
+  --text-1: oklch(0.97 0.05 60);
+  --text-2: oklch(0.78 0.1 50);
+  --line: oklch(0.72 0.22 40 / 0.22);
+  --line-strong: oklch(0.72 0.22 40 / 0.45);
+  --r-md: 6px;
+  --r-lg: 10px;
+  --beat-glow: 0 0 22px oklch(0.72 0.22 40 / 0.85), 0 0 40px oklch(0.62 0.24 25 / 0.5);
+}
+
+/* 18. Forest Deep */
+html[data-skin="forest"] {
+  --accent: oklch(0.7 0.16 145);
+  --accent-2: oklch(0.62 0.14 160);
+  --surface-1: oklch(0.1 0.02 150);
+  --surface-2: oklch(0.15 0.03 150);
+  --surface-3: oklch(0.21 0.04 150);
+  --surface-4: oklch(0.28 0.05 150);
+  --text-1: oklch(0.95 0.04 130);
+  --text-2: oklch(0.72 0.06 140);
+  --line: oklch(0.7 0.16 145 / 0.2);
+  --line-strong: oklch(0.7 0.16 145 / 0.4);
+  --r-lg: 14px;
+  --beat-glow: 0 0 16px oklch(0.7 0.16 145 / 0.7);
+}
+
+/* 19. Candy Pop */
+html[data-skin="candy"] {
+  --accent: oklch(0.78 0.2 350);
+  --accent-2: oklch(0.82 0.15 175);
+  --surface-1: oklch(0.96 0.02 340);
+  --surface-2: oklch(0.92 0.03 340);
+  --surface-3: oklch(0.86 0.04 340);
+  --surface-4: oklch(0.78 0.05 340);
+  --text-1: oklch(0.22 0.05 330);
+  --text-2: oklch(0.45 0.08 330);
+  --text-3: oklch(0.58 0.06 330);
+  --line: oklch(0.22 0.05 330 / 0.12);
+  --line-strong: oklch(0.78 0.2 350 / 0.4);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px oklch(0.78 0.2 350 / 0.2);
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --beat-glow: 0 0 18px oklch(0.78 0.2 350 / 0.7);
+}
+
+/* 20. Matrix Rain */
+html[data-skin="matrix"] {
+  --accent: oklch(0.88 0.25 140);
+  --accent-2: oklch(0.7 0.22 140);
+  --surface-1: oklch(0.04 0.005 150);
+  --surface-2: oklch(0.08 0.008 150);
+  --surface-3: oklch(0.13 0.012 150);
+  --surface-4: oklch(0.18 0.018 150);
+  --text-1: oklch(0.88 0.25 140);
+  --text-2: oklch(0.65 0.22 140);
+  --text-3: oklch(0.42 0.18 140);
+  --line: oklch(0.88 0.25 140 / 0.22);
+  --line-strong: oklch(0.88 0.25 140 / 0.45);
+  --r-md: 1px;
+  --r-lg: 2px;
+  --font-display: "JetBrains Mono", ui-monospace, monospace;
+  --beat-glow: 0 0 22px oklch(0.88 0.25 140 / 0.9);
+}
+
+/* 21. Royal Purple */
+html[data-skin="royal"] {
+  --accent: oklch(0.7 0.22 305);
+  --accent-2: oklch(0.82 0.15 85);
+  --surface-1: oklch(0.09 0.04 305);
+  --surface-2: oklch(0.14 0.05 305);
+  --surface-3: oklch(0.2 0.06 305);
+  --surface-4: oklch(0.27 0.07 305);
+  --text-1: oklch(0.96 0.03 305);
+  --text-2: oklch(0.74 0.06 305);
+  --line: oklch(0.7 0.22 305 / 0.22);
+  --line-strong: oklch(0.82 0.15 85 / 0.35);
+  --r-md: 8px;
+  --r-lg: 14px;
+  --font-display: Georgia, "Times New Roman", serif;
+  --beat-glow: 0 0 18px oklch(0.7 0.22 305 / 0.75), 0 0 32px oklch(0.82 0.15 85 / 0.3);
+}
+
 /* Common console primitives — use the skin tokens above */
 .vdj-app {
   background: var(--surface-1);

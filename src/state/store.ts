@@ -27,7 +27,12 @@ export type SkinId =
   | "arctic"
   | "blood"
   | "gold"
-  | "ocean";
+  | "ocean"
+  | "lava"
+  | "forest"
+  | "candy"
+  | "matrix"
+  | "royal";
 
 export interface DeckState {
   trackId: string | null;
