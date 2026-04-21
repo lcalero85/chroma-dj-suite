@@ -1,10 +1,15 @@
 import { useApp } from "@/state/store";
 import { Settings, Palette, HelpCircle, Disc3 } from "lucide-react";
+import { useEffect } from "react";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);
   const setDrawer = useApp((s) => s.setDrawer);
   const skin = useApp((s) => s.skin);
+  const appName = useApp((s) => s.settings.appName);
+  useEffect(() => {
+    if (appName) document.title = appName;
+  }, [appName]);
   return (
     <div
       className="vdj-panel"
@@ -21,7 +26,9 @@ export function TopBar() {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Disc3 size={20} style={{ color: "var(--accent)" }} />
-        <div style={{ fontWeight: 800, letterSpacing: "0.18em", fontSize: 13 }}>VDJ&nbsp;PRO</div>
+        <div style={{ fontWeight: 800, letterSpacing: "0.18em", fontSize: 13, textTransform: "uppercase" }}>
+          {appName || "VDJ PRO"}
+        </div>
         <span className="vdj-chip" style={{ marginLeft: 8 }}>SKIN · {skin}</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
