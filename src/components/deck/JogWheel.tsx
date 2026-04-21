@@ -59,17 +59,26 @@ export function JogWheel({ spinning, bpm, size = 220, onScratch, onScratchStart,
       if (outer) {
         onNudge?.(deg / 360);
       } else {
+        // Activate scratch session lazily on first inner-area drag
+        if (!scratchActive.current) {
+          scratchActive.current = true;
+          onScratchStart?.();
+        }
         // 1 full revolution ≈ 1.8 seconds of audio scrub
         onScratch?.((deg / 360) * 1.8);
       }
       dragLast.current = { x: e.clientX, y: e.clientY };
     },
-    [onScratch, onNudge],
+    [onScratch, onScratchStart, onNudge],
   );
 
   const onPointerUp = useCallback(() => {
     dragLast.current = null;
-  }, []);
+    if (scratchActive.current) {
+      scratchActive.current = false;
+      onScratchEnd?.();
+    }
+  }, [onScratchEnd]);
 
   return (
     <div
