@@ -2,7 +2,7 @@ import { useApp } from "@/state/store";
 import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { getNextScheduledSegment } from "@/state/controller";
+import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
 import { resolveShortcuts } from "@/lib/shortcutDefs";
 
@@ -15,6 +15,8 @@ export function TopBar() {
   // Subscribe to segments so the next-segment chip refreshes on change.
   const segments = useApp((s) => s.segments);
   const radio = useApp((s) => s.radio);
+  const numpadDeck = useApp((s) => s.mixer.numpadDeck);
+  const enabledDecks = useApp((s) => s.settings.enabledDecks ?? 2);
   const [, tick] = useState(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const shortcutsCfg = useApp((s) => s.settings.shortcuts);
@@ -102,6 +104,27 @@ export function TopBar() {
             {next.segment.name} · {formatMinutes(next.minutesUntil)}
           </span>
         )}
+      </div>
+      {/* Always-visible Numpad target selector (mirrors the one in Recorder tab) */}
+      <div
+        className="vdj-panel-inset"
+        style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}
+        title="Selecciona el deck que controla el teclado numérico (` para alternar)"
+      >
+        <Keyboard size={12} />
+        <span className="vdj-label">NUMPAD →</span>
+        {(enabledDecks === 4 ? (["A", "B", "C", "D"] as const) : (["A", "B"] as const)).map((d) => (
+          <button
+            key={d}
+            className="vdj-btn"
+            data-active={numpadDeck === d}
+            style={{ padding: "2px 8px", minWidth: 24 }}
+            onClick={() => setNumpadDeck(d)}
+          >
+            {d}
+          </button>
+        ))}
+        <span className="vdj-label" style={{ opacity: 0.7 }}>(`)</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         <button className="vdj-btn" onClick={() => setShowShortcuts(true)} title="Atajos (?)">
