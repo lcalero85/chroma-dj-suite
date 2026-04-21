@@ -116,7 +116,7 @@ export function MixPresetsPanel() {
           if (count === 0) return null;
           return (
             <button key={cat} className="vdj-btn" data-active={filter === cat} onClick={() => setFilter(cat)}>
-              {CATEGORY_LABELS[cat]} <span style={{ opacity: 0.6 }}>({count})</span>
+              {labelFor(cat)} <span style={{ opacity: 0.6 }}>({count})</span>
             </button>
           );
         })}
@@ -134,7 +134,7 @@ export function MixPresetsPanel() {
           if (filter === "all") {
             for (const cat of CATEGORY_ORDER) {
               const items = grouped.get(cat) ?? [];
-              if (items.length) sections.push({ key: cat, label: CATEGORY_LABELS[cat], items });
+              if (items.length) sections.push({ key: cat, label: labelFor(cat), items });
             }
           }
           if (userCreated.length && (filter === "all" || filter === "user")) {
@@ -142,7 +142,7 @@ export function MixPresetsPanel() {
           }
         } else {
           const items = grouped.get(filter) ?? [];
-          sections.push({ key: filter, label: CATEGORY_LABELS[filter], items });
+          sections.push({ key: filter, label: labelFor(filter), items });
         }
         return sections.map((sec) => (
           <div key={sec.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -159,7 +159,7 @@ export function MixPresetsPanel() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ fontSize: 22 }}>{p.emoji}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{resolveName(p)}</div>
                       <div style={{ fontSize: 10, color: "var(--text-3)" }}>{p.builtin ? t("presetsDefaultBadge") : t("presetsUserBadge")}</div>
                     </div>
                     {!p.builtin && (
@@ -175,7 +175,7 @@ export function MixPresetsPanel() {
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-2)", minHeight: 30, lineHeight: 1.35 }}>
-                    {p.description}
+                    {resolveDesc(p)}
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 10 }}>
                     {typeof p.hi === "number" && <span className="vdj-chip">HI {fmt(p.hi)}</span>}
