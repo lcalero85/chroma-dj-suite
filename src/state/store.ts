@@ -219,6 +219,8 @@ interface AppState {
   selectedFolderId: string | null;
   folders: FolderRecord[];
   midi: MidiState;
+  segments: RadioSegment[];
+  stream: StreamConfig;
 
   // setters
   updateDeck: (id: DeckId, patch: Partial<DeckState>) => void;
@@ -238,6 +240,10 @@ interface AppState {
   setSelectedFolder: (id: string | null) => void;
   setFolders: (f: FolderRecord[]) => void;
   updateVideoFx: (id: DeckId, patch: Partial<VideoFx>) => void;
+  setSegments: (s: RadioSegment[]) => void;
+  upsertSegment: (s: RadioSegment) => void;
+  removeSegment: (id: string) => void;
+  updateStream: (patch: Partial<StreamConfig>) => void;
 }
 
 const defaultSettings: SettingsState = {
@@ -305,6 +311,24 @@ export const useApp = create<AppState>()(
       selectedFolderId: null,
       folders: [],
       midi: defaultMidiSettings,
+      segments: [],
+      stream: {
+        enabled: false,
+        serverUrl: "",
+        mount: "/stream",
+        username: "source",
+        password: "",
+        bitrate: 128,
+        format: "webm-opus",
+        stationName: "VDJ PRO Radio",
+        genre: "Mixed",
+        description: "Live DJ set",
+        autoStartWithRadio: false,
+        status: "idle",
+        lastError: null,
+        bytesSent: 0,
+        startedAt: null,
+      },
 
       updateDeck: (id, patch) =>
         set((s) => ({ decks: { ...s.decks, [id]: { ...s.decks[id], ...patch } } })),
@@ -334,6 +358,17 @@ export const useApp = create<AppState>()(
             },
           },
         })),
+      setSegments: (segments) => set({ segments }),
+      upsertSegment: (seg) =>
+        set((s) => {
+          const idx = s.segments.findIndex((x) => x.id === seg.id);
+          if (idx === -1) return { segments: [...s.segments, seg] };
+          const next = [...s.segments];
+          next[idx] = seg;
+          return { segments: next };
+        }),
+      removeSegment: (id) => set((s) => ({ segments: s.segments.filter((x) => x.id !== id) })),
+      updateStream: (patch) => set((s) => ({ stream: { ...s.stream, ...patch } })),
     }),
     {
       name: "vdj-pro-state",
@@ -344,6 +379,15 @@ export const useApp = create<AppState>()(
         radio: s.radio,
         videoMix: s.videoMix,
         midi: s.midi,
+        segments: s.segments,
+        stream: {
+          ...s.stream,
+          // do not persist transient runtime fields
+          status: "idle" as StreamStatus,
+          lastError: null,
+          bytesSent: 0,
+          startedAt: null,
+        },
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppState>;
@@ -355,6 +399,8 @@ export const useApp = create<AppState>()(
           radio: { ...current.radio, ...(p.radio ?? {}) },
           videoMix: { ...current.videoMix, ...(p.videoMix ?? {}) },
           midi: { ...current.midi, ...(p.midi ?? {}) },
+          segments: p.segments ?? current.segments,
+          stream: { ...current.stream, ...(p.stream ?? {}) },
         };
       },
     },
