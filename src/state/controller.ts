@@ -296,6 +296,23 @@ export function nudgeDeck(id: DeckId, deltaSec: number) {
   nudge(id, deltaSec);
 }
 
+// ===== Scratch (vinyl-style) =====
+import { beginScratch as engBeginScratch, scratchMove as engScratchMove, endScratch as engEndScratch } from "@/audio/scratch";
+
+export async function beginScratchDeck(id: DeckId) {
+  await ensureRunning();
+  engBeginScratch(id);
+}
+export function scratchDeck(id: DeckId, deltaSec: number) {
+  engScratchMove(id, deltaSec);
+}
+export function endScratchDeck(id: DeckId) {
+  engEndScratch(id);
+  // Sync UI playing state with audio (engine may have resumed).
+  const d = getDeck(id);
+  useApp.getState().updateDeck(id, { isPlaying: d.isPlaying });
+}
+
 export function setMasterVolume(v: number) {
   engSetMaster(v);
   useAppMasterRef.current = v;
