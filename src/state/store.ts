@@ -123,6 +123,8 @@ export interface SettingsState {
   defaultKeyLock: boolean;
   shortcuts: Record<string, string>;
   appName: string;
+  lang: "en" | "es";
+  appMode: "basic" | "advanced";
 }
 
 const defaultDeck = (): DeckState => ({
@@ -214,6 +216,8 @@ const defaultSettings: SettingsState = {
     record: "KeyR",
   },
   appName: "VDJ PRO",
+  lang: "en",
+  appMode: "advanced",
 };
 
 export const useApp = create<AppState>()(
