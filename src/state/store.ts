@@ -7,6 +7,7 @@ import type { FxKind } from "@/audio/fx";
 import { defaultMidiSettings, type MidiSettings } from "@/midi/engine";
 
 export type MidiState = MidiSettings & { _devicesVersion?: number };
+void defaultMidiSettings;
 
 export type DeckId = "A" | "B" | "C" | "D";
 export type SkinId =
