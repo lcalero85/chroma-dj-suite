@@ -2,8 +2,23 @@ import { useState } from "react";
 import { useApp, type DeckId } from "@/state/store";
 import { applyMixPreset, captureMixPreset, deleteMixPreset, resetDefaultMixPresets } from "@/state/controller";
 import { Plus, Trash2, RotateCcw } from "lucide-react";
-import { CATEGORY_LABELS, CATEGORY_ORDER, type PresetCategory } from "@/lib/mixPresets";
+import { CATEGORY_ORDER, type PresetCategory } from "@/lib/mixPresets";
 import { useT } from "@/lib/i18n";
+import type { DictKey } from "@/lib/i18n/dict";
+
+/** Map a builtin preset id to its base i18n key (e.g. "builtin-lp-intro" → "preset_lp_intro"). */
+function presetI18nBase(id: string): string {
+  return "preset_" + id.replace(/^builtin-/, "").replace(/-/g, "_");
+}
+
+const CATEGORY_KEY: Record<PresetCategory, DictKey> = {
+  general: "catGeneral",
+  reggaeton: "catReggaeton",
+  pop: "catPop",
+  electronica: "catElectronica",
+  rap: "catRap",
+  rock: "catRock",
+};
 
 /**
  * Mix Presets — quick DJ recipes.
@@ -13,6 +28,21 @@ import { useT } from "@/lib/i18n";
  */
 export function MixPresetsPanel() {
   const t = useT();
+  const labelFor = (cat: PresetCategory) => t(CATEGORY_KEY[cat]);
+  // Resolve a built-in preset's name/description via the dictionary; fall back
+  // to the stored Spanish copy for user presets or unknown ids.
+  const resolveName = (p: { id: string; name: string; builtin?: boolean }) => {
+    if (!p.builtin) return p.name;
+    const k = `${presetI18nBase(p.id)}_name` as DictKey;
+    const v = t(k);
+    return v === k ? p.name : v;
+  };
+  const resolveDesc = (p: { id: string; description: string; builtin?: boolean }) => {
+    if (!p.builtin) return p.description;
+    const k = `${presetI18nBase(p.id)}_desc` as DictKey;
+    const v = t(k);
+    return v === k ? p.description : v;
+  };
   const presets = useApp((s) => s.mixPresets);
   const activeDecks = useApp((s) => s.activeDecks);
   const [target, setTarget] = useState<DeckId>(activeDecks[0] ?? "A");
@@ -86,7 +116,7 @@ export function MixPresetsPanel() {
           if (count === 0) return null;
           return (
             <button key={cat} className="vdj-btn" data-active={filter === cat} onClick={() => setFilter(cat)}>
-              {CATEGORY_LABELS[cat]} <span style={{ opacity: 0.6 }}>({count})</span>
+              {labelFor(cat)} <span style={{ opacity: 0.6 }}>({count})</span>
             </button>
           );
         })}
@@ -104,7 +134,7 @@ export function MixPresetsPanel() {
           if (filter === "all") {
             for (const cat of CATEGORY_ORDER) {
               const items = grouped.get(cat) ?? [];
-              if (items.length) sections.push({ key: cat, label: CATEGORY_LABELS[cat], items });
+              if (items.length) sections.push({ key: cat, label: labelFor(cat), items });
             }
           }
           if (userCreated.length && (filter === "all" || filter === "user")) {
@@ -112,7 +142,7 @@ export function MixPresetsPanel() {
           }
         } else {
           const items = grouped.get(filter) ?? [];
-          sections.push({ key: filter, label: CATEGORY_LABELS[filter], items });
+          sections.push({ key: filter, label: labelFor(filter), items });
         }
         return sections.map((sec) => (
           <div key={sec.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -129,7 +159,7 @@ export function MixPresetsPanel() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ fontSize: 22 }}>{p.emoji}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{resolveName(p)}</div>
                       <div style={{ fontSize: 10, color: "var(--text-3)" }}>{p.builtin ? t("presetsDefaultBadge") : t("presetsUserBadge")}</div>
                     </div>
                     {!p.builtin && (
@@ -145,7 +175,7 @@ export function MixPresetsPanel() {
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-2)", minHeight: 30, lineHeight: 1.35 }}>
-                    {p.description}
+                    {resolveDesc(p)}
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 10 }}>
                     {typeof p.hi === "number" && <span className="vdj-chip">HI {fmt(p.hi)}</span>}

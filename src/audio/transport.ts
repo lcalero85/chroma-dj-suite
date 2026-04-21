@@ -5,6 +5,7 @@ import { getDeck, currentTime, seek, pause, play, setPlaybackRate } from "./deck
 import { setMasterVolume } from "./engine";
 import { setXfaderPosition } from "@/state/controller";
 import { toast } from "sonner";
+import { t } from "@/lib/i18n";
 
 /** Jump N beats forward/backward keeping play state. */
 export function beatJump(id: DeckId, beats: number) {
@@ -115,8 +116,8 @@ export function autoMixTo(target: -1 | 1, seconds = 8): boolean {
   const a = getDeck("A");
   const b = getDeck("B");
   if (!a.buffer || !b.buffer || !decks.A.trackId || !decks.B.trackId) {
-    toast.error("Auto-mix requiere ambos decks cargados", {
-      description: "Carga una pista en Deck A y otra en Deck B antes de usar Auto-Mix.",
+    toast.error(t("autoMixNeedsBoth"), {
+      description: t("autoMixNeedsBothDesc"),
     });
     return false;
   }
