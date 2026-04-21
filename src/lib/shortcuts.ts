@@ -29,6 +29,8 @@ declare global {
 }
 
 export function installShortcuts() {
+  if ((window as unknown as { __vdjShortcutsInstalled?: boolean }).__vdjShortcutsInstalled) return;
+  (window as unknown as { __vdjShortcutsInstalled?: boolean }).__vdjShortcutsInstalled = true;
   window.addEventListener("keydown", async (e) => {
     const target = e.target as HTMLElement;
     if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;

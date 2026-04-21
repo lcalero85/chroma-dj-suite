@@ -40,7 +40,6 @@ function Index() {
       getEngine();
       await ensureRunning();
       startPositionPolling();
-      installShortcuts();
       void bootMidi();
       window.removeEventListener("pointerdown", boot);
       window.removeEventListener("keydown", boot);
