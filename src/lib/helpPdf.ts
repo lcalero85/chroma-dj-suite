@@ -88,6 +88,23 @@ const SECTIONS_ES: Section[] = [
     ],
   },
   {
+    title: "Segmentos de Radio (bloques temáticos)",
+    intro: "Crea bloques temáticos (Romántico, Reggae, Salsa, Top 40…) y prográmalos para que suenen automáticamente a una hora exacta.",
+    rows: [
+      "Pestaña Radio → sub-pestaña Segmentos → botón '+ Nuevo segmento'.",
+      "Pon nombre y color al segmento (ej. 'Romántico' en rojo, 'Reggae' en verde).",
+      "Añade pistas al segmento de 2 formas: (1) desde Library con el menú '+ Segmento' en cada fila, (2) desde el segmento usando el buscador interno.",
+      "Programa la hora de disparo en formato 24h (HH:MM). Ej: 21:00 lanza el segmento Romántico cada noche a las 9.",
+      "Modo de carga: 'Reemplazar' (sustituye la cola actual) o 'Añadir' (encola al final).",
+      "Cuando llega la hora programada y la Radio está ON, las pistas del segmento se cargan en la cola del Deck A y empiezan a sonar una tras otra.",
+      "El scheduler revisa cada 30 segundos; un segmento solo se dispara una vez por minuto programado.",
+      "Disparo manual: botón ▶ en el segmento para cargarlo en la cola sin esperar la hora.",
+      "Compatible con Auto-Mix: si está activo, las pistas del segmento se mezclan automáticamente al cambiar.",
+      "Compatible con Aleatorio: el orden del segmento se baraja al cargarse en la cola.",
+      "Tip de programación: encadena varios segmentos a horas distintas para una parrilla tipo emisora (ej. 18:00 Reggae, 20:00 Salsa, 22:00 Romántico).",
+    ],
+  },
+  {
     title: "Voice-over y efectos de voz",
     rows: [
       "Tecla N o botón VOICE OVER en la pestaña Recorder.",
@@ -227,6 +244,23 @@ const SECTIONS_EN: Section[] = [
       "Numpad + / − → Sampler pads 1 / 2",
       "Numpad * / / → Toggle FX 1 / FX 2",
       "Numpad Enter → Start / stop recording",
+    ],
+  },
+  {
+    title: "Radio segments (themed blocks)",
+    intro: "Create themed blocks (Romantic, Reggae, Salsa, Top 40…) and schedule them to fire automatically at a given time.",
+    rows: [
+      "Radio tab → Segments sub-tab → '+ New segment'.",
+      "Give the segment a name and color (e.g. 'Romantic' in red, 'Reggae' in green).",
+      "Add tracks two ways: (1) from Library using the '+ Segment' menu on each row, (2) inside the segment using the built-in search.",
+      "Schedule the trigger time in 24h format (HH:MM). Ex: 21:00 fires the Romantic block every night at 9pm.",
+      "Load mode: 'Replace' (overwrites the current queue) or 'Append' (queues at the end).",
+      "When the scheduled time hits and Radio is ON, segment tracks are loaded into Deck A's queue and start playing back-to-back.",
+      "The scheduler polls every 30 seconds and each segment only fires once per scheduled minute.",
+      "Manual trigger: ▶ button on the segment loads it into the queue immediately.",
+      "Auto-Mix friendly: if Auto-Mix is on, segment tracks crossfade automatically.",
+      "Shuffle friendly: enabling Random shuffles the segment order on load.",
+      "Programming tip: chain segments at different times for a radio-style schedule (e.g. 18:00 Reggae, 20:00 Salsa, 22:00 Romantic).",
     ],
   },
   {
