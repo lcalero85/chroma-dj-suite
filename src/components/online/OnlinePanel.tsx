@@ -137,7 +137,7 @@ export function OnlinePanel() {
     try {
       await importToLibrary(item);
       setTracks(await listTracks());
-      toast.success(t("onlineSavedTitle"), { description: item.title });
+      toast.success(tr("onlineSavedTitle"), { description: item.title });
     } catch (e) {
       toast.error(tr("onlineCouldNotSave"), { description: String(e) });
     } finally {
