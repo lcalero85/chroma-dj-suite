@@ -21,11 +21,19 @@ let booted = false;
 
 function Index() {
   const skin = useApp((s) => s.skin);
+  const enabledDecks = useApp((s) => s.settings.enabledDecks ?? 2);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-skin", skin);
   }, [skin]);
+
+  // Keep activeDecks in sync with the user's enabledDecks preference, so
+  // position polling, presets, etc. cover Deck C/D when enabled.
+  useEffect(() => {
+    const next = enabledDecks === 4 ? ["A", "B", "C", "D"] : ["A", "B"];
+    useApp.setState({ activeDecks: next as ("A" | "B" | "C" | "D")[] });
+  }, [enabledDecks]);
 
   useEffect(() => {
     setMounted(true);
@@ -78,14 +86,20 @@ function Index() {
           overflow: "hidden",
         }}
       >
-        <div style={{ minHeight: 0, gridColumn: "1 / 2", gridRow: "1 / 2" }}>
-          <Deck id="A" side="left" />
+        <div style={{ minHeight: 0, gridColumn: "1 / 2", gridRow: "1 / 2", display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
+          <div style={{ flex: 1, minHeight: 0 }}><Deck id="A" side="left" /></div>
+          {enabledDecks === 4 && (
+            <div style={{ flex: 1, minHeight: 0 }}><Deck id="C" side="left" /></div>
+          )}
         </div>
         <div style={{ gridColumn: "2 / 3", gridRow: "1 / 2", minHeight: 0, overflow: "hidden" }}>
           <Mixer />
         </div>
-        <div style={{ minHeight: 0, gridColumn: "3 / 4", gridRow: "1 / 2" }}>
-          <Deck id="B" side="right" />
+        <div style={{ minHeight: 0, gridColumn: "3 / 4", gridRow: "1 / 2", display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
+          <div style={{ flex: 1, minHeight: 0 }}><Deck id="B" side="right" /></div>
+          {enabledDecks === 4 && (
+            <div style={{ flex: 1, minHeight: 0 }}><Deck id="D" side="right" /></div>
+          )}
         </div>
       </div>
       <div style={{ height: "32%", minHeight: 240, padding: "0 10px 10px 10px", overflow: "hidden", flexShrink: 0 }}>

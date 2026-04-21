@@ -183,6 +183,10 @@ export interface SettingsState {
   videoLowerThird?: boolean;
   /** Auto-gain on import. */
   autoGainOnImport?: boolean;
+  /** How many decks are visible/active in the layout. Default 2 (A+B). */
+  enabledDecks?: 2 | 4;
+  /** Visual style for the deck waveforms. */
+  waveformStyle?: "classic" | "bars" | "dual";
 }
 
 export interface SessionStats {
@@ -287,6 +291,8 @@ const defaultSettings: SettingsState = {
   appName: "VDJ PRO",
   lang: "en",
   appMode: "advanced",
+  enabledDecks: 2,
+  waveformStyle: "classic",
 };
 
 export const useApp = create<AppState>()(

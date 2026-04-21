@@ -21,4 +21,8 @@ export function applyCrossfader(pos: number, curve: XfaderCurve) {
   const { left, right } = curveValue(pos, curve);
   setXfaderGain("A", left);
   setXfaderGain("B", right);
+  // Decks C and D mirror the same crossfader sides as A and B respectively.
+  // (Some users assign C as a second left-side deck and D as a second right-side deck.)
+  setXfaderGain("C", left);
+  setXfaderGain("D", right);
 }

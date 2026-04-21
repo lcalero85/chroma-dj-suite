@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n";
 
 export function Mixer() {
   const mixer = useApp((s) => s.mixer);
+  const enabledDecks = useApp((s) => s.settings.enabledDecks ?? 2);
   const t = useT();
   const [ana, setAna] = useState<AnalyserNode | null>(null);
   const [cueAna, setCueAna] = useState<AnalyserNode | null>(null);
@@ -37,11 +38,21 @@ export function Mixer() {
         <span className="vdj-chip">{mixer.xfaderCurve.toUpperCase()}</span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8 }}>
-        <MixerChannel id="A" />
-        <MasterColumn />
-        <MixerChannel id="B" />
-      </div>
+      {enabledDecks === 4 ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto 1fr 1fr", gap: 6 }}>
+          <MixerChannel id="A" />
+          <MixerChannel id="C" />
+          <MasterColumn />
+          <MixerChannel id="B" />
+          <MixerChannel id="D" />
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8 }}>
+          <MixerChannel id="A" />
+          <MasterColumn />
+          <MixerChannel id="B" />
+        </div>
+      )}
 
        <CrossfaderSection />
 

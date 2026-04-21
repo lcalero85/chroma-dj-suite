@@ -39,6 +39,7 @@ interface DeckProps {
 
 export function Deck({ id, side }: DeckProps) {
   const ds = useApp((s) => s.decks[id]);
+  const waveformStyle = useApp((s) => s.settings.waveformStyle ?? "classic");
   const masterId: DeckId = id === "A" ? "B" : "A";
 
   const handle = getDeck(id);
@@ -191,6 +192,7 @@ export function Deck({ id, side }: DeckProps) {
         height={96}
         variant="main"
         isPlaying={ds.isPlaying}
+        styleVariant={waveformStyle}
       />
 
       <div

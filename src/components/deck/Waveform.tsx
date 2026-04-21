@@ -13,6 +13,8 @@ interface WaveformProps {
   variant?: "main" | "mini";
   onSeek?: (pos: number) => void;
   isPlaying?: boolean;
+  /** Visual style: classic = solid bars, bars = thicker spaced bars, dual = top/bottom mirror (Serato-like). */
+  styleVariant?: "classic" | "bars" | "dual";
 }
 
 export function Waveform({
@@ -28,6 +30,7 @@ export function Waveform({
   variant = "main",
   onSeek,
   isPlaying,
+  styleVariant = "classic",
 }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -89,7 +92,12 @@ export function Waveform({
         const startIdx = Math.floor((startSec / duration) * peaks.length);
         const endIdx = Math.ceil((endSec / duration) * peaks.length);
         const slice = peaks.slice(startIdx, endIdx);
-        const barW = w / Math.max(1, slice.length);
+        const baseBarW = w / Math.max(1, slice.length);
+        // "bars" style: spacing between vertical bars, "classic" / "dual" use full width
+        const barW = styleVariant === "bars" ? baseBarW : baseBarW;
+        const barFillW = styleVariant === "bars"
+          ? Math.max(1, baseBarW * 0.55)
+          : Math.max(1, baseBarW - 0.5);
 
         for (let i = 0; i < slice.length; i++) {
           const v = slice[i];
@@ -115,7 +123,7 @@ export function Waveform({
 
           // Live shimmer: small symmetric height modulation near playhead
           let mod = 1;
-          if (isPlaying) {
+          if (isPlaying && styleVariant !== "bars") {
             const distFromHead = Math.abs(i - slice.length / 2) / (slice.length / 2);
             const breathe = 1 - distFromHead * 0.7;
             mod = 1 + Math.sin(phase + i * 0.35) * 0.08 * breathe;
@@ -123,7 +131,17 @@ export function Waveform({
 
           const barH = Math.max(1, v * h * 0.9 * mod);
           ctx.fillStyle = fill;
-          ctx.fillRect(i * barW, h / 2 - barH / 2, Math.max(1, barW - 0.5), barH);
+          if (styleVariant === "dual") {
+            // Serato-style: top half rendered upward, bottom half mirrored downward,
+            // colored slightly differently for hi/lo emphasis.
+            const halfH = barH / 2;
+            ctx.fillRect(i * barW, h / 2 - halfH, barFillW, halfH);
+            ctx.globalAlpha = 0.65;
+            ctx.fillRect(i * barW, h / 2, barFillW, halfH);
+            ctx.globalAlpha = 1;
+          } else {
+            ctx.fillRect(i * barW, h / 2 - barH / 2, barFillW, barH);
+          }
         }
 
         // beatgrid
