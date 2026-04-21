@@ -57,6 +57,8 @@ export interface DeckState {
   bands?: { lo: number[]; mid: number[]; hi: number[] } | null;
   reverse: boolean;
   slip: boolean;
+  /** 0..1 — center-channel vocal cancellation amount */
+  vocalCut: number;
   // Video support
   hasVideo?: boolean;
   videoUrl?: string | null;
@@ -160,6 +162,7 @@ const defaultDeck = (): DeckState => ({
   bands: null,
   reverse: false,
   slip: false,
+  vocalCut: 0,
   hasVideo: false,
   videoUrl: null,
   videoFx: defaultVideoFx(),
