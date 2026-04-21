@@ -65,6 +65,7 @@ async function importToLibrary(item: ScResult): Promise<TrackRecord> {
 
 export function OnlinePanel() {
   const setTracks = useApp((s) => s.setTracks);
+  const t = useT();
   const [provider, setProvider] = useState<Provider>("soundcloud");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -77,8 +78,9 @@ export function OnlinePanel() {
 
   const search = async () => {
     if (provider !== "soundcloud") {
-      toast(`${provider === "spotify" ? "Spotify" : "Beatport"} no permite mezcla DJ`, {
-        description: "Limitación de su API. Usa SoundCloud para mezclar online.",
+      const name = provider === "spotify" ? "Spotify" : "Beatport";
+      toast(t("onlineProviderNotMixable", { name }), {
+        description: t("onlineProviderNotMixableDesc"),
       });
       return;
     }
@@ -89,9 +91,9 @@ export function OnlinePanel() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "search failed");
       setResults(j.items as ScResult[]);
-      if ((j.items as ScResult[]).length === 0) toast("Sin resultados");
+      if ((j.items as ScResult[]).length === 0) toast(t("onlineNoResults"));
     } catch (e) {
-      toast.error("Error de búsqueda", { description: String(e) });
+      toast.error(t("onlineSearchError"), { description: String(e) });
     } finally {
       setLoading(false);
     }
@@ -111,8 +113,8 @@ export function OnlinePanel() {
     try {
       await audio.play();
       audio.onended = () => setPreviewId(null);
-    } catch (e) {
-      toast.error("No se pudo previsualizar");
+    } catch {
+      toast.error(t("onlineCouldNotPreview"));
       setPreviewId(null);
     }
   };
@@ -124,7 +126,7 @@ export function OnlinePanel() {
       setTracks(await listTracks());
       await loadTrackToDeck(deck, rec.id);
     } catch (e) {
-      toast.error(`Falló cargar en Deck ${deck}`, { description: String(e) });
+      toast.error(t("onlineFailedLoadDeck", { deck }), { description: String(e) });
     } finally {
       setBusyId(null);
     }
@@ -135,9 +137,9 @@ export function OnlinePanel() {
     try {
       await importToLibrary(item);
       setTracks(await listTracks());
-      toast.success("Guardada en librería", { description: item.title });
+      toast.success(t("onlineSavedTitle"), { description: item.title });
     } catch (e) {
-      toast.error("No se pudo guardar", { description: String(e) });
+      toast.error(t("onlineCouldNotSave"), { description: String(e) });
     } finally {
       setBusyId(null);
     }
