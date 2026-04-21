@@ -19,8 +19,8 @@ export function MasterPro() {
 
   const onAutoMix = () => {
     const target = mixer.xfader >= 0 ? -1 : 1;
-    autoMixTo(target, 8);
-    toast(`Auto-mix → Deck ${target === -1 ? "A" : "B"} (8s)`);
+    const ok = autoMixTo(target, 8);
+    if (ok) toast(`Auto-mix → Deck ${target === -1 ? "A" : "B"} (8s)`);
   };
 
   const sleepOptions = [0, 5, 15, 30, 60];

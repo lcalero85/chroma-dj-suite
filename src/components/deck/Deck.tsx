@@ -30,6 +30,7 @@ import { VideoFxPanel } from "../video/VideoFxPanel";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useT, t as tGlobal } from "@/lib/i18n";
+import { setDeckVocalCut } from "@/state/controller";
 
 interface DeckProps {
   id: DeckId;
@@ -284,6 +285,8 @@ export function Deck({ id, side }: DeckProps) {
 
       <AdvancedDeckExtras id={id} />
 
+      <VocalCutBar id={id} />
+
       {/* deck VU */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span className="vdj-label">{t("signal")}</span>
@@ -411,5 +414,46 @@ function AdvancedDeckExtras({ id }: { id: DeckId }) {
       {/* video FX (only when a video clip is loaded) */}
       <VideoFxPanel id={id} />
     </>
+  );
+}
+
+function VocalCutBar({ id }: { id: DeckId }) {
+  const ds = useApp((s) => s.decks[id]);
+  const t = useT();
+  const v = ds.vocalCut ?? 0;
+  return (
+    <div
+      className="vdj-panel-inset"
+      style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px" }}
+      title={t("vocalCutTitle")}
+    >
+      <span className="vdj-label" style={{ minWidth: 44, color: v > 0.05 ? "var(--accent)" : undefined }}>{t("vocalCut")}</span>
+      <button
+        className="vdj-btn"
+        data-active={v < 0.05}
+        style={{ fontSize: 9, padding: "2px 6px" }}
+        onClick={() => setDeckVocalCut(id, 0)}
+      >
+        {t("vocalOff")}
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={v}
+        onChange={(e) => setDeckVocalCut(id, parseFloat(e.target.value))}
+        style={{ flex: 1, accentColor: "var(--accent)" }}
+      />
+      <button
+        className="vdj-btn"
+        data-active={v > 0.95}
+        style={{ fontSize: 9, padding: "2px 6px" }}
+        onClick={() => setDeckVocalCut(id, 1)}
+      >
+        {t("vocalKaraoke")}
+      </button>
+      <span className="vdj-readout" style={{ fontSize: 10, minWidth: 32, textAlign: "right" }}>{Math.round(v * 100)}%</span>
+    </div>
   );
 }

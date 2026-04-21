@@ -26,6 +26,7 @@ import {
   setFader,
   setCue,
   nudge,
+  setVocalCut as engSetVocalCut,
 } from "@/audio/deck";
 import { applyCrossfader } from "@/audio/crossfader";
 import { detectBPM, extractPeaks, extractBandPeaks } from "@/audio/analysis/bpm";
@@ -210,6 +211,12 @@ export function setDeckFader(id: DeckId, v: number) {
 export function setDeckCue(id: DeckId, on: boolean) {
   setCue(id, on);
   useApp.getState().updateDeck(id, { pflCue: on });
+}
+
+/** Smooth vocal-cut (karaoke) per deck. amount: 0..1. */
+export function setDeckVocalCut(id: DeckId, amount: number) {
+  engSetVocalCut(id, amount);
+  useApp.getState().updateDeck(id, { vocalCut: amount });
 }
 
 export function seekDeck(id: DeckId, normPos: number) {
