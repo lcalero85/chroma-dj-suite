@@ -1,15 +1,17 @@
 import { useApp, type DeckId } from "@/state/store";
 import { beatJump, brake, setReverse } from "@/audio/transport";
 import { Rewind, FastForward, RotateCcw, Disc, Square } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 interface Props { id: DeckId }
 
 export function ProControls({ id }: Props) {
   const ds = useApp((s) => s.decks[id]);
+  const t = useT();
   const toggleSlip = () => useApp.getState().updateDeck(id, { slip: !ds.slip });
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <div className="vdj-label">PRO</div>
+      <div className="vdj-label">{t("pro")}</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 4 }}>
         <button className="vdj-btn" title="Beat jump -4" style={{ fontSize: 9, padding: "4px 0" }} onClick={() => beatJump(id, -4)}>
           <Rewind size={10} />4
