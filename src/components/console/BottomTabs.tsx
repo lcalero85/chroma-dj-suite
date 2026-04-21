@@ -5,10 +5,11 @@ import { SamplerPanel } from "../sampler/SamplerPanel";
 import { RecorderPanel } from "../recorder/RecorderPanel";
 import { RadioPanel } from "../radio/RadioPanel";
 import { OnlinePanel } from "../online/OnlinePanel";
+import { MixPresetsPanel } from "../presets/MixPresetsPanel";
 import { useT, type DictKey } from "@/lib/i18n";
 import { useEffect } from "react";
 
-type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder";
+type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets";
 
 const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "library",  key: "library",  advanced: false },
@@ -17,6 +18,7 @@ const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "radio",    key: "radio",    advanced: true },
   { id: "fx",       key: "fx",       advanced: true },
   { id: "sampler",  key: "sampler",  advanced: true },
+  { id: "presets",  key: "mixPresets", advanced: false },
 ];
 
 export function BottomTabs() {
@@ -47,6 +49,7 @@ export function BottomTabs() {
         {mode === "advanced" && tab === "fx" && <FxPanel />}
         {mode === "advanced" && tab === "sampler" && <SamplerPanel />}
         {tab === "recorder" && <RecorderPanel />}
+        {tab === "presets" && <MixPresetsPanel />}
       </div>
     </div>
   );
