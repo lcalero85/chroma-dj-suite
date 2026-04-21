@@ -106,6 +106,38 @@ export interface RadioState {
   shuffle: boolean;
 }
 
+export interface RadioSegment {
+  id: string;
+  name: string;
+  color: string;
+  trackIds: string[];
+  /** Optional schedule: HH:MM 24h. If set, segment auto-loads at this time when radio is enabled. */
+  scheduledAt?: string | null;
+  /** If true, run the schedule once per day. */
+  recurring?: boolean;
+  createdAt: number;
+}
+
+export type StreamStatus = "idle" | "connecting" | "live" | "error";
+
+export interface StreamConfig {
+  enabled: boolean;
+  serverUrl: string;     // e.g. https://my-icecast.example.com
+  mount: string;         // e.g. /stream
+  username: string;      // typically "source"
+  password: string;
+  bitrate: 64 | 96 | 128 | 192 | 256;
+  format: "webm-opus" | "ogg-opus";
+  stationName: string;
+  genre: string;
+  description: string;
+  autoStartWithRadio: boolean;
+  status: StreamStatus;
+  lastError: string | null;
+  bytesSent: number;
+  startedAt: number | null;
+}
+
 export interface VideoMixState {
   videoXfader: number; // -1..1, follows audio xfader by default
   linkAudioXfader: boolean;
