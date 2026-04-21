@@ -88,6 +88,23 @@ const SECTIONS_ES: Section[] = [
     ],
   },
   {
+    title: "Segmentos de Radio (bloques temáticos)",
+    intro: "Crea bloques temáticos (Romántico, Reggae, Salsa, Top 40…) y prográmalos para que suenen automáticamente a una hora exacta.",
+    rows: [
+      "Pestaña Radio → sub-pestaña Segmentos → botón '+ Nuevo segmento'.",
+      "Pon nombre y color al segmento (ej. 'Romántico' en rojo, 'Reggae' en verde).",
+      "Añade pistas al segmento de 2 formas: (1) desde Library con el menú '+ Segmento' en cada fila, (2) desde el segmento usando el buscador interno.",
+      "Programa la hora de disparo en formato 24h (HH:MM). Ej: 21:00 lanza el segmento Romántico cada noche a las 9.",
+      "Modo de carga: 'Reemplazar' (sustituye la cola actual) o 'Añadir' (encola al final).",
+      "Cuando llega la hora programada y la Radio está ON, las pistas del segmento se cargan en la cola del Deck A y empiezan a sonar una tras otra.",
+      "El scheduler revisa cada 30 segundos; un segmento solo se dispara una vez por minuto programado.",
+      "Disparo manual: botón ▶ en el segmento para cargarlo en la cola sin esperar la hora.",
+      "Compatible con Auto-Mix: si está activo, las pistas del segmento se mezclan automáticamente al cambiar.",
+      "Compatible con Aleatorio: el orden del segmento se baraja al cargarse en la cola.",
+      "Tip de programación: encadena varios segmentos a horas distintas para una parrilla tipo emisora (ej. 18:00 Reggae, 20:00 Salsa, 22:00 Romántico).",
+    ],
+  },
+  {
     title: "Voice-over y efectos de voz",
     rows: [
       "Tecla N o botón VOICE OVER en la pestaña Recorder.",
