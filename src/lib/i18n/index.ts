@@ -4,10 +4,10 @@ import { DICT, type DictKey, type Lang } from "./dict";
 export type { Lang, DictKey } from "./dict";
 export { LANG_LABELS } from "./dict";
 
-function pickDict(lang: Lang): typeof DICT.en {
-  if (lang === "es") return DICT.es as typeof DICT.en;
+function pickDict(lang: Lang): Record<DictKey, string> {
+  if (lang === "es") return DICT.es as unknown as Record<DictKey, string>;
   // pt/fr/it currently inherit English copy until full translations are added.
-  return DICT.en;
+  return DICT.en as unknown as Record<DictKey, string>;
 }
 
 /** Reactive translator hook. Re-renders when `settings.lang` changes. */
