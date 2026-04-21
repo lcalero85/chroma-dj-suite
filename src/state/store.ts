@@ -308,6 +308,7 @@ export const useApp = create<AppState>()(
         mixer: s.mixer,
         radio: s.radio,
         videoMix: s.videoMix,
+        midi: s.midi,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppState>;
@@ -318,6 +319,7 @@ export const useApp = create<AppState>()(
           settings: { ...current.settings, ...(p.settings ?? {}) },
           radio: { ...current.radio, ...(p.radio ?? {}) },
           videoMix: { ...current.videoMix, ...(p.videoMix ?? {}) },
+          midi: { ...current.midi, ...(p.midi ?? {}) },
         };
       },
     },
