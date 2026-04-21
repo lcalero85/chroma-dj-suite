@@ -151,29 +151,29 @@ export function RecorderPanel() {
                         createdAt: Date.now(),
                       });
                       setRecordings(await listRecordings());
-                      toast.success("Video grabado", { description: `Archivo ${r.ext.toUpperCase()} listo para descargar.` });
+                      toast.success(t("recVideoSaved"), { description: t("recVideoSavedDesc", { ext: r.ext.toUpperCase() }) });
                     }
                   } else {
                     const canvas = videoStageRef.current;
                     if (!canvas) {
-                      toast.error("Activa la pantalla de video primero");
+                      toast.error(t("recVideoNeedsStage"));
                       return;
                     }
                     const ok = await startVideoRecording(canvas, 30);
-                    if (ok) toast("Grabando video…", { description: "Captura del mix de video + audio master." });
-                    else toast.error("No se pudo iniciar la grabación de video");
+                    if (ok) toast(t("recRecordingNow"), { description: t("recVideoStartedDesc") });
+                    else toast.error(t("recVideoFailed"));
                   }
                 } catch (error) {
                   console.error(error);
-                  toast.error("Error en grabación de video");
+                  toast.error(t("recVideoError"));
                 }
                 force((x) => x + 1);
               }}
               style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 132, justifyContent: "center", minHeight: 40 }}
-              title="Grabar video MP4 (master + canvas)"
+              title={t("recVideoTip")}
             >
               {vrec ? <Square size={12} /> : <Video size={14} />}
-              {vrec ? "Stop video" : "Grabar video"}
+              {vrec ? t("recVideoStopBtn") : t("recVideoBtn")}
             </button>
             <span className="vdj-readout" style={{ color: vrec ? "var(--bad)" : "var(--text-3)", display: "flex", alignItems: "center" }}>
               {formatTime(videoRecordingElapsed())}
@@ -184,10 +184,10 @@ export function RecorderPanel() {
         {/* Numpad target indicator */}
         <div className="vdj-panel-inset" style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px" }}>
           <Keyboard size={12} />
-          <span className="vdj-label">NUMPAD →</span>
+          <span className="vdj-label">{t("numpadArrow")}</span>
           <button className="vdj-btn" data-active={mixer.numpadDeck === "A"} style={{ padding: "2px 8px" }} onClick={() => setNumpadDeck("A")}>A</button>
           <button className="vdj-btn" data-active={mixer.numpadDeck === "B"} style={{ padding: "2px 8px" }} onClick={() => setNumpadDeck("B")}>B</button>
-          <span className="vdj-label" style={{ opacity: 0.7 }}>(` para alternar)</span>
+          <span className="vdj-label" style={{ opacity: 0.7 }}>{t("recNumpadToggleHint")}</span>
         </div>
       </div>
 
@@ -210,11 +210,11 @@ export function RecorderPanel() {
           className="vdj-btn"
           data-active={mixer.micOn}
           data-tone={mixer.micOn ? "live" : undefined}
-          title="Voice-over (micrófono en vivo)"
+          title={t("recVoiceOverTitle")}
           onClick={async () => {
             const ok = await setMicOn(!mixer.micOn);
-            if (ok && !mixer.micOn) toast.success("Voice-over ACTIVO", { description: "Tu voz entra al master y a la grabación." });
-            else if (mixer.micOn) toast("Voice-over apagado");
+            if (ok && !mixer.micOn) toast.success(t("recVoiceOverActive"), { description: t("recVoiceOverActiveDesc") });
+            else if (mixer.micOn) toast(t("recVoiceOverOff"));
           }}
           style={{
             display: "flex",
@@ -228,7 +228,7 @@ export function RecorderPanel() {
           }}
         >
           {mixer.micOn ? <Mic size={16} /> : <MicOff size={16} />}
-          VOICE OVER
+          {t("recVoiceOverLabel")}
         </button>
 
         {mixer.micOn && (
@@ -243,12 +243,12 @@ export function RecorderPanel() {
               animation: "vdj-pulse 1s infinite",
             }}
           >
-            ● EN VIVO
+            {t("recOnAirDot")}
           </span>
         )}
 
         <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          LVL
+          {t("recLvl")}
           <input
             type="range"
             min={0}
@@ -261,7 +261,7 @@ export function RecorderPanel() {
           <span className="vdj-readout" style={{ fontSize: 10, minWidth: 30 }}>{mixer.micLevel.toFixed(2)}</span>
         </label>
         <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          DUCK
+          {t("recDuck")}
           <input
             type="range"
             min={0}
@@ -276,13 +276,13 @@ export function RecorderPanel() {
 
         {/* Voice presets */}
         <div className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Wand2 size={12} /> EFECTO
+          <Wand2 size={12} /> {t("recVoiceFx")}
           <select
             value={mixer.micPreset}
             onChange={(e) => {
               setVoicePreset(e.target.value);
               const p = VOICE_PRESETS.find((x) => x.id === e.target.value);
-              if (p && p.id !== "off") toast(`Efecto voz: ${p.label}`);
+              if (p && p.id !== "off") toast(t("recVoicePresetToast", { label: p.label }));
             }}
             className="vdj-btn"
             style={{ padding: "4px 8px", fontFamily: "var(--font-mono)" }}
@@ -296,7 +296,7 @@ export function RecorderPanel() {
 
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, overflow: "auto", padding: 6 }}>
         {recordings.length === 0 && (
-          <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>Sin grabaciones aún.</div>
+          <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>{t("recNoRecordings")}</div>
         )}
         {recordings.map((r) => (
           <RecordingRow
