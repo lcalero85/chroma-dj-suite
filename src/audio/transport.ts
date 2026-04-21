@@ -4,6 +4,7 @@ import { useApp } from "@/state/store";
 import { getDeck, currentTime, seek, pause, play, setPlaybackRate } from "./deck";
 import { setMasterVolume } from "./engine";
 import { setXfaderPosition } from "@/state/controller";
+import { toast } from "sonner";
 
 /** Jump N beats forward/backward keeping play state. */
 export function beatJump(id: DeckId, beats: number) {
@@ -108,7 +109,17 @@ export function setSleepTimer(minutes: number) {
 
 /** Auto-mix: gradually slide crossfader from current to target over `seconds`. */
 let autoMixRaf: number | null = null;
-export function autoMixTo(target: -1 | 1, seconds = 8) {
+export function autoMixTo(target: -1 | 1, seconds = 8): boolean {
+  // Safety: both decks must have a track loaded.
+  const decks = useApp.getState().decks;
+  const a = getDeck("A");
+  const b = getDeck("B");
+  if (!a.buffer || !b.buffer || !decks.A.trackId || !decks.B.trackId) {
+    toast.error("Auto-mix requiere ambos decks cargados", {
+      description: "Carga una pista en Deck A y otra en Deck B antes de usar Auto-Mix.",
+    });
+    return false;
+  }
   if (autoMixRaf) cancelAnimationFrame(autoMixRaf);
   const start = useApp.getState().mixer.xfader;
   const t0 = performance.now();
@@ -121,6 +132,7 @@ export function autoMixTo(target: -1 | 1, seconds = 8) {
     else autoMixRaf = null;
   };
   autoMixRaf = requestAnimationFrame(step);
+  return true;
 }
 
 /** Tap tempo: returns BPM after 4+ taps; resets after 2s of inactivity. */
