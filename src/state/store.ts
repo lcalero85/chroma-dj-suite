@@ -352,6 +352,7 @@ export const useApp = create<AppState>()(
         bytesSent: 0,
         startedAt: null,
       },
+      mixPresets: DEFAULT_MIX_PRESETS,
 
       updateDeck: (id, patch) =>
         set((s) => ({ decks: { ...s.decks, [id]: { ...s.decks[id], ...patch } } })),
@@ -392,6 +393,17 @@ export const useApp = create<AppState>()(
         }),
       removeSegment: (id) => set((s) => ({ segments: s.segments.filter((x) => x.id !== id) })),
       updateStream: (patch) => set((s) => ({ stream: { ...s.stream, ...patch } })),
+      setMixPresets: (mixPresets) => set({ mixPresets }),
+      upsertMixPreset: (p) =>
+        set((s) => {
+          const idx = s.mixPresets.findIndex((x) => x.id === p.id);
+          if (idx === -1) return { mixPresets: [...s.mixPresets, p] };
+          const next = [...s.mixPresets];
+          next[idx] = p;
+          return { mixPresets: next };
+        }),
+      removeMixPreset: (id) =>
+        set((s) => ({ mixPresets: s.mixPresets.filter((x) => x.id !== id) })),
     }),
     {
       name: "vdj-pro-state",
