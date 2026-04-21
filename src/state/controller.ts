@@ -379,6 +379,11 @@ export function radioEnable(on: boolean) {
   useApp.getState().updateRadio({ enabled: on });
   if (on) toast.success("Modo Radio activado", { description: "Las pistas en cola sonarán una tras otra en Deck A." });
   else toast("Modo Radio apagado");
+  const stream = useApp.getState().stream;
+  if (stream.enabled && stream.autoStartWithRadio) {
+    if (on && stream.status === "idle") void startLiveStream();
+    else if (!on && stream.status === "live") void stopLiveStream();
+  }
 }
 
 export function radioAdd(trackId: string) {
