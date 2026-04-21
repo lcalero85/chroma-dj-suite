@@ -120,6 +120,13 @@ export function LibraryPanel() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  // Advanced filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [bpmMin, setBpmMin] = useState<number>(0);
+  const [bpmMax, setBpmMax] = useState<number>(220);
+  const [compatibleWith, setCompatibleWith] = useState<CamelotKey | "">("");
+  const [tagFilter, setTagFilter] = useState<string>("");
+
   useEffect(() => {
     listTracks().then(setTracks);
     refreshFolders();
@@ -173,6 +180,13 @@ export function LibraryPanel() {
     toast(`${files.length} pista(s) añadidas`);
   };
 
+  // Aggregate tags across the library for quick chips.
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    tracks.forEach((t) => (t.tags ?? []).forEach((tag) => set.add(tag)));
+    return [...set].sort();
+  }, [tracks]);
+
   const filtered = tracks
     .filter((t) => {
       const q = search.toLowerCase();
@@ -180,7 +194,11 @@ export function LibraryPanel() {
       const matchesFolder = selectedFolderId === null
         ? true
         : (t.folderId ?? null) === selectedFolderId;
-      return matchesText && matchesFolder;
+      const bpm = t.bpm ?? 0;
+      const matchesBpm = !showFilters || (bpm === 0 ? bpmMin === 0 : bpm >= bpmMin && bpm <= bpmMax);
+      const matchesKey = !showFilters || !compatibleWith || (t.key && isCompatible(t.key as CamelotKey, compatibleWith as CamelotKey));
+      const matchesTag = !tagFilter || (t.tags ?? []).includes(tagFilter);
+      return matchesText && matchesFolder && matchesBpm && matchesKey && matchesTag;
     })
     .sort((a, b) => b.addedAt - a.addedAt);
 
