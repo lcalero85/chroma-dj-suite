@@ -5,14 +5,17 @@ interface JogWheelProps {
   bpm: number | null;
   size?: number;
   onScratch?: (deltaSec: number) => void;
+  onScratchStart?: () => void;
+  onScratchEnd?: () => void;
   onNudge?: (delta: number) => void;
 }
 
-export function JogWheel({ spinning, bpm, size = 220, onScratch, onNudge }: JogWheelProps) {
+export function JogWheel({ spinning, bpm, size = 220, onScratch, onScratchStart, onScratchEnd, onNudge }: JogWheelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const angle = useRef(0);
   const last = useRef(performance.now());
   const dragLast = useRef<{ x: number; y: number } | null>(null);
+  const scratchActive = useRef(false);
 
   useEffect(() => {
     let raf = 0;
@@ -56,17 +59,26 @@ export function JogWheel({ spinning, bpm, size = 220, onScratch, onNudge }: JogW
       if (outer) {
         onNudge?.(deg / 360);
       } else {
+        // Activate scratch session lazily on first inner-area drag
+        if (!scratchActive.current) {
+          scratchActive.current = true;
+          onScratchStart?.();
+        }
         // 1 full revolution ≈ 1.8 seconds of audio scrub
         onScratch?.((deg / 360) * 1.8);
       }
       dragLast.current = { x: e.clientX, y: e.clientY };
     },
-    [onScratch, onNudge],
+    [onScratch, onScratchStart, onNudge],
   );
 
   const onPointerUp = useCallback(() => {
     dragLast.current = null;
-  }, []);
+    if (scratchActive.current) {
+      scratchActive.current = false;
+      onScratchEnd?.();
+    }
+  }, [onScratchEnd]);
 
   return (
     <div
