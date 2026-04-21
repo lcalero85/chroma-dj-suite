@@ -13,6 +13,8 @@ interface WaveformProps {
   variant?: "main" | "mini";
   onSeek?: (pos: number) => void;
   isPlaying?: boolean;
+  /** Visual style: classic = solid bars, bars = thicker spaced bars, dual = top/bottom mirror (Serato-like). */
+  styleVariant?: "classic" | "bars" | "dual";
 }
 
 export function Waveform({
@@ -28,6 +30,7 @@ export function Waveform({
   variant = "main",
   onSeek,
   isPlaying,
+  styleVariant = "classic",
 }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
