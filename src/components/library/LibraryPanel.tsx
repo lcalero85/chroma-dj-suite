@@ -181,6 +181,97 @@ export function LibraryPanel() {
     toast(`${files.length} pista(s) añadidas`);
   };
 
+  // ===== Import folder (with subfolders) using webkitdirectory =====
+  const handleFolderImport = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    await ensureRunning();
+    const ctx = await ensureRunning();
+
+    // Map relative folder path → folder id (created on demand).
+    // Each file from <input webkitdirectory> exposes a `webkitRelativePath` like
+    // "MyMusic/House/track.mp3". We replicate that hierarchy in our folders DB.
+    const pathToFolderId = new Map<string, string | null>();
+    pathToFolderId.set("", selectedFolderId ?? null); // root anchor: import inside selected folder if any
+
+    const ensureFolderPath = async (segments: string[]): Promise<string | null> => {
+      let parentId: string | null = selectedFolderId ?? null;
+      let acc = "";
+      for (const seg of segments) {
+        acc = acc ? `${acc}/${seg}` : seg;
+        if (pathToFolderId.has(acc)) {
+          parentId = pathToFolderId.get(acc) ?? null;
+          continue;
+        }
+        const created = await createFolder(seg, parentId);
+        const fid = created?.id ?? null;
+        pathToFolderId.set(acc, fid);
+        parentId = fid;
+      }
+      return parentId;
+    };
+
+    const arr = Array.from(files);
+    const accepted = arr.filter((f) => /^(audio|video)\//.test(f.type) || /\.(mp3|wav|flac|m4a|aac|ogg|opus|webm|mp4|mov|mkv)$/i.test(f.name));
+    if (accepted.length === 0) {
+      toast("No se encontraron archivos de audio/video en la carpeta");
+      return;
+    }
+    toast(`Importando ${accepted.length} archivo(s) de la carpeta…`);
+
+    let imported = 0;
+    for (const f of accepted) {
+      try {
+        // Build folder hierarchy from the relative path
+        // (last segment is the file name itself).
+        const rel = (f as File & { webkitRelativePath?: string }).webkitRelativePath || "";
+        const parts = rel ? rel.split("/").slice(0, -1) : [];
+        const folderId = parts.length > 0 ? await ensureFolderPath(parts) : (selectedFolderId ?? null);
+
+        const id = uid();
+        const buf = await f.arrayBuffer();
+        const isVideo = f.type.startsWith("video/") || /\.(mp4|mov|mkv|webm)$/i.test(f.name);
+        let duration = 0;
+        try {
+          const ab = await ctx.decodeAudioData(buf.slice(0));
+          duration = ab.duration;
+        } catch {
+          if (isVideo) {
+            duration = await new Promise<number>((resolve) => {
+              const v = document.createElement("video");
+              v.preload = "metadata";
+              v.src = URL.createObjectURL(f);
+              v.onloadedmetadata = () => { resolve(v.duration || 0); URL.revokeObjectURL(v.src); };
+              v.onerror = () => resolve(0);
+            });
+          }
+        }
+        const rec: TrackRecord = {
+          id,
+          title: f.name.replace(/\.[^.]+$/, ""),
+          artist: "",
+          duration,
+          bpm: null,
+          key: null,
+          color: isVideo ? "#19a7ff" : "#7c5cff",
+          addedAt: Date.now(),
+          lastPlayed: null,
+          blob: f,
+          kind: isVideo ? "video" : "audio",
+          mime: f.type,
+          folderId,
+        };
+        await putTrack(rec);
+        imported++;
+      } catch (err) {
+        console.warn("Failed to import", f.name, err);
+      }
+    }
+
+    setTracks(await listTracks());
+    await refreshFolders();
+    toast.success(`${imported} pista(s) añadidas desde la carpeta`);
+  };
+
   // Aggregate tags across the library for quick chips.
   const allTags = useMemo(() => {
     const set = new Set<string>();
