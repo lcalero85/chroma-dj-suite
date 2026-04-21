@@ -339,28 +339,61 @@ function PitchSection({ id }: { id: DeckId }) {
     useApp.getState().updateDeck(id, { pitchRange: next });
   };
   const toggleKeyLock = () => useApp.getState().updateDeck(id, { keyLock: !ds.keyLock });
+  // Vertical pitch fader: top = -pitch (slower), bottom = +pitch (faster) — DJ convention.
+  // We invert so dragging up actually slows the track (matches CDJ/Pioneer).
+  const fader = (
+    <div
+      className="vdj-panel-inset"
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "6px 4px" }}
+      title="Pitch fader (doble click = 0)"
+    >
+      <Fader
+        value={-ds.pitch}
+        min={-1}
+        max={1}
+        defaultValue={0}
+        height={120}
+        onChange={(v) => setDeckPitch(id, -v)}
+      />
+    </div>
+  );
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <button className="vdj-btn" data-active={ds.keyLock} onClick={toggleKeyLock} title="Key lock">
-        <Lock size={12} /> Key
-      </button>
-      <button className="vdj-btn" onClick={cycleRange} title="Pitch range">
-        ±{ds.pitchRange}%
-      </button>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.min(1, ds.pitch + 0.02))}>
-          <ChevronUp size={10} />
-        </button>
-        <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.max(-1, ds.pitch - 0.02))}>
-          <ChevronDown size={10} />
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+      {fader}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button className="vdj-btn" data-active={ds.keyLock} onClick={toggleKeyLock} title="Key lock" style={{ flex: 1, fontSize: 10 }}>
+            <Lock size={10} /> Key
+          </button>
+          <button className="vdj-btn" onClick={cycleRange} title="Pitch range" style={{ flex: 1, fontSize: 10 }}>
+            ±{ds.pitchRange}%
+          </button>
+        </div>
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.min(1, ds.pitch + 0.02))} title="Pitch +">
+              <ChevronUp size={10} />
+            </button>
+            <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => setDeckPitch(id, Math.max(-1, ds.pitch - 0.02))} title="Pitch -">
+              <ChevronDown size={10} />
+            </button>
+          </div>
+          <button
+            className="vdj-btn"
+            onClick={() => setDeckPitch(id, 0)}
+            title="Reset pitch"
+            style={{ fontSize: 9, padding: "2px 6px" }}
+          >
+            0%
+          </button>
+          <div className="vdj-readout" style={{ fontSize: 12, color: ds.pitch === 0 ? "var(--text-2)" : "var(--accent)", flex: 1, textAlign: "right" }}>
+            {ds.pitch > 0 ? "+" : ""}{(ds.pitch * ds.pitchRange).toFixed(2)}%
+          </div>
+        </div>
+        <button className="vdj-btn" data-active={ds.pflCue} onClick={() => useApp.getState().updateDeck(id, { pflCue: !ds.pflCue })} title="Cue / PFL" style={{ fontSize: 10 }}>
+          <Headphones size={10} /> Cue
         </button>
       </div>
-      <div className="vdj-readout" style={{ fontSize: 11, color: ds.pitch === 0 ? "var(--text-2)" : "var(--accent)" }}>
-        {(ds.pitch * ds.pitchRange).toFixed(2)}%
-      </div>
-      <button className="vdj-btn" data-active={ds.pflCue} onClick={() => useApp.getState().updateDeck(id, { pflCue: !ds.pflCue })} title="Cue / PFL">
-        <Headphones size={12} />
-      </button>
     </div>
   );
 }
