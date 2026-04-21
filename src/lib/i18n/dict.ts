@@ -1,4 +1,4 @@
-export type Lang = "en" | "es";
+export type Lang = "en" | "es" | "pt" | "fr" | "it";
 
 export const DICT = {
   en: {
@@ -207,3 +207,12 @@ export const DICT = {
 } as const;
 
 export type DictKey = keyof typeof DICT["en"];
+
+/** Language display labels for the settings picker. */
+export const LANG_LABELS: Record<Lang, string> = {
+  en: "English",
+  es: "Español",
+  pt: "Português",
+  fr: "Français",
+  it: "Italiano",
+};

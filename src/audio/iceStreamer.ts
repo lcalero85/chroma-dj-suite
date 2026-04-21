@@ -11,6 +11,9 @@ let mediaRecorder: MediaRecorder | null = null;
 let activeSessionId: string | null = null;
 let bytesSent = 0;
 let onStatus: ((s: { status: "connecting" | "live" | "error" | "idle"; bytesSent: number; error?: string }) => void) | null = null;
+let lastConfig: StreamConfig | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempts = 0;
 
 export function setStreamStatusListener(fn: typeof onStatus) {
   onStatus = fn;
@@ -31,8 +34,28 @@ export function isStreaming() {
   return mediaRecorder !== null && mediaRecorder.state === "recording";
 }
 
+export function getActiveSessionId(): string | null {
+  return activeSessionId;
+}
+
+/** Send title/artist to the upstream Icecast server as stream metadata. */
+export async function updateStreamMetadata(title: string, artist: string): Promise<void> {
+  if (!activeSessionId) return;
+  try {
+    await fetch(`/api/stream/ingest?sessionId=${encodeURIComponent(activeSessionId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, artist }),
+    });
+  } catch {
+    /* noop — metadata is best-effort */
+  }
+}
+
 export async function startStream(cfg: StreamConfig): Promise<void> {
   if (isStreaming()) return;
+  lastConfig = cfg;
+  reconnectAttempts = 0;
   if (!cfg.serverUrl || !cfg.password) {
     throw new Error("Falta URL del servidor o contraseña");
   }
@@ -101,6 +124,12 @@ export async function startStream(cfg: StreamConfig): Promise<void> {
 }
 
 export async function stopStream(): Promise<void> {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  reconnectAttempts = 0;
+  lastConfig = null;
   try {
     if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
   } catch { /* noop */ }
@@ -113,4 +142,22 @@ export async function stopStream(): Promise<void> {
     } catch { /* noop */ }
   }
   onStatus?.({ status: "idle", bytesSent });
+}
+
+/** Tries to re-establish a broken stream using the last config, with backoff. */
+export function scheduleReconnect(): void {
+  if (!lastConfig || reconnectTimer || isStreaming()) return;
+  reconnectAttempts += 1;
+  const delayMs = Math.min(30_000, 1000 * 2 ** reconnectAttempts);
+  onStatus?.({ status: "connecting", bytesSent, error: `Reintentando (${reconnectAttempts}) en ${Math.round(delayMs / 1000)}s` });
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+    if (!lastConfig) return;
+    try {
+      await startStream(lastConfig);
+    } catch (err) {
+      onStatus?.({ status: "error", bytesSent, error: err instanceof Error ? err.message : String(err) });
+      scheduleReconnect();
+    }
+  }, delayMs);
 }

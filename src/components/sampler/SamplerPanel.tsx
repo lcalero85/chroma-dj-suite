@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getSlots, initSampler, loadSampleFromBlob, triggerSlot, setSlotVolume } from "@/audio/sampler";
+import { getSlots, initSampler, loadSampleFromBlob, triggerSlot, setSlotVolume, setSlotColor, setSlotLoop, startSlotLoop } from "@/audio/sampler";
 import { ensureRunning } from "@/audio/engine";
 
 export function SamplerPanel() {
@@ -7,6 +7,9 @@ export function SamplerPanel() {
   const [, force] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const [target, setTarget] = useState<number | null>(null);
+  const stopFns = useRef<Map<number, () => void>>(new Map());
+
+  const PAD_PALETTE = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
 
   useEffect(() => {
     initSampler();
@@ -47,34 +50,78 @@ export function SamplerPanel() {
           >
             <div
               style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", width: "100%" }}
-              onClick={() => (s.buffer ? triggerSlot(s.id) : (setTarget(s.id), fileRef.current?.click()))}
+              onClick={() => {
+                if (!s.buffer) {
+                  setTarget(s.id);
+                  fileRef.current?.click();
+                  return;
+                }
+                if (s.loop) {
+                  // toggle loop on/off
+                  const existing = stopFns.current.get(s.id);
+                  if (existing) {
+                    existing();
+                    stopFns.current.delete(s.id);
+                  } else {
+                    const stop = startSlotLoop(s.id);
+                    if (stop) stopFns.current.set(s.id, stop);
+                  }
+                  force((x) => x + 1);
+                  return;
+                }
+                triggerSlot(s.id);
+              }}
+              onPointerDown={() => {
+                // Hold-to-play in loop mode
+                if (s.buffer && s.loop) return; // handled in onClick toggle for clarity
+              }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 setTarget(s.id);
                 fileRef.current?.click();
               }}
-              title={s.buffer ? `Disparar ${s.name} · click derecho para reemplazar` : "Cargar muestra"}
+              title={s.buffer ? `${s.loop ? "Loop ON/OFF" : "Disparar"} ${s.name} · click derecho: reemplazar` : "Cargar muestra"}
             >
               <div style={{ fontSize: 9, opacity: 0.7 }}>{s.id - bank * 16 + 1}</div>
-              <div style={{ fontSize: 10, marginTop: 4, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{s.buffer ? s.name : "Cargar"}</div>
+              <div style={{ fontSize: 10, marginTop: 4, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                {s.buffer ? s.name : "Cargar"}
+              </div>
+              {s.loop && stopFns.current.has(s.id) && <div style={{ fontSize: 8, opacity: 0.85 }}>● LOOP</div>}
             </div>
             {s.buffer && (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: 3, width: "100%", paddingTop: 2, borderTop: "1px solid color-mix(in oklab, currentColor 18%, transparent)" }}
-                onClick={(e) => e.stopPropagation()}
-                title="Volumen del sample"
-              >
-                <span style={{ fontSize: 8, opacity: 0.7, fontFamily: "var(--font-mono)" }}>VOL</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={1.5}
-                  step={0.01}
-                  defaultValue={s.volume}
-                  onChange={(e) => { setSlotVolume(s.id, parseFloat(e.target.value)); force((x) => x + 1); }}
-                  style={{ flex: 1, height: 12, accentColor: "currentColor" }}
-                />
-                <span style={{ fontSize: 8, opacity: 0.7, fontFamily: "var(--font-mono)", minWidth: 22, textAlign: "right" }}>{Math.round(s.volume * 100)}</span>
+              <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%", paddingTop: 2, borderTop: "1px solid color-mix(in oklab, currentColor 18%, transparent)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }} title="Volumen del sample">
+                  <span style={{ fontSize: 8, opacity: 0.7, fontFamily: "var(--font-mono)" }}>VOL</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1.5}
+                    step={0.01}
+                    defaultValue={s.volume}
+                    onChange={(e) => { setSlotVolume(s.id, parseFloat(e.target.value)); force((x) => x + 1); }}
+                    style={{ flex: 1, height: 12, accentColor: "currentColor" }}
+                  />
+                  <span style={{ fontSize: 8, opacity: 0.7, fontFamily: "var(--font-mono)", minWidth: 22, textAlign: "right" }}>{Math.round(s.volume * 100)}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <button
+                    className="vdj-btn"
+                    data-active={!!s.loop}
+                    onClick={() => { setSlotLoop(s.id, !s.loop); if (!s.loop === false) { const fn = stopFns.current.get(s.id); fn?.(); stopFns.current.delete(s.id); } force((x) => x + 1); }}
+                    style={{ padding: "1px 4px", fontSize: 8, flex: 1 }}
+                    title="Modo loop: click para iniciar/parar"
+                  >
+                    LOOP
+                  </button>
+                  {PAD_PALETTE.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => { setSlotColor(s.id, c); force((x) => x + 1); }}
+                      title="Cambiar color"
+                      style={{ width: 10, height: 10, padding: 0, borderRadius: 2, background: c, border: s.color === c ? "1px solid white" : "1px solid transparent" }}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>

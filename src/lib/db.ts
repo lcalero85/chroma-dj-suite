@@ -19,6 +19,12 @@ export interface TrackRecord {
   folderId?: string | null;
   kind?: "audio" | "video";
   mime?: string;
+  /** Free-form tags: genre, mood, energy. */
+  tags?: string[];
+  /** Auto-gain offset in dB to normalize loudness on import. */
+  gainOffsetDb?: number;
+  /** Times this track has been loaded onto a deck. */
+  playCount?: number;
 }
 
 export interface PlaylistRecord {

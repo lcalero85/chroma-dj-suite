@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "@/state/store";
 import { listTracks, putTrack, deleteTrack, uid, type TrackRecord, type FolderRecord } from "@/lib/db";
 import { loadTrackToDeck, refreshFolders, createFolder, renameFolder, removeFolder, moveTrackToFolder } from "@/state/controller";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film, Disc3 } from "lucide-react";
+import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film, Tag, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { radioAdd, addTrackToSegment } from "@/state/controller";
+import { isCompatible, type CamelotKey } from "@/lib/camelot";
 
 function FolderNode({
   folder,
@@ -119,6 +120,13 @@ export function LibraryPanel() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  // Advanced filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [bpmMin, setBpmMin] = useState<number>(0);
+  const [bpmMax, setBpmMax] = useState<number>(220);
+  const [compatibleWith, setCompatibleWith] = useState<CamelotKey | "">("");
+  const [tagFilter, setTagFilter] = useState<string>("");
+
   useEffect(() => {
     listTracks().then(setTracks);
     refreshFolders();
@@ -172,6 +180,13 @@ export function LibraryPanel() {
     toast(`${files.length} pista(s) añadidas`);
   };
 
+  // Aggregate tags across the library for quick chips.
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    tracks.forEach((t) => (t.tags ?? []).forEach((tag) => set.add(tag)));
+    return [...set].sort();
+  }, [tracks]);
+
   const filtered = tracks
     .filter((t) => {
       const q = search.toLowerCase();
@@ -179,7 +194,11 @@ export function LibraryPanel() {
       const matchesFolder = selectedFolderId === null
         ? true
         : (t.folderId ?? null) === selectedFolderId;
-      return matchesText && matchesFolder;
+      const bpm = t.bpm ?? 0;
+      const matchesBpm = !showFilters || (bpm === 0 ? bpmMin === 0 : bpm >= bpmMin && bpm <= bpmMax);
+      const matchesKey = !showFilters || !compatibleWith || (t.key && isCompatible(t.key as CamelotKey, compatibleWith as CamelotKey));
+      const matchesTag = !tagFilter || (t.tags ?? []).includes(tagFilter);
+      return matchesText && matchesFolder && matchesBpm && matchesKey && matchesTag;
     })
     .sort((a, b) => b.addedAt - a.addedAt);
 
@@ -234,7 +253,70 @@ export function LibraryPanel() {
           />
         </div>
         <span className="vdj-chip">{filtered.length} pistas</span>
+        <button
+          className="vdj-btn"
+          data-active={showFilters}
+          onClick={() => setShowFilters((v) => !v)}
+          title="Filtros avanzados (BPM, key, tags)"
+        >
+          <SlidersHorizontal size={12} />
+        </button>
       </div>
+
+      {showFilters && (
+        <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", fontSize: 11 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="vdj-label">BPM</span>
+            <input
+              type="number"
+              value={bpmMin}
+              min={0}
+              max={220}
+              onChange={(e) => setBpmMin(parseInt(e.target.value || "0", 10))}
+              style={{ width: 56, background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
+            />
+            <span style={{ color: "var(--text-3)" }}>—</span>
+            <input
+              type="number"
+              value={bpmMax}
+              min={0}
+              max={220}
+              onChange={(e) => setBpmMax(parseInt(e.target.value || "220", 10))}
+              style={{ width: 56, background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="vdj-label">Compatible con</span>
+            <select
+              value={compatibleWith}
+              onChange={(e) => setCompatibleWith(e.target.value as CamelotKey | "")}
+              style={{ background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
+            >
+              <option value="">— cualquier key —</option>
+              {["1A","1B","2A","2B","3A","3B","4A","4B","5A","5B","6A","6B","7A","7B","8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"].map((k) => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+          </div>
+          {allTags.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+              <Tag size={11} style={{ color: "var(--text-3)" }} />
+              <button className="vdj-btn" data-active={tagFilter === ""} style={{ padding: "1px 6px", fontSize: 10 }} onClick={() => setTagFilter("")}>Todos</button>
+              {allTags.map((tag) => (
+                <button
+                  key={tag}
+                  className="vdj-btn"
+                  data-active={tagFilter === tag}
+                  style={{ padding: "1px 6px", fontSize: 10 }}
+                  onClick={() => setTagFilter(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, flex: 1, minHeight: 0 }}>
         {/* Folder tree sidebar */}

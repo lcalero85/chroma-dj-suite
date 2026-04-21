@@ -34,22 +34,55 @@ import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFol
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
 import { setVideo, clearVideo, syncVideo, getVideo, isVideoBlob } from "@/audio/videoDeck";
-import { startStream as engStartStream, stopStream as engStopStream, setStreamStatusListener, isStreaming } from "@/audio/iceStreamer";
+import { startStream as engStartStream, stopStream as engStopStream, setStreamStatusListener, isStreaming, updateStreamMetadata, scheduleReconnect } from "@/audio/iceStreamer";
 import type { RadioSegment } from "./store";
 
 let pollStarted = false;
+
+// ===== Session stats =====
+const sessionStats = {
+  startedAt: Date.now(),
+  tracksPlayed: 0,
+  totalSeconds: 0,
+  topTracks: new Map<string, number>(),
+  lastTickAt: Date.now(),
+};
+
+export function getSessionStats() {
+  const top = [...sessionStats.topTracks.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([trackId, count]) => ({ trackId, count }));
+  return {
+    startedAt: sessionStats.startedAt,
+    tracksPlayed: sessionStats.tracksPlayed,
+    totalSeconds: sessionStats.totalSeconds,
+    topTracks: top,
+  };
+}
+
+export function resetSessionStats() {
+  sessionStats.startedAt = Date.now();
+  sessionStats.tracksPlayed = 0;
+  sessionStats.totalSeconds = 0;
+  sessionStats.topTracks.clear();
+}
 
 export function startPositionPolling() {
   if (pollStarted) return;
   pollStarted = true;
   const tick = () => {
     const state = useApp.getState();
+    const now = Date.now();
+    const dt = (now - sessionStats.lastTickAt) / 1000;
+    sessionStats.lastTickAt = now;
     state.activeDecks.forEach((id) => {
       const d = getDeck(id);
       if (!d.buffer) return;
       const t = currentTime(id);
       const dur = d.buffer.duration;
       const ds = state.decks[id];
+      if (d.isPlaying && dt > 0 && dt < 1) sessionStats.totalSeconds += dt;
       // Sync video element if any
       if (ds.hasVideo) {
         syncVideo(id, t, d.isPlaying, d.playbackRate);
@@ -144,6 +177,18 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     hasVideo: isVideo,
   });
   toast(`Cargada en Deck ${deckId}`, { description: t.title });
+
+  // Track stats + play count
+  sessionStats.tracksPlayed += 1;
+  sessionStats.topTracks.set(t.id, (sessionStats.topTracks.get(t.id) ?? 0) + 1);
+  void putTrack({ ...updated, playCount: (t.playCount ?? 0) + 1 });
+
+  // Push now-playing metadata to live stream if running
+  if (deckId === "A" || deckId === "B") {
+    try {
+      void updateStreamMetadata(t.title, t.artist);
+    } catch { /* noop */ }
+  }
 }
 
 export async function togglePlay(id: DeckId) {
@@ -501,6 +546,63 @@ export function setSegmentSchedule(segmentId: string, time: string | null, recur
   useApp.getState().upsertSegment({ ...s, scheduledAt: time, recurring });
 }
 
+/** Set the days of week (0=Sun..6=Sat) when the segment schedule applies. Empty array = every day. */
+export function setSegmentDays(segmentId: string, days: number[]) {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  useApp.getState().upsertSegment({ ...s, scheduledDays: days.slice().sort() });
+}
+
+/** Configure a jingle that plays every N tracks while this segment is the current queue source. */
+export function setSegmentJingle(segmentId: string, jingleTrackId: string | null, every: number) {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  useApp.getState().upsertSegment({ ...s, jingleTrackId, jingleEvery: Math.max(1, every) });
+}
+
+/** Duplicate a segment (deep copy) and append "(copia)" to the name. */
+export function duplicateSegment(segmentId: string): RadioSegment | null {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return null;
+  const copy: RadioSegment = {
+    ...s,
+    id: genId(),
+    name: `${s.name} (copia)`,
+    trackIds: [...s.trackIds],
+    scheduledAt: null,
+    scheduledDays: s.scheduledDays ? [...s.scheduledDays] : undefined,
+    createdAt: Date.now(),
+  };
+  useApp.getState().upsertSegment(copy);
+  toast.success("Segmento duplicado", { description: copy.name });
+  return copy;
+}
+
+/** Returns the next scheduled segment + minutes until it fires, or null if none. */
+export function getNextScheduledSegment(): { segment: RadioSegment; minutesUntil: number } | null {
+  const segs = useApp.getState().segments.filter((s) => !!s.scheduledAt);
+  if (segs.length === 0) return null;
+  const now = new Date();
+  const dayNow = now.getDay();
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  let best: { segment: RadioSegment; minutesUntil: number } | null = null;
+  for (const s of segs) {
+    const [hh, mm] = (s.scheduledAt ?? "").split(":").map((x) => parseInt(x, 10));
+    if (Number.isNaN(hh) || Number.isNaN(mm)) continue;
+    const target = hh * 60 + mm;
+    const days = s.scheduledDays && s.scheduledDays.length > 0 ? s.scheduledDays : [0, 1, 2, 3, 4, 5, 6];
+    let minWait = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < 7; i++) {
+      const day = (dayNow + i) % 7;
+      if (!days.includes(day)) continue;
+      const wait = i === 0 ? (target - minutesNow + (target <= minutesNow ? 24 * 60 : 0)) : (i * 24 * 60 - minutesNow + target);
+      if (wait < minWait) minWait = wait;
+    }
+    if (!best || minWait < best.minutesUntil) best = { segment: s, minutesUntil: minWait };
+  }
+  return best;
+}
+
 /** Replace radio queue with segment tracks (or append). */
 export async function loadSegmentToRadio(segmentId: string, mode: "replace" | "append" = "replace") {
   const s = useApp.getState().segments.find((x) => x.id === segmentId);
@@ -530,10 +632,13 @@ export function startSegmentScheduler() {
     const segs = useApp.getState().segments.filter((s) => !!s.scheduledAt);
     if (segs.length === 0) return;
     const now = new Date();
+    const dow = now.getDay();
     const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const dayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${hhmm}`;
     for (const s of segs) {
       if (s.scheduledAt !== hhmm) continue;
+      // Respect day-of-week filter if set.
+      if (s.scheduledDays && s.scheduledDays.length > 0 && !s.scheduledDays.includes(dow)) continue;
       const key = `${s.id}-${dayKey}`;
       if (lastFiredKey === key) continue;
       lastFiredKey = key;
@@ -546,12 +651,18 @@ export function startSegmentScheduler() {
 // ===== Live streaming =====
 export function initStreamStatus() {
   setStreamStatusListener((info) => {
+    const cur = useApp.getState().stream;
     useApp.getState().updateStream({
       status: info.status,
       bytesSent: info.bytesSent,
       lastError: info.error ?? null,
-      startedAt: info.status === "live" && useApp.getState().stream.startedAt === null ? Date.now() : useApp.getState().stream.startedAt,
+      startedAt: info.status === "live" && cur.startedAt === null ? Date.now() : cur.startedAt,
     });
+    // Auto-reconnect on error if user opted in.
+    const settings = useApp.getState().settings;
+    if (info.status === "error" && settings.streamAutoReconnect) {
+      try { scheduleReconnect(); } catch { /* noop */ }
+    }
   });
 }
 
@@ -638,3 +749,67 @@ export async function moveTrackToFolder(trackId: string, folderId: string | null
 
 // Re-exports for convenience
 export { getVideo };
+
+// ===== Backup: export/import full config =====
+export interface BackupBundle {
+  version: 1;
+  exportedAt: number;
+  skin: string;
+  settings: ReturnType<typeof useApp.getState>["settings"];
+  mixer: ReturnType<typeof useApp.getState>["mixer"];
+  radio: ReturnType<typeof useApp.getState>["radio"];
+  videoMix: ReturnType<typeof useApp.getState>["videoMix"];
+  midi: ReturnType<typeof useApp.getState>["midi"];
+  segments: RadioSegment[];
+  stream: ReturnType<typeof useApp.getState>["stream"];
+}
+
+export function exportBackup(): BackupBundle {
+  const s = useApp.getState();
+  return {
+    version: 1,
+    exportedAt: Date.now(),
+    skin: s.skin,
+    settings: s.settings,
+    mixer: s.mixer,
+    radio: s.radio,
+    videoMix: s.videoMix,
+    midi: s.midi,
+    segments: s.segments,
+    stream: { ...s.stream, password: "" }, // never export the password
+  };
+}
+
+export function downloadBackup(): void {
+  const data = exportBackup();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vdj-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast.success("Backup descargado");
+}
+
+export function importBackup(bundle: unknown): boolean {
+  try {
+    const b = bundle as Partial<BackupBundle>;
+    if (!b || typeof b !== "object") throw new Error("Bundle inválido");
+    const s = useApp.getState();
+    if (b.skin) s.setSkin(b.skin as never);
+    if (b.settings) s.updateSettings(b.settings);
+    if (b.mixer) s.updateMixer(b.mixer);
+    if (b.radio) s.updateRadio(b.radio);
+    if (b.videoMix) s.updateVideoMix(b.videoMix);
+    if (b.segments) s.setSegments(b.segments);
+    if (b.stream) s.updateStream({ ...b.stream, password: s.stream.password }); // keep current password
+    toast.success("Backup importado");
+    return true;
+  } catch (err) {
+    toast.error("No se pudo importar el backup", { description: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
+}
