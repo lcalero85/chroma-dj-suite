@@ -15,6 +15,7 @@ import {
 import { isRecording, startRecording, stopRecording } from "@/audio/recorder";
 import { ensureRunning } from "@/audio/engine";
 import { beatJump, brake, setReverse, autoMixTo, tap } from "@/audio/transport";
+import { pause } from "@/audio/deck";
 import { triggerSlot } from "@/audio/sampler";
 import { setFxMix, type FxRackHandles } from "@/audio/fx";
 import { listRecordings, putRecording, uid } from "./db";
@@ -34,6 +35,11 @@ export function installShortcuts() {
 
     if (e.code === "Space") { e.preventDefault(); await togglePlay("A"); return; }
     if (e.code === "ShiftRight") { e.preventDefault(); await togglePlay("B"); return; }
+    // J = play/pause Deck A · L = play/pause Deck B
+    if (e.code === "KeyJ") { e.preventDefault(); await togglePlay("A"); return; }
+    // O = brake Deck A · U = stop Deck A
+    if (e.code === "KeyO") { e.preventDefault(); brake("A", 1.4); return; }
+    if (e.code === "KeyU") { e.preventDefault(); pause("A"); useApp.getState().updateDeck("A", { isPlaying: false }); toast("Deck A: STOP"); return; }
     if (e.code === "KeyQ") { cueDeck("A"); return; }
     if (e.code === "KeyW") { cueDeck("B"); return; }
     if (e.code === "KeyA") { syncDeck("A", "B"); return; }
@@ -65,9 +71,11 @@ export function installShortcuts() {
       setNumpadDeck(cur === "A" ? "B" : "A");
       return;
     }
-    // KeyL: radio next
-    if (e.code === "KeyL" && !e.shiftKey) {
-      void radioNext();
+    // KeyL: play/pause Deck B (Shift+L = radio next)
+    if (e.code === "KeyL") {
+      e.preventDefault();
+      if (e.shiftKey) { void radioNext(); return; }
+      await togglePlay("B");
       return;
     }
     // Beat jump: [/] for deck A, ;/' for deck B
@@ -85,8 +93,8 @@ export function installShortcuts() {
     // Auto-mix
     if (e.code === "KeyM") {
       const x = useApp.getState().mixer.xfader;
-      autoMixTo(x >= 0 ? -1 : 1, 8);
-      toast("Auto-mix iniciado");
+      const ok = autoMixTo(x >= 0 ? -1 : 1, 8);
+      if (ok) toast("Auto-mix iniciado");
       return;
     }
     // Tap tempo
