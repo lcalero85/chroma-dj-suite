@@ -432,6 +432,70 @@ export function setVoicePreset(presetId: string) {
   useApp.getState().updateMixer({ micPreset: p.id });
 }
 
+// ===== Mix Presets (DJ recipes) =====
+import type { MixPreset } from "@/lib/mixPresets";
+import { DEFAULT_MIX_PRESETS, genPresetId } from "@/lib/mixPresets";
+
+/** Apply a mix preset to a target deck. EQ/Filter/VocalCut + optional FX slot. */
+export function applyMixPreset(presetId: string, deckId: DeckId) {
+  const p = useApp.getState().mixPresets.find((x) => x.id === presetId);
+  if (!p) return;
+  if (typeof p.hi === "number") setDeckEQ(deckId, "hi", p.hi);
+  if (typeof p.mid === "number") setDeckEQ(deckId, "mid", p.mid);
+  if (typeof p.lo === "number") setDeckEQ(deckId, "lo", p.lo);
+  if (typeof p.filter === "number") setDeckFilter(deckId, p.filter);
+  if (typeof p.vocalCut === "number") setDeckVocalCut(deckId, p.vocalCut);
+  if (p.fx) {
+    useApp.getState().updateFx(p.fx.slot, {
+      kind: p.fx.kind,
+      wet: p.fx.wet,
+      param1: p.fx.param1,
+      param2: p.fx.param2,
+    });
+  }
+  toast.success(`${p.emoji} ${p.name} → Deck ${deckId}`);
+}
+
+/** Capture current deck state into a new user preset. */
+export function captureMixPreset(deckId: DeckId, name: string): MixPreset {
+  const ds = useApp.getState().decks[deckId];
+  const fx1 = useApp.getState().fx[0];
+  const preset: MixPreset = {
+    id: genPresetId(),
+    name: name.trim() || "Mi preset",
+    description: `Capturado desde Deck ${deckId}`,
+    emoji: "🎚️",
+    hi: ds.hi,
+    mid: ds.mid,
+    lo: ds.lo,
+    filter: ds.filter,
+    vocalCut: ds.vocalCut,
+    fx: fx1.kind === "off" ? undefined : { slot: 1, kind: fx1.kind, wet: fx1.wet, param1: fx1.param1, param2: fx1.param2 },
+  };
+  useApp.getState().upsertMixPreset(preset);
+  toast.success("Preset guardado", { description: preset.name });
+  return preset;
+}
+
+export function deleteMixPreset(id: string) {
+  const p = useApp.getState().mixPresets.find((x) => x.id === id);
+  if (!p) return;
+  if (p.builtin) {
+    toast("Los presets por defecto no pueden eliminarse");
+    return;
+  }
+  useApp.getState().removeMixPreset(id);
+  toast("Preset eliminado");
+}
+
+/** Restore the 5 default presets (keeps user-created ones). */
+export function resetDefaultMixPresets() {
+  const cur = useApp.getState().mixPresets;
+  const userOnly = cur.filter((p) => !p.builtin);
+  useApp.getState().setMixPresets([...DEFAULT_MIX_PRESETS, ...userOnly]);
+  toast.success("Presets por defecto restaurados");
+}
+
 // ===== Numpad target deck =====
 export function setNumpadDeck(id: DeckId) {
   useApp.getState().updateMixer({ numpadDeck: id });

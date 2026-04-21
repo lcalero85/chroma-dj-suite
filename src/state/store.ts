@@ -237,7 +237,7 @@ interface AppState {
   playlists: PlaylistRecord[];
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
-  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online";
+  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets";
   drawer: null | "settings" | "skins" | "help";
   search: string;
   selectedPlaylistId: string | null;
