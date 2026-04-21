@@ -546,6 +546,63 @@ export function setSegmentSchedule(segmentId: string, time: string | null, recur
   useApp.getState().upsertSegment({ ...s, scheduledAt: time, recurring });
 }
 
+/** Set the days of week (0=Sun..6=Sat) when the segment schedule applies. Empty array = every day. */
+export function setSegmentDays(segmentId: string, days: number[]) {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  useApp.getState().upsertSegment({ ...s, scheduledDays: days.slice().sort() });
+}
+
+/** Configure a jingle that plays every N tracks while this segment is the current queue source. */
+export function setSegmentJingle(segmentId: string, jingleTrackId: string | null, every: number) {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  useApp.getState().upsertSegment({ ...s, jingleTrackId, jingleEvery: Math.max(1, every) });
+}
+
+/** Duplicate a segment (deep copy) and append "(copia)" to the name. */
+export function duplicateSegment(segmentId: string): RadioSegment | null {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return null;
+  const copy: RadioSegment = {
+    ...s,
+    id: genId(),
+    name: `${s.name} (copia)`,
+    trackIds: [...s.trackIds],
+    scheduledAt: null,
+    scheduledDays: s.scheduledDays ? [...s.scheduledDays] : undefined,
+    createdAt: Date.now(),
+  };
+  useApp.getState().upsertSegment(copy);
+  toast.success("Segmento duplicado", { description: copy.name });
+  return copy;
+}
+
+/** Returns the next scheduled segment + minutes until it fires, or null if none. */
+export function getNextScheduledSegment(): { segment: RadioSegment; minutesUntil: number } | null {
+  const segs = useApp.getState().segments.filter((s) => !!s.scheduledAt);
+  if (segs.length === 0) return null;
+  const now = new Date();
+  const dayNow = now.getDay();
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  let best: { segment: RadioSegment; minutesUntil: number } | null = null;
+  for (const s of segs) {
+    const [hh, mm] = (s.scheduledAt ?? "").split(":").map((x) => parseInt(x, 10));
+    if (Number.isNaN(hh) || Number.isNaN(mm)) continue;
+    const target = hh * 60 + mm;
+    const days = s.scheduledDays && s.scheduledDays.length > 0 ? s.scheduledDays : [0, 1, 2, 3, 4, 5, 6];
+    let minWait = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < 7; i++) {
+      const day = (dayNow + i) % 7;
+      if (!days.includes(day)) continue;
+      const wait = i === 0 ? (target - minutesNow + (target <= minutesNow ? 24 * 60 : 0)) : (i * 24 * 60 - minutesNow + target);
+      if (wait < minWait) minWait = wait;
+    }
+    if (!best || minWait < best.minutesUntil) best = { segment: s, minutesUntil: minWait };
+  }
+  return best;
+}
+
 /** Replace radio queue with segment tracks (or append). */
 export async function loadSegmentToRadio(segmentId: string, mode: "replace" | "append" = "replace") {
   const s = useApp.getState().segments.find((x) => x.id === segmentId);
