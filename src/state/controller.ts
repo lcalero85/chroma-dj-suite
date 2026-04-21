@@ -34,22 +34,55 @@ import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFol
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
 import { setVideo, clearVideo, syncVideo, getVideo, isVideoBlob } from "@/audio/videoDeck";
-import { startStream as engStartStream, stopStream as engStopStream, setStreamStatusListener, isStreaming } from "@/audio/iceStreamer";
+import { startStream as engStartStream, stopStream as engStopStream, setStreamStatusListener, isStreaming, updateStreamMetadata, scheduleReconnect } from "@/audio/iceStreamer";
 import type { RadioSegment } from "./store";
 
 let pollStarted = false;
+
+// ===== Session stats =====
+const sessionStats = {
+  startedAt: Date.now(),
+  tracksPlayed: 0,
+  totalSeconds: 0,
+  topTracks: new Map<string, number>(),
+  lastTickAt: Date.now(),
+};
+
+export function getSessionStats() {
+  const top = [...sessionStats.topTracks.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([trackId, count]) => ({ trackId, count }));
+  return {
+    startedAt: sessionStats.startedAt,
+    tracksPlayed: sessionStats.tracksPlayed,
+    totalSeconds: sessionStats.totalSeconds,
+    topTracks: top,
+  };
+}
+
+export function resetSessionStats() {
+  sessionStats.startedAt = Date.now();
+  sessionStats.tracksPlayed = 0;
+  sessionStats.totalSeconds = 0;
+  sessionStats.topTracks.clear();
+}
 
 export function startPositionPolling() {
   if (pollStarted) return;
   pollStarted = true;
   const tick = () => {
     const state = useApp.getState();
+    const now = Date.now();
+    const dt = (now - sessionStats.lastTickAt) / 1000;
+    sessionStats.lastTickAt = now;
     state.activeDecks.forEach((id) => {
       const d = getDeck(id);
       if (!d.buffer) return;
       const t = currentTime(id);
       const dur = d.buffer.duration;
       const ds = state.decks[id];
+      if (d.isPlaying && dt > 0 && dt < 1) sessionStats.totalSeconds += dt;
       // Sync video element if any
       if (ds.hasVideo) {
         syncVideo(id, t, d.isPlaying, d.playbackRate);
