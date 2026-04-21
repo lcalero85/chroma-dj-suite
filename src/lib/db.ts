@@ -58,10 +58,12 @@ export interface SampleRecord {
 }
 
 let _db: IDBPDatabase | null = null;
+let _opening: Promise<IDBPDatabase> | null = null;
 
 export async function getDB() {
   if (_db) return _db;
-  _db = await openDB("vdj-pro", 2, {
+  if (_opening) return _opening;
+  _opening = openDB("vdj-pro", 2, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("tracks")) db.createObjectStore("tracks", { keyPath: "id" });
       if (!db.objectStoreNames.contains("playlists")) db.createObjectStore("playlists", { keyPath: "id" });
@@ -69,77 +71,110 @@ export async function getDB() {
       if (!db.objectStoreNames.contains("samples")) db.createObjectStore("samples", { keyPath: "id" });
       if (!db.objectStoreNames.contains("folders")) db.createObjectStore("folders", { keyPath: "id" });
     },
+    blocked() {
+      // another tab is holding the old version open
+      console.warn("[db] open blocked by another connection");
+    },
+    blocking() {
+      // another tab requested a newer version — close so it can upgrade
+      try { _db?.close(); } catch { /* noop */ }
+      _db = null;
+    },
+    terminated() {
+      _db = null;
+    },
+  }).then((db) => {
+    _db = db;
+    // If the browser closes the connection unexpectedly, drop the cache
+    // so the next call reopens it instead of throwing
+    // "The database connection is closing".
+    db.addEventListener("close", () => { _db = null; });
+    db.addEventListener("versionchange", () => {
+      try { db.close(); } catch { /* noop */ }
+      _db = null;
+    });
+    _opening = null;
+    return db;
+  }).catch((err) => {
+    _opening = null;
+    throw err;
   });
-  return _db;
+  return _opening;
+}
+
+/**
+ * Wrap an IDB operation so that a transient "connection is closing"
+ * (or InvalidStateError) reopens the DB and retries once.
+ */
+async function withDb<T>(op: (db: IDBPDatabase) => Promise<T>): Promise<T> {
+  let db = await getDB();
+  try {
+    return await op(db);
+  } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    const name = (e as Error)?.name;
+    const isClosing =
+      name === "InvalidStateError" ||
+      msg.includes("connection is closing") ||
+      msg.includes("database connection is closing");
+    if (!isClosing) throw e;
+    _db = null;
+    db = await getDB();
+    return op(db);
+  }
 }
 
 export async function listTracks(): Promise<TrackRecord[]> {
-  const db = await getDB();
-  return db.getAll("tracks");
+  return withDb((db) => db.getAll("tracks") as Promise<TrackRecord[]>);
 }
 export async function putTrack(t: TrackRecord) {
-  const db = await getDB();
-  await db.put("tracks", t);
+  await withDb((db) => db.put("tracks", t));
 }
 export async function getTrack(id: string): Promise<TrackRecord | undefined> {
-  const db = await getDB();
-  return db.get("tracks", id);
+  return withDb((db) => db.get("tracks", id) as Promise<TrackRecord | undefined>);
 }
 export async function deleteTrack(id: string) {
-  const db = await getDB();
-  await db.delete("tracks", id);
+  await withDb((db) => db.delete("tracks", id));
 }
 
 export async function listPlaylists(): Promise<PlaylistRecord[]> {
-  const db = await getDB();
-  return db.getAll("playlists");
+  return withDb((db) => db.getAll("playlists") as Promise<PlaylistRecord[]>);
 }
 export async function putPlaylist(p: PlaylistRecord) {
-  const db = await getDB();
-  await db.put("playlists", p);
+  await withDb((db) => db.put("playlists", p));
 }
 export async function deletePlaylist(id: string) {
-  const db = await getDB();
-  await db.delete("playlists", id);
+  await withDb((db) => db.delete("playlists", id));
 }
 
 export async function listRecordings(): Promise<RecordingRecord[]> {
-  const db = await getDB();
-  return db.getAll("recordings");
+  return withDb((db) => db.getAll("recordings") as Promise<RecordingRecord[]>);
 }
 export async function putRecording(r: RecordingRecord) {
-  const db = await getDB();
-  await db.put("recordings", r);
+  await withDb((db) => db.put("recordings", r));
 }
 export async function deleteRecording(id: string) {
-  const db = await getDB();
-  await db.delete("recordings", id);
+  await withDb((db) => db.delete("recordings", id));
 }
 
 export async function listSamples(): Promise<SampleRecord[]> {
-  const db = await getDB();
-  return db.getAll("samples");
+  return withDb((db) => db.getAll("samples") as Promise<SampleRecord[]>);
 }
 export async function putSample(s: SampleRecord) {
-  const db = await getDB();
-  await db.put("samples", s);
+  await withDb((db) => db.put("samples", s));
 }
 export async function deleteSample(id: string) {
-  const db = await getDB();
-  await db.delete("samples", id);
+  await withDb((db) => db.delete("samples", id));
 }
 
 export async function listFolders(): Promise<FolderRecord[]> {
-  const db = await getDB();
-  return db.getAll("folders");
+  return withDb((db) => db.getAll("folders") as Promise<FolderRecord[]>);
 }
 export async function putFolder(f: FolderRecord) {
-  const db = await getDB();
-  await db.put("folders", f);
+  await withDb((db) => db.put("folders", f));
 }
 export async function deleteFolder(id: string) {
-  const db = await getDB();
-  await db.delete("folders", id);
+  await withDb((db) => db.delete("folders", id));
 }
 
 export function uid() {
