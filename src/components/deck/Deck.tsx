@@ -225,7 +225,9 @@ export function Deck({ id, side }: DeckProps) {
           spinning={ds.isPlaying}
           bpm={ds.bpm}
           size={180}
-          onScratch={(s) => nudgeDeck(id, s)}
+          onScratchStart={() => void beginScratchDeck(id)}
+          onScratch={(s) => scratchDeck(id, s)}
+          onScratchEnd={() => endScratchDeck(id)}
           onNudge={(d) => setDeckPitch(id, Math.max(-1, Math.min(1, ds.pitch + d * 0.2)))}
         />
         {side === "right" && (
