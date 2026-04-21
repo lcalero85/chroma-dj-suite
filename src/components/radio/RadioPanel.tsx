@@ -176,13 +176,13 @@ function QueueView({
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {t?.title ?? "(pista eliminada)"}
+                  {t?.title ?? tr("radioDeletedTrack")}
                 </div>
                 <div className="vdj-label">
                   {t?.artist || "—"} · {t ? formatTime(t.duration) : "0:00"} {t?.bpm ? `· ${t.bpm.toFixed(0)} BPM` : ""}
                 </div>
               </div>
-              <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => void radioPlayIndex(idx)} title="Reproducir esta">
+              <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => void radioPlayIndex(idx)} title={tr("radioPlayThis")}>
                 <Play size={10} />
               </button>
               <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => radioMove(idx, -1)} disabled={idx === 0}>
@@ -213,6 +213,7 @@ function SegmentsView({
   setActiveSegmentId: (id: string | null) => void;
   tracks: ReturnType<typeof useApp.getState>["tracks"];
 }) {
+  const tr = useT();
   const trackById = (id: string) => tracks.find((t) => t.id === id);
   return (
     <div style={{ display: "flex", gap: 8, flex: 1, minHeight: 0 }}>
@@ -221,18 +222,18 @@ function SegmentsView({
         <button
           className="vdj-btn"
           onClick={() => {
-            const n = window.prompt("Nombre del segmento (ej: Romántico, Reggae, Rock 80s)");
+            const n = window.prompt(tr("radioNewSegmentPrompt"));
             if (!n) return;
             const s = createSegment(n);
             setActiveSegmentId(s.id);
           }}
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontWeight: 700 }}
         >
-          <Plus size={12} /> Nuevo segmento
+          <Plus size={12} /> {tr("radioNewSegment")}
         </button>
         {segments.length === 0 && (
           <div style={{ fontSize: 10, color: "var(--text-3)", padding: 12, textAlign: "center" }}>
-            Crea un segmento para agrupar canciones por estilo o programar bloques.
+            {tr("radioCreateSegmentHint")}
           </div>
         )}
         {segments.map((s) => (
