@@ -158,8 +158,23 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     }
   }
   const key = t.key ?? pseudoDetectKey(t.id);
-  const updated: TrackRecord = { ...t, bpm, key, peaks, bands, lastPlayed: Date.now() };
+  // Auto-gain: compute once per track and cache.
+  let gainOffsetDb = t.gainOffsetDb;
+  if (gainOffsetDb === undefined) {
+    try {
+      gainOffsetDb = analyzeLoudness(buffer).gainOffsetDb;
+    } catch {
+      gainOffsetDb = 0;
+    }
+  }
+  const updated: TrackRecord = { ...t, bpm, key, peaks, bands, gainOffsetDb, lastPlayed: Date.now() };
   await putTrack(updated);
+
+  // Apply auto-gain to this deck's channel-gain (multiplies the user knob).
+  const autoGainEnabled = useApp.getState().settings.autoGainOnImport ?? true;
+  setAutoGainDb(deckId, autoGainEnabled ? (gainOffsetDb ?? 0) : 0);
+  const userGain = useApp.getState().decks[deckId].gain;
+  setGain(deckId, userGain * dbToGain(autoGainEnabled ? (gainOffsetDb ?? 0) : 0));
 
   useApp.getState().updateDeck(deckId, {
     trackId: t.id,
@@ -251,7 +266,8 @@ export function setDeckFilter(id: DeckId, v: number) {
   useApp.getState().updateDeck(id, { filter: v });
 }
 export function setDeckGain(id: DeckId, v: number) {
-  setGain(id, v);
+  // Multiply by auto-gain compensation so quiet tracks become as loud as hot ones.
+  setGain(id, v * dbToGain(getAutoGainDb(id)));
   useApp.getState().updateDeck(id, { gain: v });
 }
 export function setDeckFader(id: DeckId, v: number) {
