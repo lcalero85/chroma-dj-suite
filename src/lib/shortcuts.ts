@@ -94,9 +94,11 @@ export function installShortcuts() {
     }
     // Auto-mix
     if (e.code === "KeyM") {
+      e.preventDefault();
       const x = useApp.getState().mixer.xfader;
-      const ok = autoMixTo(x >= 0 ? -1 : 1, 8);
-      if (ok) toast("Auto-mix iniciado");
+      const target = x >= 0 ? -1 : 1;
+      const ok = autoMixTo(target, 8);
+      if (ok) toast(`Auto-mix → Deck ${target === -1 ? "A" : "B"} (8s)`);
       return;
     }
     // Tap tempo
