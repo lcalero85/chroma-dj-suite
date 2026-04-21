@@ -3,6 +3,7 @@ import { useApp, type DeckId } from "@/state/store";
 import { applyMixPreset, captureMixPreset, deleteMixPreset, resetDefaultMixPresets } from "@/state/controller";
 import { Plus, Trash2, RotateCcw } from "lucide-react";
 import { CATEGORY_LABELS, CATEGORY_ORDER, type PresetCategory } from "@/lib/mixPresets";
+import { useT } from "@/lib/i18n";
 
 /**
  * Mix Presets — quick DJ recipes.
@@ -11,6 +12,7 @@ import { CATEGORY_LABELS, CATEGORY_ORDER, type PresetCategory } from "@/lib/mixP
  * and reset the 5 built-in defaults at any time.
  */
 export function MixPresetsPanel() {
+  const t = useT();
   const presets = useApp((s) => s.mixPresets);
   const activeDecks = useApp((s) => s.activeDecks);
   const [target, setTarget] = useState<DeckId>(activeDecks[0] ?? "A");
@@ -35,7 +37,7 @@ export function MixPresetsPanel() {
   return (
     <div className="vdj-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%", overflowY: "auto", padding: 4 }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-        <span className="vdj-label">Aplicar a Deck</span>
+        <span className="vdj-label">{t("presetsApplyTo")}</span>
         <div style={{ display: "flex", gap: 4 }}>
           {(["A", "B", "C", "D"] as DeckId[]).map((d) => (
             <button
@@ -53,7 +55,7 @@ export function MixPresetsPanel() {
         <div style={{ flex: 1 }} />
         <input
           type="text"
-          placeholder="Nombre del nuevo preset"
+          placeholder={t("presetsNewName")}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           className="vdj-btn"
@@ -65,19 +67,19 @@ export function MixPresetsPanel() {
             captureMixPreset(target, newName);
             setNewName("");
           }}
-          title="Captura el EQ/Filter/FX actual del deck como preset"
+          title={t("presetsCaptureTip")}
         >
-          <Plus size={12} /> Capturar Deck {target}
+          <Plus size={12} /> {t("presetsCaptureBtn", { deck: target })}
         </button>
-        <button className="vdj-btn" onClick={resetDefaultMixPresets} title="Restaurar los 5 presets por defecto">
-          <RotateCcw size={12} /> Reset
+        <button className="vdj-btn" onClick={resetDefaultMixPresets} title={t("presetsResetTip")}>
+          <RotateCcw size={12} /> {t("presetsResetBtn")}
         </button>
       </div>
 
       {/* Category filter chips */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
         <button className="vdj-btn" data-active={filter === "all"} onClick={() => setFilter("all")}>
-          Todos
+          {t("presetsAll")}
         </button>
         {CATEGORY_ORDER.map((cat) => {
           const count = grouped.get(cat)?.length ?? 0;
@@ -90,7 +92,7 @@ export function MixPresetsPanel() {
         })}
         {userCreated.length > 0 && (
           <button className="vdj-btn" data-active={filter === "user"} onClick={() => setFilter("user")}>
-            Mis Presets <span style={{ opacity: 0.6 }}>({userCreated.length})</span>
+            {t("presetsMine")} <span style={{ opacity: 0.6 }}>({userCreated.length})</span>
           </button>
         )}
       </div>
@@ -106,7 +108,7 @@ export function MixPresetsPanel() {
             }
           }
           if (userCreated.length && (filter === "all" || filter === "user")) {
-            sections.push({ key: "user", label: "Mis Presets", items: userCreated });
+            sections.push({ key: "user", label: t("presetsMine"), items: userCreated });
           }
         } else {
           const items = grouped.get(filter) ?? [];
@@ -128,14 +130,14 @@ export function MixPresetsPanel() {
                     <div style={{ fontSize: 22 }}>{p.emoji}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
-                      <div style={{ fontSize: 10, color: "var(--text-3)" }}>{p.builtin ? "DEFAULT" : "USER"}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-3)" }}>{p.builtin ? t("presetsDefaultBadge") : t("presetsUserBadge")}</div>
                     </div>
                     {!p.builtin && (
                       <button
                         className="vdj-btn"
                         data-tone="danger"
                         onClick={() => deleteMixPreset(p.id)}
-                        title="Eliminar preset"
+                        title={t("presetsDeleteTip")}
                         style={{ padding: "4px 6px" }}
                       >
                         <Trash2 size={11} />
@@ -159,7 +161,7 @@ export function MixPresetsPanel() {
                     onClick={() => applyMixPreset(p.id, target)}
                     style={{ marginTop: 4 }}
                   >
-                    Aplicar a Deck {target}
+                    {t("presetsApplyBtn", { deck: target })}
                   </button>
                 </div>
               ))}

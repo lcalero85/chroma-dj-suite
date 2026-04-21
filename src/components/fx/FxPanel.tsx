@@ -3,10 +3,23 @@ import { useApp } from "@/state/store";
 import { Knob } from "../console/Knob";
 import { createFxRack, setFxKind, setFxMix, setFxParam, type FxKind, type FxRackHandles } from "@/audio/fx";
 import { getEngine } from "@/audio/engine";
+import { useT, type DictKey } from "@/lib/i18n";
 
 const KINDS: FxKind[] = ["off", "reverb", "delay", "filter", "flanger", "phaser", "bitcrusher", "echo", "gate"];
+const KIND_KEY: Record<FxKind, DictKey> = {
+  off: "fxKindOff",
+  reverb: "fxKindReverb",
+  delay: "fxKindDelay",
+  filter: "fxKindFilter",
+  flanger: "fxKindFlanger",
+  phaser: "fxKindPhaser",
+  bitcrusher: "fxKindBitcrusher",
+  echo: "fxKindEcho",
+  gate: "fxKindGate",
+};
 
 export function FxPanel() {
+  const t = useT();
   const fxs = useApp((s) => s.fx);
   const racks = useRef<Record<number, FxRackHandles>>({});
 
@@ -48,7 +61,7 @@ export function FxPanel() {
             >
               {KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {k}
+                  {t(KIND_KEY[k])}
                 </option>
               ))}
             </select>
@@ -60,7 +73,7 @@ export function FxPanel() {
                 useApp.getState().updateFx(fx.id, { param1: v });
                 if (racks.current[fx.id]) setFxParam(racks.current[fx.id], 1, mapParam(fx.kind, 1, v));
               }}
-              label="P1"
+              label={t("fxParam1")}
               size={48}
             />
             <Knob
@@ -69,7 +82,7 @@ export function FxPanel() {
                 useApp.getState().updateFx(fx.id, { param2: v });
                 if (racks.current[fx.id]) setFxParam(racks.current[fx.id], 2, mapParam(fx.kind, 2, v));
               }}
-              label="P2"
+              label={t("fxParam2")}
               size={48}
             />
             <Knob
@@ -78,7 +91,7 @@ export function FxPanel() {
                 useApp.getState().updateFx(fx.id, { wet: v });
                 if (racks.current[fx.id]) setFxMix(racks.current[fx.id], v);
               }}
-              label="MIX"
+              label={t("fxMix")}
               size={48}
             />
           </div>
@@ -91,7 +104,7 @@ export function FxPanel() {
               if (racks.current[fx.id]) setFxMix(racks.current[fx.id], next);
             }}
           >
-            ON / OFF
+            {t("fxOnOff")}
           </button>
         </div>
       ))}
