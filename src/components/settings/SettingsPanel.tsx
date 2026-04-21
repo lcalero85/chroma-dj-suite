@@ -1,11 +1,13 @@
 import { useApp } from "@/state/store";
+import { useT } from "@/lib/i18n";
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
   const update = useApp((s) => s.updateSettings);
+  const t = useT();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <Row label="Nombre de la app">
+      <Row label={t("appName")}>
         <input
           type="text"
           className="vdj-btn"
@@ -16,16 +18,38 @@ export function SettingsPanel() {
           onChange={(e) => update({ appName: e.target.value })}
         />
       </Row>
-      <Row label="Animaciones">
+      <Row label={t("language")}>
+        <select
+          className="vdj-btn"
+          value={settings.lang}
+          onChange={(e) => update({ lang: e.target.value as "en" | "es" })}
+          style={{ padding: "6px 8px" }}
+        >
+          <option value="en">{t("english")}</option>
+          <option value="es">{t("spanish")}</option>
+        </select>
+      </Row>
+      <Row label={t("appMode")}>
+        <select
+          className="vdj-btn"
+          value={settings.appMode}
+          onChange={(e) => update({ appMode: e.target.value as "basic" | "advanced" })}
+          style={{ padding: "6px 8px" }}
+        >
+          <option value="basic">{t("basic")}</option>
+          <option value="advanced">{t("advanced")}</option>
+        </select>
+      </Row>
+      <Row label={t("animations")}>
         <input type="checkbox" checked={settings.animations} onChange={(e) => update({ animations: e.target.checked })} />
       </Row>
-      <Row label="Tooltips">
+      <Row label={t("tooltips")}>
         <input type="checkbox" checked={settings.tooltips} onChange={(e) => update({ tooltips: e.target.checked })} />
       </Row>
-      <Row label="Key Lock por defecto">
+      <Row label={t("defaultKeyLock")}>
         <input type="checkbox" checked={settings.defaultKeyLock} onChange={(e) => update({ defaultKeyLock: e.target.checked })} />
       </Row>
-      <Row label="Pitch range por defecto">
+      <Row label={t("defaultPitchRange")}>
         <select
           className="vdj-btn"
           value={settings.defaultPitchRange}
@@ -36,7 +60,7 @@ export function SettingsPanel() {
           <option value={50}>±50%</option>
         </select>
       </Row>
-      <div className="vdj-label" style={{ marginTop: 12 }}>Atajos</div>
+      <div className="vdj-label" style={{ marginTop: 12 }}>{t("shortcuts")}</div>
       <pre className="vdj-panel-inset" style={{ padding: 10, fontSize: 11, lineHeight: 1.6, color: "var(--text-2)" }}>
 {`Space        Play / Pause Deck A
 Shift Right  Play / Pause Deck B

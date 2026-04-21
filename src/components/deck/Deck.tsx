@@ -29,6 +29,7 @@ import { keyName } from "@/lib/camelot";
 import { VideoFxPanel } from "../video/VideoFxPanel";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT, t as tGlobal } from "@/lib/i18n";
 
 interface DeckProps {
   id: DeckId;
@@ -41,6 +42,7 @@ export function Deck({ id, side }: DeckProps) {
 
   const handle = getDeck(id);
   const [dragOver, setDragOver] = useState(false);
+  const t = useT();
 
   return (
     <div
@@ -64,7 +66,7 @@ export function Deck({ id, side }: DeckProps) {
         if (!tid) return;
         e.preventDefault();
         e.stopPropagation();
-        void loadTrackToDeck(id, tid).then(() => toast(`Cargada en Deck ${id}`));
+        void loadTrackToDeck(id, tid).then(() => toast(`${tGlobal("loadedToast")} ${id}`));
       }}
       style={{
         padding: 12,
@@ -99,7 +101,7 @@ export function Deck({ id, side }: DeckProps) {
             background: "color-mix(in oklab, var(--accent) 6%, transparent)",
           }}
         >
-          SOLTAR PARA CARGAR EN DECK {id}
+          {t("dropToLoad")} {id}
         </div>
       )}
       {/* header */}
@@ -141,10 +143,10 @@ export function Deck({ id, side }: DeckProps) {
                 <span
                   className="vdj-loaded-badge"
                   data-tone={ds.isPlaying ? "live" : undefined}
-                  title={ds.isPlaying ? "Reproduciendo" : "Pista cargada"}
+                  title={ds.isPlaying ? t("playing") : t("trackLoaded")}
                 >
                   <span className="dot" />
-                  {ds.isPlaying ? "LIVE" : "LOADED"}
+                  {ds.isPlaying ? t("live") : t("loaded")}
                 </span>
               )}
             </div>
@@ -233,7 +235,7 @@ export function Deck({ id, side }: DeckProps) {
       {/* hot cues + loops */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <div className="vdj-label" style={{ marginBottom: 6 }}>Hot Cues</div>
+          <div className="vdj-label" style={{ marginBottom: 6 }}>{t("hotCues")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4 }}>
             {Array.from({ length: 8 }).map((_, i) => {
               const cue = ds.hotCues.find((c) => c.id === i);
@@ -257,7 +259,7 @@ export function Deck({ id, side }: DeckProps) {
           </div>
         </div>
         <div>
-          <div className="vdj-label" style={{ marginBottom: 6 }}>Loops</div>
+          <div className="vdj-label" style={{ marginBottom: 6 }}>{t("loops")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4 }}>
             {[1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8, 16].map((b) => (
               <button
@@ -280,15 +282,11 @@ export function Deck({ id, side }: DeckProps) {
         </div>
       </div>
 
-      {/* pro controls: beat jump, slip, reverse, brake */}
-      <ProControls id={id} />
-
-      {/* video FX (only when a video clip is loaded) */}
-      <VideoFxPanel id={id} />
+      <AdvancedDeckExtras id={id} />
 
       {/* deck VU */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span className="vdj-label">SIGNAL</span>
+        <span className="vdj-label">{t("signal")}</span>
         <div style={{ flex: 1 }}>
           <VuMeter analyser={handle.analyser} orientation="horizontal" width={6} height={140} />
         </div>
@@ -314,22 +312,23 @@ function TimeDisplay({ deck }: { deck: ReturnType<typeof useApp.getState>["decks
 
 function Transport({ id, masterId }: { id: DeckId; masterId: DeckId }) {
   const ds = useApp((s) => s.decks[id]);
+  const t = useT();
   return (
     <div style={{ display: "flex", gap: 4 }}>
       <button
         className="vdj-btn"
         data-active={ds.isPlaying}
         onClick={() => togglePlay(id)}
-        title="Play / Pause"
+        title={`${t("play")} / ${t("pause")}`}
         style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
       >
-        {ds.isPlaying ? <Pause size={12} /> : <Play size={12} />} {ds.isPlaying ? "Pause" : "Play"}
+        {ds.isPlaying ? <Pause size={12} /> : <Play size={12} />} {ds.isPlaying ? t("pause") : t("play")}
       </button>
-      <button className="vdj-btn" onClick={() => cueDeck(id)} title="Cue">
-        <RotateCcw size={12} /> Cue
+      <button className="vdj-btn" onClick={() => cueDeck(id)} title={t("cue")}>
+        <RotateCcw size={12} /> {t("cue")}
       </button>
-      <button className="vdj-btn" onClick={() => syncDeck(id, masterId)} title={`Sync to deck ${masterId}`}>
-        Sync
+      <button className="vdj-btn" onClick={() => syncDeck(id, masterId)} title={`${t("sync")} → ${masterId}`}>
+        {t("sync")}
       </button>
     </div>
   );
@@ -337,6 +336,7 @@ function Transport({ id, masterId }: { id: DeckId; masterId: DeckId }) {
 
 function PitchSection({ id }: { id: DeckId }) {
   const ds = useApp((s) => s.decks[id]);
+  const t = useT();
   const cycleRange = () => {
     const next: 8 | 16 | 50 = ds.pitchRange === 8 ? 16 : ds.pitchRange === 16 ? 50 : 8;
     useApp.getState().updateDeck(id, { pitchRange: next });
@@ -348,7 +348,7 @@ function PitchSection({ id }: { id: DeckId }) {
     <div
       className="vdj-panel-inset"
       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "6px 4px" }}
-      title="Pitch fader (doble click = 0)"
+      title={t("pitchFader")}
     >
       <Fader
         value={-ds.pitch}
@@ -365,10 +365,10 @@ function PitchSection({ id }: { id: DeckId }) {
       {fader}
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
         <div style={{ display: "flex", gap: 4 }}>
-          <button className="vdj-btn" data-active={ds.keyLock} onClick={toggleKeyLock} title="Key lock" style={{ flex: 1, fontSize: 10 }}>
-            <Lock size={10} /> Key
+          <button className="vdj-btn" data-active={ds.keyLock} onClick={toggleKeyLock} title={t("keyLock")} style={{ flex: 1, fontSize: 10 }}>
+            <Lock size={10} /> {t("keyLock")}
           </button>
-          <button className="vdj-btn" onClick={cycleRange} title="Pitch range" style={{ flex: 1, fontSize: 10 }}>
+          <button className="vdj-btn" onClick={cycleRange} title={t("pitchRange")} style={{ flex: 1, fontSize: 10 }}>
             ±{ds.pitchRange}%
           </button>
         </div>
@@ -384,7 +384,7 @@ function PitchSection({ id }: { id: DeckId }) {
           <button
             className="vdj-btn"
             onClick={() => setDeckPitch(id, 0)}
-            title="Reset pitch"
+            title={t("resetPitch")}
             style={{ fontSize: 9, padding: "2px 6px" }}
           >
             0%
@@ -393,10 +393,23 @@ function PitchSection({ id }: { id: DeckId }) {
             {ds.pitch > 0 ? "+" : ""}{(ds.pitch * ds.pitchRange).toFixed(2)}%
           </div>
         </div>
-        <button className="vdj-btn" data-active={ds.pflCue} onClick={() => useApp.getState().updateDeck(id, { pflCue: !ds.pflCue })} title="Cue / PFL" style={{ fontSize: 10 }}>
-          <Headphones size={10} /> Cue
+        <button className="vdj-btn" data-active={ds.pflCue} onClick={() => useApp.getState().updateDeck(id, { pflCue: !ds.pflCue })} title={t("cuePfl")} style={{ fontSize: 10 }}>
+          <Headphones size={10} /> {t("cue")}
         </button>
       </div>
     </div>
+  );
+}
+
+function AdvancedDeckExtras({ id }: { id: DeckId }) {
+  const mode = useApp((s) => s.settings.appMode);
+  if (mode !== "advanced") return null;
+  return (
+    <>
+      {/* pro controls: beat jump, slip, reverse, brake */}
+      <ProControls id={id} />
+      {/* video FX (only when a video clip is loaded) */}
+      <VideoFxPanel id={id} />
+    </>
   );
 }

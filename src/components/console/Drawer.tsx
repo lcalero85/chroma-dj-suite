@@ -3,12 +3,14 @@ import { SkinPicker } from "../skins/SkinPicker";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { HelpPanel } from "../help/HelpPanel";
 import { X } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 export function Drawer() {
   const drawer = useApp((s) => s.drawer);
   const setDrawer = useApp((s) => s.setDrawer);
+  const t = useT();
   if (!drawer) return null;
-  const titles = { settings: "Settings", skins: "Skins", help: "Ayuda" } as const;
+  const titles = { settings: t("settings"), skins: t("skins"), help: t("help") } as const;
   return (
     <div
       style={{

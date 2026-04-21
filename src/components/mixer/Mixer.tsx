@@ -6,9 +6,11 @@ import { VuMeter } from "../console/VuMeter";
 import { MasterPro } from "./MasterPro";
 import { getEngine } from "@/audio/engine";
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 export function Mixer() {
   const mixer = useApp((s) => s.mixer);
+  const t = useT();
   const [ana, setAna] = useState<AnalyserNode | null>(null);
   const [cueAna, setCueAna] = useState<AnalyserNode | null>(null);
   useEffect(() => {
@@ -31,7 +33,7 @@ export function Mixer() {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span className="vdj-label">MIXER</span>
+        <span className="vdj-label">{t("mixer")}</span>
         <span className="vdj-chip">{mixer.xfaderCurve.toUpperCase()}</span>
       </div>
 
@@ -41,13 +43,13 @@ export function Mixer() {
         <MixerChannel id="B" />
       </div>
 
-      <CrossfaderSection />
+       <CrossfaderSection />
 
       <MasterPro />
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
-          <span className="vdj-label">MASTER</span>
+          <span className="vdj-label">{t("master")}</span>
           <VuMeter analyser={ana} orientation="horizontal" width={8} height={120} channels={1} />
         </div>
         <Knob
@@ -55,13 +57,13 @@ export function Mixer() {
           max={1.2}
           defaultValue={0.85}
           onChange={setMasterVolume}
-          label="VOL"
+          label={t("vol")}
           size={48}
         />
         <Knob
           value={mixer.cueMix}
           onChange={(v) => useApp.getState().updateMixer({ cueMix: v })}
-          label="CUE MIX"
+          label={t("cueMix")}
           size={36}
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -71,7 +73,7 @@ export function Mixer() {
             onClick={() => setLimiter(!mixer.limiter)}
             style={{ fontSize: 10 }}
           >
-            LIM
+            {t("lim")}
           </button>
           <select
             value={mixer.xfaderCurve}
@@ -81,13 +83,13 @@ export function Mixer() {
             className="vdj-btn"
             style={{ fontSize: 10, padding: "4px" }}
           >
-            <option value="linear">Linear</option>
-            <option value="smooth">Smooth</option>
-            <option value="sharp">Sharp</option>
+            <option value="linear">{t("linear")}</option>
+            <option value="smooth">{t("smooth")}</option>
+            <option value="sharp">{t("sharp")}</option>
           </select>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
-          <span className="vdj-label">CUE</span>
+          <span className="vdj-label">{t("cue").toUpperCase()}</span>
           <VuMeter analyser={cueAna} orientation="horizontal" width={6} height={80} />
         </div>
       </div>
@@ -96,11 +98,12 @@ export function Mixer() {
 }
 
 function MasterColumn() {
+  const t = useT();
   return (
     <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 60 }}>
-      <span className="vdj-label">BOOTH</span>
-      <Knob value={1} min={0} max={1.2} onChange={() => {}} size={32} label="VOL" />
-      <span className="vdj-label" style={{ marginTop: 6 }}>REC</span>
+      <span className="vdj-label">{t("booth")}</span>
+      <Knob value={1} min={0} max={1.2} onChange={() => {}} size={32} label={t("vol")} />
+      <span className="vdj-label" style={{ marginTop: 6 }}>{t("rec")}</span>
       <RecordingPulse />
     </div>
   );
@@ -114,6 +117,7 @@ function RecordingPulse() {
 
 function CrossfaderSection() {
   const mixer = useApp((s) => s.mixer);
+  const t = useT();
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -139,7 +143,7 @@ function CrossfaderSection() {
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <span className="vdj-label">A</span>
-        <span className="vdj-label">CROSSFADER</span>
+        <span className="vdj-label">{t("crossfader")}</span>
         <span className="vdj-label">B</span>
       </div>
       <div
