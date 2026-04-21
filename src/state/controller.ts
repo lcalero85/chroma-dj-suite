@@ -749,3 +749,67 @@ export async function moveTrackToFolder(trackId: string, folderId: string | null
 
 // Re-exports for convenience
 export { getVideo };
+
+// ===== Backup: export/import full config =====
+export interface BackupBundle {
+  version: 1;
+  exportedAt: number;
+  skin: string;
+  settings: ReturnType<typeof useApp.getState>["settings"];
+  mixer: ReturnType<typeof useApp.getState>["mixer"];
+  radio: ReturnType<typeof useApp.getState>["radio"];
+  videoMix: ReturnType<typeof useApp.getState>["videoMix"];
+  midi: ReturnType<typeof useApp.getState>["midi"];
+  segments: RadioSegment[];
+  stream: ReturnType<typeof useApp.getState>["stream"];
+}
+
+export function exportBackup(): BackupBundle {
+  const s = useApp.getState();
+  return {
+    version: 1,
+    exportedAt: Date.now(),
+    skin: s.skin,
+    settings: s.settings,
+    mixer: s.mixer,
+    radio: s.radio,
+    videoMix: s.videoMix,
+    midi: s.midi,
+    segments: s.segments,
+    stream: { ...s.stream, password: "" }, // never export the password
+  };
+}
+
+export function downloadBackup(): void {
+  const data = exportBackup();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vdj-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast.success("Backup descargado");
+}
+
+export function importBackup(bundle: unknown): boolean {
+  try {
+    const b = bundle as Partial<BackupBundle>;
+    if (!b || typeof b !== "object") throw new Error("Bundle inválido");
+    const s = useApp.getState();
+    if (b.skin) s.setSkin(b.skin as never);
+    if (b.settings) s.updateSettings(b.settings);
+    if (b.mixer) s.updateMixer(b.mixer);
+    if (b.radio) s.updateRadio(b.radio);
+    if (b.videoMix) s.updateVideoMix(b.videoMix);
+    if (b.segments) s.setSegments(b.segments);
+    if (b.stream) s.updateStream({ ...b.stream, password: s.stream.password }); // keep current password
+    toast.success("Backup importado");
+    return true;
+  } catch (err) {
+    toast.error("No se pudo importar el backup", { description: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
+}
