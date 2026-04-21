@@ -110,6 +110,7 @@ function FolderNode({
 }
 
 export function LibraryPanel() {
+  const tr = useT();
   const tracks = useApp((s) => s.tracks);
   const search = useApp((s) => s.search);
   const setTracks = useApp((s) => s.setTracks);
