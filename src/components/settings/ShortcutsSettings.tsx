@@ -3,6 +3,7 @@ import { useApp } from "@/state/store";
 import { SHORTCUT_DEFS, defaultShortcutMap, formatKeyCode, resolveShortcuts } from "@/lib/shortcutDefs";
 import { RotateCcw, Keyboard, X } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 /** Captures the next KeyboardEvent.code globally and calls onCapture. */
 function useKeyCapture(active: boolean, onCapture: (code: string) => void) {
@@ -32,6 +33,7 @@ function useKeyCapture(active: boolean, onCapture: (code: string) => void) {
 }
 
 export function ShortcutsSettings() {
+  const tr = useT();
   const settings = useApp((s) => s.settings);
   const update = useApp((s) => s.updateSettings);
   const map = resolveShortcuts(settings.shortcuts);
@@ -50,7 +52,7 @@ export function ShortcutsSettings() {
     const conflict = Object.entries(map).find(([k, v]) => k !== capturing && v === code);
     if (conflict) {
       const def = SHORTCUT_DEFS.find((d) => d.id === conflict[0]);
-      toast.warning(`Tecla en uso por: ${def?.label ?? conflict[0]}. Reasignada.`);
+      toast.warning(tr("shortcutsKeyTaken", { label: def?.label ?? conflict[0] }));
       // Clear the conflicting binding so the new one wins.
       const next = { ...map, [conflict[0]]: "", [capturing]: code };
       update({ shortcuts: next });
@@ -62,7 +64,7 @@ export function ShortcutsSettings() {
 
   const resetAll = () => {
     update({ shortcuts: defaultShortcutMap() });
-    toast.success("Atajos restablecidos");
+    toast.success(tr("shortcutsResetToast"));
   };
 
   const resetOne = (id: string) => {
@@ -79,15 +81,15 @@ export function ShortcutsSettings() {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          <Keyboard size={14} style={{ color: "var(--accent)" }} /> Atajos configurables
+          <Keyboard size={14} style={{ color: "var(--accent)" }} /> {tr("shortcutsConfigurable")}
         </div>
-        <button className="vdj-btn" onClick={resetAll} title="Restablecer todos">
+        <button className="vdj-btn" onClick={resetAll} title={tr("shortcutsResetTip")}>
           <RotateCcw size={11} /> Reset
         </button>
       </div>
       <input
         type="text"
-        placeholder="Filtrar acciones…"
+        placeholder={tr("shortcutsFilterPlaceholder")}
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         className="vdj-btn"
@@ -95,7 +97,7 @@ export function ShortcutsSettings() {
       />
       {capturing && (
         <div className="vdj-panel-inset" style={{ padding: 8, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span>Pulsa una tecla para asignar a <b>{SHORTCUT_DEFS.find((d) => d.id === capturing)?.label}</b>… (Esc para cancelar)</span>
+          <span>{tr("shortcutsCaptureHint", { label: SHORTCUT_DEFS.find((d) => d.id === capturing)?.label ?? "" })}</span>
           <button className="vdj-btn" onClick={() => setCapturing(null)}><X size={11} /></button>
         </div>
       )}
@@ -114,17 +116,17 @@ export function ShortcutsSettings() {
                   const isCap = capturing === d.id;
                   return (
                     <div key={d.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11 }}>
-                      <span style={{ color: "var(--text-2)", flex: 1 }}>{d.label}{d.shift ? " (Shift)" : ""}</span>
+                      <span style={{ color: "var(--text-2)", flex: 1 }}>{d.label}{d.shift ? tr("shortcutsShiftSuffix") : ""}</span>
                       <button
                         className="vdj-btn"
                         data-active={isCap}
                         onClick={() => setCapturing(isCap ? null : d.id)}
                         style={{ minWidth: 110, fontFamily: "var(--font-mono)" }}
-                        title={`Click para reasignar (actual: ${code || "ninguna"})`}
+                        title={tr("shortcutsCurrentTip", { code: code || tr("shortcutsNone") })}
                       >
-                        {isCap ? "Pulsa tecla…" : code ? formatKeyCode(code) : "—"}
+                        {isCap ? tr("shortcutsPressKey") : code ? formatKeyCode(code) : "—"}
                       </button>
-                      <button className="vdj-btn" onClick={() => resetOne(d.id)} title="Restablecer al valor por defecto">
+                      <button className="vdj-btn" onClick={() => resetOne(d.id)} title={tr("shortcutsResetOneTip")}>
                         <RotateCcw size={11} />
                       </button>
                     </div>

@@ -1,4 +1,5 @@
 import { useApp, defaultVideoFx, type DeckId } from "@/state/store";
+import { useT } from "@/lib/i18n";
 
 const SLIDERS: { key: keyof ReturnType<typeof defaultVideoFx>; label: string; min: number; max: number; step: number; suffix?: string }[] = [
   { key: "blur",       label: "BLUR",     min: 0,   max: 20,  step: 0.5, suffix: "px" },
@@ -13,6 +14,7 @@ const SLIDERS: { key: keyof ReturnType<typeof defaultVideoFx>; label: string; mi
 ];
 
 export function VideoFxPanel({ id }: { id: DeckId }) {
+  const t = useT();
   const ds = useApp((s) => s.decks[id]);
   const fx = ds.videoFx ?? defaultVideoFx();
   if (!ds.hasVideo) return null;
@@ -33,13 +35,13 @@ export function VideoFxPanel({ id }: { id: DeckId }) {
           color: "var(--accent)",
         }}
       >
-        <span>● VIDEO FX · DECK {id}</span>
+        <span>{t("videoFxTitle", { deck: id })}</span>
         <button
           className="vdj-btn"
           style={{ padding: "2px 8px", fontSize: 9 }}
           onClick={() => useApp.getState().updateVideoFx(id, defaultVideoFx())}
         >
-          RESET
+          {t("videoFxReset")}
         </button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>

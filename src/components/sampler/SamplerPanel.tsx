@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { getSlots, initSampler, loadSampleFromBlob, triggerSlot, setSlotVolume, setSlotColor, setSlotLoop, startSlotLoop } from "@/audio/sampler";
 import { ensureRunning } from "@/audio/engine";
+import { useT } from "@/lib/i18n";
 
 export function SamplerPanel() {
+  const t = useT();
   const [bank, setBank] = useState(0);
   const [, force] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -21,7 +23,7 @@ export function SamplerPanel() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <span className="vdj-label">SAMPLER · BANK</span>
+        <span className="vdj-label">{t("samplerBank")}</span>
         {[0, 1, 2, 3].map((b) => (
           <button key={b} className="vdj-btn" data-active={bank === b} onClick={() => setBank(b)}>
             {b + 1}
@@ -80,17 +82,17 @@ export function SamplerPanel() {
                 setTarget(s.id);
                 fileRef.current?.click();
               }}
-              title={s.buffer ? `${s.loop ? "Loop ON/OFF" : "Disparar"} ${s.name} · click derecho: reemplazar` : "Cargar muestra"}
+              title={s.buffer ? t("samplerTipLoaded", { action: s.loop ? t("samplerActionLoop") : t("samplerActionTrigger"), name: s.name }) : t("samplerTipEmpty")}
             >
               <div style={{ fontSize: 9, opacity: 0.7 }}>{s.id - bank * 16 + 1}</div>
               <div style={{ fontSize: 10, marginTop: 4, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
-                {s.buffer ? s.name : "Cargar"}
+                {s.buffer ? s.name : t("samplerLoad")}
               </div>
-              {s.loop && stopFns.current.has(s.id) && <div style={{ fontSize: 8, opacity: 0.85 }}>● LOOP</div>}
+              {s.loop && stopFns.current.has(s.id) && <div style={{ fontSize: 8, opacity: 0.85 }}>{t("samplerLoopBadge")}</div>}
             </div>
             {s.buffer && (
               <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%", paddingTop: 2, borderTop: "1px solid color-mix(in oklab, currentColor 18%, transparent)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 3 }} title="Volumen del sample">
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }} title={t("samplerVolumeTip")}>
                   <span style={{ fontSize: 8, opacity: 0.7, fontFamily: "var(--font-mono)" }}>VOL</span>
                   <input
                     type="range"
@@ -109,7 +111,7 @@ export function SamplerPanel() {
                     data-active={!!s.loop}
                     onClick={() => { setSlotLoop(s.id, !s.loop); if (!s.loop === false) { const fn = stopFns.current.get(s.id); fn?.(); stopFns.current.delete(s.id); } force((x) => x + 1); }}
                     style={{ padding: "1px 4px", fontSize: 8, flex: 1 }}
-                    title="Modo loop: click para iniciar/parar"
+                    title={t("samplerLoopTip")}
                   >
                     LOOP
                   </button>
@@ -117,7 +119,7 @@ export function SamplerPanel() {
                     <button
                       key={c}
                       onClick={() => { setSlotColor(s.id, c); force((x) => x + 1); }}
-                      title="Cambiar color"
+                      title={t("samplerColorTip")}
                       style={{ width: 10, height: 10, padding: 0, borderRadius: 2, background: c, border: s.color === c ? "1px solid white" : "1px solid transparent" }}
                     />
                   ))}

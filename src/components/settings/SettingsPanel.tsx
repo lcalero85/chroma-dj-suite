@@ -63,34 +63,34 @@ export function SettingsPanel() {
           <option value={50}>±50%</option>
         </select>
       </Row>
-      <Row label="Auto-nivelar volumen (Auto-gain)">
+      <Row label={t("autoGainLabel")}>
         <input
           type="checkbox"
           checked={settings.autoGainOnImport ?? true}
           onChange={(e) => update({ autoGainOnImport: e.target.checked })}
         />
       </Row>
-      <Row label="Decks visibles">
+      <Row label={t("visibleDecks")}>
         <select
           className="vdj-btn"
           value={settings.enabledDecks ?? 2}
           onChange={(e) => update({ enabledDecks: Number(e.target.value) as 2 | 4 })}
           style={{ padding: "6px 8px" }}
         >
-          <option value={2}>2 decks (A + B)</option>
-          <option value={4}>4 decks (A + B + C + D)</option>
+          <option value={2}>{t("visibleDecks2")}</option>
+          <option value={4}>{t("visibleDecks4")}</option>
         </select>
       </Row>
-      <Row label="Estilo de waveform">
+      <Row label={t("waveformStyle")}>
         <select
           className="vdj-btn"
           value={settings.waveformStyle ?? "classic"}
           onChange={(e) => update({ waveformStyle: e.target.value as "classic" | "bars" | "dual" })}
           style={{ padding: "6px 8px" }}
         >
-          <option value="classic">Clásico (relleno)</option>
-          <option value="bars">Barras separadas</option>
-          <option value="dual">Dual (Serato)</option>
+          <option value="classic">{t("wfClassic")}</option>
+          <option value="bars">{t("wfBars")}</option>
+          <option value="dual">{t("wfDual")}</option>
         </select>
       </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />

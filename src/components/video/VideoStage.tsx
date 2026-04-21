@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useApp, defaultVideoFx } from "@/state/store";
 import { getVideo } from "@/audio/videoDeck";
+import { useT } from "@/lib/i18n";
 
 // Singleton ref so the recorder (or other modules) can grab the canvas without
 // prop-drilling. Updated whenever the VideoStage mounts/unmounts.
@@ -14,6 +15,7 @@ export const videoStageRef: { current: HTMLCanvasElement | null } = { current: n
  * shift and glitch are extra effects done by drawing offset color channels.
  */
 export function VideoStage() {
+  const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const decks = useApp((s) => s.decks);
@@ -238,7 +240,7 @@ export function VideoStage() {
           userSelect: "none",
         }}
       >
-        <span>⋮⋮ ● VIDEO MIX</span>
+        <span>⋮⋮ {t("videoMixLabel")}</span>
         <button
           className="vdj-btn"
           style={{ padding: "1px 6px", fontSize: 9 }}
@@ -246,7 +248,7 @@ export function VideoStage() {
           onClick={() =>
             useApp.getState().updateVideoMix({ showStage: false })
           }
-          title="Ocultar pantalla"
+          title={t("videoHide")}
         >
           ✕
         </button>
@@ -279,13 +281,14 @@ export function VideoStage() {
             "linear-gradient(135deg, transparent 50%, var(--accent) 50%, var(--accent) 70%, transparent 70%)",
           borderBottomRightRadius: 8,
         }}
-        title="Redimensionar"
+        title={t("videoResize")}
       />
     </div>
   );
 }
 
 export function VideoStageToggle() {
+  const t = useT();
   const videoMix = useApp((s) => s.videoMix);
   const hasVideo = useApp((s) => s.decks.A.hasVideo || s.decks.B.hasVideo);
   if (!hasVideo) return null;
@@ -306,7 +309,7 @@ export function VideoStageToggle() {
       }}
       onClick={() => useApp.getState().updateVideoMix({ showStage: true })}
     >
-      ▶ MOSTRAR VIDEO
+      {t("videoShowBtn")}
     </button>
   );
 }

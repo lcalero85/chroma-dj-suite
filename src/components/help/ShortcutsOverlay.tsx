@@ -2,8 +2,10 @@ import { X, Keyboard } from "lucide-react";
 import { useEffect } from "react";
 import { useApp } from "@/state/store";
 import { SHORTCUT_DEFS, formatKeyCode, resolveShortcuts } from "@/lib/shortcutDefs";
+import { useT } from "@/lib/i18n";
 
 export function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const settings = useApp((s) => s.settings);
   const map = resolveShortcuts(settings.shortcuts);
   const groups = Array.from(new Set(SHORTCUT_DEFS.map((d) => d.group)));
@@ -53,7 +55,7 @@ export function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
             <Keyboard size={16} style={{ color: "var(--accent)" }} />
-            Atajos de teclado
+            {t("shortcutsTitle")}
           </div>
           <button className="vdj-btn" onClick={onClose}>
             <X size={12} /> ESC
@@ -91,7 +93,7 @@ export function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <div style={{ marginTop: 12, fontSize: 10, color: "var(--text-3)", textAlign: "center" }}>
-          Pulsa <b>?</b> en cualquier momento para mostrar/ocultar este panel · ESC para cerrar
+          {t("shortcutsFooter")}
         </div>
       </div>
     </div>
