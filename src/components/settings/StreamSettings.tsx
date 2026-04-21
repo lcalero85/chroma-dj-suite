@@ -1,26 +1,28 @@
 import { useApp } from "@/state/store";
 import { Wifi, WifiOff, Radio } from "lucide-react";
 import { startLiveStream, stopLiveStream } from "@/state/controller";
+import { useT } from "@/lib/i18n";
 
 export function StreamSettings() {
   const stream = useApp((s) => s.stream);
   const update = useApp((s) => s.updateStream);
+  const t = useT();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-        <Radio size={12} /> Radio en vivo (transmisión por Internet)
+        <Radio size={12} /> {t("streamSectionTitle")}
       </div>
 
       <div className="vdj-panel-inset" style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-        <Row label="Activar transmisión">
+        <Row label={t("streamEnable")}>
           <input
             type="checkbox"
             checked={stream.enabled}
             onChange={(e) => update({ enabled: e.target.checked })}
           />
         </Row>
-        <Row label="Auto-iniciar con Radio ON">
+        <Row label={t("streamAutoStart")}>
           <input
             type="checkbox"
             disabled={!stream.enabled}
@@ -29,7 +31,7 @@ export function StreamSettings() {
           />
         </Row>
 
-        <Row label="URL del servidor">
+        <Row label={t("streamServerUrl")}>
           <input
             type="url"
             disabled={!stream.enabled}
@@ -40,7 +42,7 @@ export function StreamSettings() {
             style={{ width: 280, padding: "6px 8px", textAlign: "left" }}
           />
         </Row>
-        <Row label="Mount point">
+        <Row label={t("streamMount")}>
           <input
             type="text"
             disabled={!stream.enabled}
@@ -51,7 +53,7 @@ export function StreamSettings() {
             style={{ width: 180, padding: "6px 8px", textAlign: "left" }}
           />
         </Row>
-        <Row label="Usuario (source)">
+        <Row label={t("streamUser")}>
           <input
             type="text"
             disabled={!stream.enabled}
@@ -61,7 +63,7 @@ export function StreamSettings() {
             style={{ width: 180, padding: "6px 8px", textAlign: "left" }}
           />
         </Row>
-        <Row label="Contraseña">
+        <Row label={t("streamPassword")}>
           <input
             type="password"
             disabled={!stream.enabled}
@@ -71,7 +73,7 @@ export function StreamSettings() {
             style={{ width: 180, padding: "6px 8px", textAlign: "left" }}
           />
         </Row>
-        <Row label="Bitrate (kbps)">
+        <Row label={t("streamBitrate")}>
           <select
             className="vdj-btn"
             disabled={!stream.enabled}
@@ -83,21 +85,21 @@ export function StreamSettings() {
             ))}
           </select>
         </Row>
-        <Row label="Formato">
+        <Row label={t("streamFormat")}>
           <select
             className="vdj-btn"
             disabled={!stream.enabled}
             value={stream.format}
             onChange={(e) => update({ format: e.target.value as "webm-opus" | "ogg-opus" })}
           >
-            <option value="webm-opus">WebM / Opus (recomendado)</option>
-            <option value="ogg-opus">Ogg / Opus</option>
+            <option value="webm-opus">{t("streamFormatWebm")}</option>
+            <option value="ogg-opus">{t("streamFormatOgg")}</option>
           </select>
         </Row>
 
         <div style={{ height: 1, background: "var(--line)", margin: "4px 0" }} />
 
-        <Row label="Nombre de la estación">
+        <Row label={t("streamStation")}>
           <input
             type="text"
             disabled={!stream.enabled}
@@ -107,7 +109,7 @@ export function StreamSettings() {
             style={{ width: 220, padding: "6px 8px", textAlign: "left" }}
           />
         </Row>
-        <Row label="Género">
+        <Row label={t("streamGenre")}>
           <input
             type="text"
             disabled={!stream.enabled}
@@ -117,7 +119,7 @@ export function StreamSettings() {
             style={{ width: 220, padding: "6px 8px", textAlign: "left" }}
           />
         </Row>
-        <Row label="Descripción">
+        <Row label={t("streamDescription")}>
           <input
             type="text"
             disabled={!stream.enabled}
@@ -131,7 +133,7 @@ export function StreamSettings() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           {stream.status === "live" ? (
             <button className="vdj-btn" data-tone="live" onClick={() => void stopLiveStream()}>
-              <WifiOff size={12} /> Detener transmisión
+              <WifiOff size={12} /> {t("streamStop")}
             </button>
           ) : (
             <button
@@ -139,7 +141,7 @@ export function StreamSettings() {
               disabled={!stream.enabled || stream.status === "connecting"}
               onClick={() => void startLiveStream()}
             >
-              <Wifi size={12} /> {stream.status === "connecting" ? "Conectando…" : "Probar transmisión"}
+              <Wifi size={12} /> {stream.status === "connecting" ? t("streamConnecting") : t("streamTest")}
             </button>
           )}
           <span className="vdj-chip" data-tone={stream.status === "live" ? "live" : undefined}>
@@ -151,9 +153,7 @@ export function StreamSettings() {
         </div>
 
         <div style={{ fontSize: 10, color: "var(--text-3)", lineHeight: 1.5, marginTop: 4 }}>
-          Compatible con Icecast 2.4+ (PUT). El audio enviado es el del MASTER (incluye micrófono).
-          Tu navegador no puede conectarse directamente a Icecast por restricciones del estándar, así que la app
-          relaya el audio a través de tu servidor de Lovable Cloud antes de reenviarlo al servidor de transmisión.
+          {t("streamHelp")}
         </div>
       </div>
     </div>

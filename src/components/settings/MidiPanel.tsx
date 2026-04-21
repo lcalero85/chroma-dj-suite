@@ -160,7 +160,7 @@ export function MidiPanel() {
                   <td style={td}>
                     <div style={{ display: "flex", gap: 4 }}>
                       <button className="vdj-btn" style={btn} onClick={() => onLearn(a.id)} disabled={learnFor !== null}>
-                        Learn
+                        {t("midiLearnBtn")}
                       </button>
                       {bound && (
                         <button className="vdj-btn" style={btn} onClick={() => removeCustomBinding(bound)}>×</button>
