@@ -58,10 +58,12 @@ export interface SampleRecord {
 }
 
 let _db: IDBPDatabase | null = null;
+let _opening: Promise<IDBPDatabase> | null = null;
 
 export async function getDB() {
   if (_db) return _db;
-  _db = await openDB("vdj-pro", 2, {
+  if (_opening) return _opening;
+  _opening = openDB("vdj-pro", 2, {
     upgrade(db) {
       if (!db.objectStoreNames.contains("tracks")) db.createObjectStore("tracks", { keyPath: "id" });
       if (!db.objectStoreNames.contains("playlists")) db.createObjectStore("playlists", { keyPath: "id" });
@@ -69,8 +71,57 @@ export async function getDB() {
       if (!db.objectStoreNames.contains("samples")) db.createObjectStore("samples", { keyPath: "id" });
       if (!db.objectStoreNames.contains("folders")) db.createObjectStore("folders", { keyPath: "id" });
     },
+    blocked() {
+      // another tab is holding the old version open
+      console.warn("[db] open blocked by another connection");
+    },
+    blocking() {
+      // another tab requested a newer version — close so it can upgrade
+      try { _db?.close(); } catch { /* noop */ }
+      _db = null;
+    },
+    terminated() {
+      _db = null;
+    },
+  }).then((db) => {
+    _db = db;
+    // If the browser closes the connection unexpectedly, drop the cache
+    // so the next call reopens it instead of throwing
+    // "The database connection is closing".
+    db.addEventListener("close", () => { _db = null; });
+    db.addEventListener("versionchange", () => {
+      try { db.close(); } catch { /* noop */ }
+      _db = null;
+    });
+    _opening = null;
+    return db;
+  }).catch((err) => {
+    _opening = null;
+    throw err;
   });
-  return _db;
+  return _opening;
+}
+
+/**
+ * Wrap an IDB operation so that a transient "connection is closing"
+ * (or InvalidStateError) reopens the DB and retries once.
+ */
+async function withDb<T>(op: (db: IDBPDatabase) => Promise<T>): Promise<T> {
+  let db = await getDB();
+  try {
+    return await op(db);
+  } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    const name = (e as Error)?.name;
+    const isClosing =
+      name === "InvalidStateError" ||
+      msg.includes("connection is closing") ||
+      msg.includes("database connection is closing");
+    if (!isClosing) throw e;
+    _db = null;
+    db = await getDB();
+    return op(db);
+  }
 }
 
 export async function listTracks(): Promise<TrackRecord[]> {
