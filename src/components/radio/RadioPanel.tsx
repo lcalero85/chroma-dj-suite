@@ -12,10 +12,12 @@ import {
 import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 type Tab = "queue" | "segments" | "live";
 
 export function RadioPanel() {
+  const t = useT();
   const radio = useApp((s) => s.radio);
   const tracks = useApp((s) => s.tracks);
   const updateRadio = useApp((s) => s.updateRadio);
@@ -31,10 +33,10 @@ export function RadioPanel() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4 }}>
         <button className="vdj-btn" data-active={tab === "queue"} onClick={() => setTab("queue")}>
-          <ListMusic size={12} style={{ marginRight: 4 }} /> Cola
+          <ListMusic size={12} style={{ marginRight: 4 }} /> {t("radioTabQueue")}
         </button>
         <button className="vdj-btn" data-active={tab === "segments"} onClick={() => setTab("segments")}>
-          <Disc3 size={12} style={{ marginRight: 4 }} /> Segmentos
+          <Disc3 size={12} style={{ marginRight: 4 }} /> {t("radioTabSegments")}
           <span className="vdj-chip" style={{ marginLeft: 6 }}>{segments.length}</span>
         </button>
         <button
@@ -44,8 +46,8 @@ export function RadioPanel() {
           onClick={() => setTab("live")}
         >
           {stream.status === "live" ? <Wifi size={12} style={{ marginRight: 4 }} /> : <WifiOff size={12} style={{ marginRight: 4 }} />}
-          En Vivo
-          {stream.status === "live" && <span className="vdj-loaded-badge" data-tone="live" style={{ marginLeft: 6 }}>● ON AIR</span>}
+          {t("radioTabLive")}
+          {stream.status === "live" && <span className="vdj-loaded-badge" data-tone="live" style={{ marginLeft: 6 }}>● {t("onAir")}</span>}
         </button>
       </div>
 
@@ -80,6 +82,7 @@ function QueueView({
   updateRadio: ReturnType<typeof useApp.getState>["updateRadio"];
   trackById: (id: string) => ReturnType<typeof useApp.getState>["tracks"][number] | undefined;
 }) {
+  const tr = useT();
   return (
     <>
       {/* Controls */}
@@ -92,11 +95,11 @@ function QueueView({
           style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 130, minHeight: 38, justifyContent: "center", fontWeight: 800, letterSpacing: "0.08em" }}
         >
           <Radio size={14} />
-          {radio.enabled ? "RADIO ON" : "RADIO OFF"}
+          {radio.enabled ? tr("radioOn") : tr("radioOff")}
         </button>
 
         {radio.enabled && (
-          <span className="vdj-loaded-badge" data-tone="live" style={{ animation: "vdj-pulse 1.2s infinite" }}>● TRANSMITIENDO</span>
+          <span className="vdj-loaded-badge" data-tone="live" style={{ animation: "vdj-pulse 1.2s infinite" }}>{tr("radioBroadcasting")}</span>
         )}
 
         <button
@@ -104,9 +107,9 @@ function QueueView({
           onClick={() => void radioNext()}
           disabled={radio.queue.length === 0}
           style={{ display: "flex", alignItems: "center", gap: 6 }}
-          title="Siguiente pista (L)"
+          title={tr("radioNextTip")}
         >
-          <SkipForward size={12} /> Siguiente
+          <SkipForward size={12} /> {tr("radioNext")}
         </button>
 
         <button
@@ -115,7 +118,7 @@ function QueueView({
           onClick={() => updateRadio({ shuffle: !radio.shuffle })}
           style={{ display: "flex", alignItems: "center", gap: 6 }}
         >
-          <Shuffle size={12} /> Aleatorio
+          <Shuffle size={12} /> {tr("radioShuffle")}
         </button>
 
         <button
@@ -123,13 +126,13 @@ function QueueView({
           data-active={radio.autoCrossfade}
           onClick={() => updateRadio({ autoCrossfade: !radio.autoCrossfade })}
           style={{ display: "flex", alignItems: "center", gap: 6 }}
-          title="Encadenar pistas automáticamente"
+          title={tr("radioAutoMixTip")}
         >
-          <Power size={12} /> Auto-Mix
+          <Power size={12} /> {tr("radioAutoMix")}
         </button>
 
         <span className="vdj-chip" style={{ marginLeft: "auto" }}>
-          {radio.queue.length} en cola · Deck A
+          {tr("radioInQueueDeckA", { n: radio.queue.length })}
         </span>
 
         {radio.queue.length > 0 && (
@@ -137,11 +140,11 @@ function QueueView({
             className="vdj-btn"
             onClick={() => {
               radioClear();
-              toast("Cola vaciada");
+              toast(tr("radioQueueClearedToast"));
             }}
             style={{ display: "flex", alignItems: "center", gap: 4 }}
           >
-            <Trash2 size={12} /> Vaciar
+            <Trash2 size={12} /> {tr("radioClear")}
           </button>
         )}
       </div>
@@ -150,7 +153,7 @@ function QueueView({
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, overflow: "auto", padding: 6 }}>
         {radio.queue.length === 0 && (
           <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)", fontSize: 12 }}>
-            Cola vacía. Añade pistas desde Library con el botón <b>📻</b> o carga un segmento.
+            {tr("radioEmptyQueue")}
           </div>
         )}
         {radio.queue.map((tid, idx) => {
@@ -173,13 +176,13 @@ function QueueView({
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {t?.title ?? "(pista eliminada)"}
+                  {t?.title ?? tr("radioDeletedTrack")}
                 </div>
                 <div className="vdj-label">
                   {t?.artist || "—"} · {t ? formatTime(t.duration) : "0:00"} {t?.bpm ? `· ${t.bpm.toFixed(0)} BPM` : ""}
                 </div>
               </div>
-              <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => void radioPlayIndex(idx)} title="Reproducir esta">
+              <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => void radioPlayIndex(idx)} title={tr("radioPlayThis")}>
                 <Play size={10} />
               </button>
               <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => radioMove(idx, -1)} disabled={idx === 0}>
@@ -210,6 +213,7 @@ function SegmentsView({
   setActiveSegmentId: (id: string | null) => void;
   tracks: ReturnType<typeof useApp.getState>["tracks"];
 }) {
+  const tr = useT();
   const trackById = (id: string) => tracks.find((t) => t.id === id);
   return (
     <div style={{ display: "flex", gap: 8, flex: 1, minHeight: 0 }}>
@@ -218,18 +222,18 @@ function SegmentsView({
         <button
           className="vdj-btn"
           onClick={() => {
-            const n = window.prompt("Nombre del segmento (ej: Romántico, Reggae, Rock 80s)");
+            const n = window.prompt(tr("radioNewSegmentPrompt"));
             if (!n) return;
             const s = createSegment(n);
             setActiveSegmentId(s.id);
           }}
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontWeight: 700 }}
         >
-          <Plus size={12} /> Nuevo segmento
+          <Plus size={12} /> {tr("radioNewSegment")}
         </button>
         {segments.length === 0 && (
           <div style={{ fontSize: 10, color: "var(--text-3)", padding: 12, textAlign: "center" }}>
-            Crea un segmento para agrupar canciones por estilo o programar bloques.
+            {tr("radioCreateSegmentHint")}
           </div>
         )}
         {segments.map((s) => (
@@ -261,7 +265,7 @@ function SegmentsView({
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, padding: 8, overflow: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
         {!activeSegment && (
           <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)", fontSize: 12 }}>
-            Selecciona o crea un segmento.
+            {tr("radioSelectOrCreate")}
           </div>
         )}
         {activeSegment && (
@@ -277,21 +281,21 @@ function SegmentsView({
               <button
                 className="vdj-btn"
                 onClick={() => void loadSegmentToRadio(activeSegment.id, "replace")}
-                title="Cargar este segmento como cola de Radio"
+                title={tr("radioLoadToQueueTip")}
               >
-                <Play size={11} /> Cargar a cola
+                <Play size={11} /> {tr("radioLoadToQueue")}
               </button>
               <button
                 className="vdj-btn"
                 onClick={() => void loadSegmentToRadio(activeSegment.id, "append")}
-                title="Añadir al final de la cola actual"
+                title={tr("radioAppendTip")}
               >
-                <Plus size={11} /> Añadir
+                <Plus size={11} /> {tr("radioAppend")}
               </button>
               <button
                 className="vdj-btn"
                 onClick={() => {
-                  if (confirm(`¿Eliminar segmento "${activeSegment.name}"?`)) {
+                  if (confirm(tr("radioDeleteSegmentConfirm", { name: activeSegment.name }))) {
                     deleteSegment(activeSegment.id);
                     setActiveSegmentId(null);
                   }
@@ -303,7 +307,7 @@ function SegmentsView({
 
             <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <span className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Clock size={11} /> Programar
+                <Clock size={11} /> {tr("radioSchedule")}
               </span>
               <input
                 type="time"
@@ -318,15 +322,15 @@ function SegmentsView({
                   checked={activeSegment.recurring ?? true}
                   onChange={(e) => setSegmentSchedule(activeSegment.id, activeSegment.scheduledAt ?? null, e.target.checked)}
                 />
-                Diario
+                {tr("radioDaily")}
               </label>
               {activeSegment.scheduledAt && (
                 <button className="vdj-btn" onClick={() => setSegmentSchedule(activeSegment.id, null, activeSegment.recurring ?? true)}>
-                  <X size={10} /> Quitar
+                  <X size={10} /> {tr("radioRemove")}
                 </button>
               )}
               <span className="vdj-label" style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-3)" }}>
-                Se activa solo si la Radio está ON
+                {tr("radioOnlyIfRadioOn")}
               </span>
             </div>
 
@@ -342,7 +346,7 @@ function SegmentsView({
             >
               {activeSegment.trackIds.length === 0 && (
                 <div style={{ padding: 16, textAlign: "center", color: "var(--text-3)", fontSize: 11 }}>
-                  Vacío. Usa el buscador abajo o el selector <b>+ Segmento</b> en Library para añadir pistas.
+                  {tr("radioSegmentEmpty")}
                 </div>
               )}
               {activeSegment.trackIds.map((tid, idx) => {
@@ -351,7 +355,7 @@ function SegmentsView({
                   <div key={tid + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px", borderTop: "1px solid var(--line)" }}>
                     <span className="vdj-readout" style={{ minWidth: 24, textAlign: "right", color: "var(--text-3)" }}>{String(idx + 1).padStart(2, "0")}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t?.title ?? "(pista eliminada)"}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t?.title ?? tr("radioDeletedTrack")}</div>
                       <div className="vdj-label">{t?.artist || "—"} · {t ? formatTime(t.duration) : "0:00"}</div>
                     </div>
                     <button className="vdj-btn" style={{ padding: "2px 6px" }} onClick={() => removeTrackFromSegment(activeSegment.id, tid)}>
@@ -379,6 +383,7 @@ function TrackPicker({
   excludeIds: string[];
   tracks: ReturnType<typeof useApp.getState>["tracks"];
 }) {
+  const tr = useT();
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
     const ex = new Set(excludeIds);
@@ -396,7 +401,7 @@ function TrackPicker({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar pista para añadir al segmento…"
+          placeholder={tr("radioPickerPlaceholder")}
           style={{ flex: 1, background: "transparent", border: 0, color: "var(--text-1)", outline: "none", fontSize: 12 }}
         />
         <span className="vdj-chip">{filtered.length}</span>
@@ -404,7 +409,7 @@ function TrackPicker({
       {q && (
         <div style={{ maxHeight: 180, overflow: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
           {filtered.length === 0 && (
-            <div style={{ padding: 8, fontSize: 10, color: "var(--text-3)", textAlign: "center" }}>Sin resultados</div>
+            <div style={{ padding: 8, fontSize: 10, color: "var(--text-3)", textAlign: "center" }}>{tr("radioPickerNoResults")}</div>
           )}
           {filtered.map((t) => (
             <button
@@ -429,6 +434,7 @@ function TrackPicker({
 }
 
 function LiveView() {
+  const tr = useT();
   const stream = useApp((s) => s.stream);
   const setDrawer = useApp((s) => s.setDrawer);
   const kb = (n: number) => (n / 1024).toFixed(1) + " KB";
@@ -449,7 +455,7 @@ function LiveView() {
               onClick={() => void stopLiveStream()}
               style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 160, minHeight: 44, justifyContent: "center", fontWeight: 800 }}
             >
-              <WifiOff size={16} /> DETENER TRANSMISIÓN
+              <WifiOff size={16} /> {tr("streamStopLiveBtn")}
             </button>
           ) : (
             <button
@@ -459,26 +465,26 @@ function LiveView() {
               onClick={() => void startLiveStream()}
               style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 160, minHeight: 44, justifyContent: "center", fontWeight: 800 }}
             >
-              <Wifi size={16} /> {stream.status === "connecting" ? "CONECTANDO…" : "TRANSMITIR EN VIVO"}
+              <Wifi size={16} /> {stream.status === "connecting" ? tr("streamConnecting") : tr("streamStartLiveBtn")}
             </button>
           )}
-          <button className="vdj-btn" onClick={() => setDrawer("settings")} title="Abrir Ajustes">
-            <Pencil size={11} /> Configurar servidor
+          <button className="vdj-btn" onClick={() => setDrawer("settings")} title={tr("settings")}>
+            <Pencil size={11} /> {tr("streamConfigureBtn")}
           </button>
           {!stream.enabled && (
             <span className="vdj-chip" style={{ color: "var(--warning, #ffb000)" }}>
-              ⚠ Activa la transmisión en Ajustes
+              {tr("streamWarnEnable")}
             </span>
           )}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-          <Stat label="Estado" value={stream.status.toUpperCase()} tone={stream.status === "live" ? "live" : stream.status === "error" ? "warn" : undefined} />
-          <Stat label="Servidor" value={stream.serverUrl ? new URL(stream.serverUrl).host : "—"} />
-          <Stat label="Mount" value={stream.mount || "—"} />
-          <Stat label="Bitrate" value={`${stream.bitrate} kbps`} />
-          <Stat label="Tiempo" value={`${hh}:${mm}:${ss}`} />
-          <Stat label="Enviado" value={stream.bytesSent < 1024 * 1024 ? kb(stream.bytesSent) : mb(stream.bytesSent)} />
+          <Stat label={tr("streamStatus")} value={stream.status.toUpperCase()} tone={stream.status === "live" ? "live" : stream.status === "error" ? "warn" : undefined} />
+          <Stat label={tr("streamServer")} value={stream.serverUrl ? new URL(stream.serverUrl).host : "—"} />
+          <Stat label={tr("streamMountLbl")} value={stream.mount || "—"} />
+          <Stat label={tr("streamBitrateLbl")} value={`${stream.bitrate} kbps`} />
+          <Stat label={tr("streamElapsed")} value={`${hh}:${mm}:${ss}`} />
+          <Stat label={tr("streamSent")} value={stream.bytesSent < 1024 * 1024 ? kb(stream.bytesSent) : mb(stream.bytesSent)} />
         </div>
 
         {stream.lastError && (
@@ -488,8 +494,7 @@ function LiveView() {
         )}
 
         <div className="vdj-label" style={{ fontSize: 10, color: "var(--text-3)", lineHeight: 1.5 }}>
-          La transmisión envía el audio del MASTER (incluyendo la voz en off del micrófono) hacia tu servidor Icecast/SHOUTcast.
-          Configura el servidor en <b>Ajustes → Radio en vivo</b>. Compatible con Icecast 2.4+ vía PUT, formato Opus.
+          {tr("streamHelpFooter")}
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { loadTrackToDeck } from "@/state/controller";
 import { useApp } from "@/state/store";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 
 interface ScResult {
   id: number;
@@ -19,10 +20,10 @@ interface ScResult {
 
 type Provider = "soundcloud" | "spotify" | "beatport";
 
-const PROVIDERS: { id: Provider; name: string; color: string; mixable: boolean; note: string }[] = [
-  { id: "soundcloud", name: "SoundCloud", color: "#ff5500", mixable: true, note: "Búsqueda y mezcla completa" },
-  { id: "spotify", name: "Spotify", color: "#1db954", mixable: false, note: "API no permite mezcla DJ (DRM)" },
-  { id: "beatport", name: "Beatport", color: "#a4ff00", mixable: false, note: "Solo apps con licencia comercial" },
+const PROVIDERS: { id: Provider; name: string; color: string; mixable: boolean; noteKey: "onlineNoteSC" | "onlineNoteSpot" | "onlineNoteBP" }[] = [
+  { id: "soundcloud", name: "SoundCloud", color: "#ff5500", mixable: true, noteKey: "onlineNoteSC" },
+  { id: "spotify", name: "Spotify", color: "#1db954", mixable: false, noteKey: "onlineNoteSpot" },
+  { id: "beatport", name: "Beatport", color: "#a4ff00", mixable: false, noteKey: "onlineNoteBP" },
 ];
 
 async function fetchAudioAsBlob(transcodingUrl: string): Promise<Blob> {
@@ -64,6 +65,7 @@ async function importToLibrary(item: ScResult): Promise<TrackRecord> {
 
 export function OnlinePanel() {
   const setTracks = useApp((s) => s.setTracks);
+  const tr = useT();
   const [provider, setProvider] = useState<Provider>("soundcloud");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -76,8 +78,9 @@ export function OnlinePanel() {
 
   const search = async () => {
     if (provider !== "soundcloud") {
-      toast(`${provider === "spotify" ? "Spotify" : "Beatport"} no permite mezcla DJ`, {
-        description: "Limitación de su API. Usa SoundCloud para mezclar online.",
+      const name = provider === "spotify" ? "Spotify" : "Beatport";
+      toast(tr("onlineProviderNotMixable", { name }), {
+        description: tr("onlineProviderNotMixableDesc"),
       });
       return;
     }
@@ -88,9 +91,9 @@ export function OnlinePanel() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "search failed");
       setResults(j.items as ScResult[]);
-      if ((j.items as ScResult[]).length === 0) toast("Sin resultados");
+      if ((j.items as ScResult[]).length === 0) toast(tr("onlineNoResults"));
     } catch (e) {
-      toast.error("Error de búsqueda", { description: String(e) });
+      toast.error(tr("onlineSearchError"), { description: String(e) });
     } finally {
       setLoading(false);
     }
@@ -110,8 +113,8 @@ export function OnlinePanel() {
     try {
       await audio.play();
       audio.onended = () => setPreviewId(null);
-    } catch (e) {
-      toast.error("No se pudo previsualizar");
+    } catch {
+      toast.error(tr("onlineCouldNotPreview"));
       setPreviewId(null);
     }
   };
@@ -123,7 +126,7 @@ export function OnlinePanel() {
       setTracks(await listTracks());
       await loadTrackToDeck(deck, rec.id);
     } catch (e) {
-      toast.error(`Falló cargar en Deck ${deck}`, { description: String(e) });
+      toast.error(tr("onlineFailedLoadDeck", { deck }), { description: String(e) });
     } finally {
       setBusyId(null);
     }
@@ -134,9 +137,9 @@ export function OnlinePanel() {
     try {
       await importToLibrary(item);
       setTracks(await listTracks());
-      toast.success("Guardada en librería", { description: item.title });
+      toast.success(tr("onlineSavedTitle"), { description: item.title });
     } catch (e) {
-      toast.error("No se pudo guardar", { description: String(e) });
+      toast.error(tr("onlineCouldNotSave"), { description: String(e) });
     } finally {
       setBusyId(null);
     }
@@ -152,7 +155,7 @@ export function OnlinePanel() {
             className="vdj-btn"
             data-active={provider === p.id}
             onClick={() => setProvider(p.id)}
-            title={p.note}
+            title={tr(p.noteKey)}
             style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             <span style={{ width: 8, height: 8, borderRadius: 8, background: p.color }} />
@@ -172,23 +175,23 @@ export function OnlinePanel() {
             onKeyDown={(e) => { if (e.key === "Enter") void search(); }}
             placeholder={
               provider === "soundcloud"
-                ? "Buscar en SoundCloud (artista, título…)"
-                : "Solo SoundCloud permite mezcla DJ"
+                ? tr("onlineSearchSCPlaceholder")
+                : tr("onlineSearchOtherPlaceholder")
             }
             disabled={provider !== "soundcloud"}
             style={{ flex: 1, background: "transparent", border: 0, color: "var(--text-1)", outline: "none", fontSize: 12 }}
           />
         </div>
         <button className="vdj-btn" onClick={() => void search()} disabled={loading || provider !== "soundcloud"}>
-          {loading ? <Loader2 size={12} className="vdj-spin" /> : <Search size={12} />} Buscar
+          {loading ? <Loader2 size={12} className="vdj-spin" /> : <Search size={12} />} {tr("onlineSearchBtn")}
         </button>
       </div>
 
       {provider !== "soundcloud" && (
         <div className="vdj-panel-inset" style={{ padding: 14, fontSize: 11, color: "var(--text-2)", lineHeight: 1.5 }}>
-          <strong>{provider === "spotify" ? "Spotify" : "Beatport"}</strong> no permite mezcla DJ desde su API pública por restricciones de DRM y licencias.
+          {tr("onlineNotMixable", { name: provider === "spotify" ? "Spotify" : "Beatport" })}
           <br />
-          Para mezclar online, usa <strong>SoundCloud</strong>. Para usar contenido de Spotify/Beatport, descarga los archivos y arrástralos a tu librería local.
+          {tr("onlineUseSoundCloud")}
         </div>
       )}
 
@@ -197,8 +200,8 @@ export function OnlinePanel() {
           {results.length === 0 && !loading && (
             <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)", fontSize: 12 }}>
               <Cloud size={20} style={{ opacity: 0.4, marginBottom: 6 }} />
-              <div>Busca canciones en SoundCloud y cárgalas directo a tus decks.</div>
-              <div style={{ fontSize: 10, marginTop: 6, opacity: 0.7 }}>Las pistas se descargan a tu librería local para mezclar con todos los FX.</div>
+              <div>{tr("onlineEmptyHint")}</div>
+              <div style={{ fontSize: 10, marginTop: 6, opacity: 0.7 }}>{tr("onlineEmptySubHint")}</div>
             </div>
           )}
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -229,10 +232,10 @@ export function OnlinePanel() {
                     <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => void loadDeck(t, "B")} disabled={busyId === t.id}>
                       {busyId === t.id ? <Loader2 size={9} className="vdj-spin" /> : "→B"}
                     </button>{" "}
-                    <button className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10 }} title="Guardar en librería" onClick={() => void saveOnly(t)} disabled={busyId === t.id}>
+                    <button className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10 }} title={tr("onlineSaveTip")} onClick={() => void saveOnly(t)} disabled={busyId === t.id}>
                       <Download size={10} />
                     </button>{" "}
-                    <a className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10, display: "inline-flex" }} href={t.permalink} target="_blank" rel="noreferrer" title="Abrir en SoundCloud">
+                    <a className="vdj-btn" style={{ padding: "2px 6px", fontSize: 10, display: "inline-flex" }} href={t.permalink} target="_blank" rel="noreferrer" title={tr("onlineOpenInSC")}>
                       <ExternalLink size={10} />
                     </a>
                   </td>

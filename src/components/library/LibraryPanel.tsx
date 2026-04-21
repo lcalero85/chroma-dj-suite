@@ -8,6 +8,7 @@ import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, Chevro
 import { toast } from "sonner";
 import { radioAdd, addTrackToSegment } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
+import { useT } from "@/lib/i18n";
 
 function FolderNode({
   folder,
@@ -34,6 +35,7 @@ function FolderNode({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(folder.name);
   const [hover, setHover] = useState(false);
+  const tr = useT();
 
   return (
     <div>
@@ -81,13 +83,13 @@ function FolderNode({
         ) : (
           <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{folder.name}</span>
         )}
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Renombrar" onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title={tr("libRename")} onClick={(e) => { e.stopPropagation(); setEditing(true); }}>
           <Pencil size={9} />
         </button>
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Subcarpeta" onClick={async (e) => { e.stopPropagation(); const n = window.prompt("Nombre de la subcarpeta"); if (n) { await createFolder(n, folder.id); setExpanded({ ...expanded, [folder.id]: true }); } }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title={tr("libSubfolder")} onClick={async (e) => { e.stopPropagation(); const n = window.prompt(tr("libSubfolderPrompt")); if (n) { await createFolder(n, folder.id); setExpanded({ ...expanded, [folder.id]: true }); } }}>
           <FolderPlus size={9} />
         </button>
-        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title="Eliminar" onClick={async (e) => { e.stopPropagation(); if (confirm(`Eliminar carpeta "${folder.name}" y sus subcarpetas? Las pistas se moverán a la raíz.`)) { await removeFolder(folder.id); if (selectedId === folder.id) onSelect(null); } }}>
+        <button className="vdj-btn" style={{ padding: "1px 4px", fontSize: 9 }} title={tr("libDelete")} onClick={async (e) => { e.stopPropagation(); if (confirm(tr("libDeleteFolderConfirm", { name: folder.name }))) { await removeFolder(folder.id); if (selectedId === folder.id) onSelect(null); } }}>
           <Trash2 size={9} />
         </button>
       </div>
@@ -109,6 +111,7 @@ function FolderNode({
 }
 
 export function LibraryPanel() {
+  const tr = useT();
   const tracks = useApp((s) => s.tracks);
   const search = useApp((s) => s.search);
   const setTracks = useApp((s) => s.setTracks);
@@ -178,7 +181,7 @@ export function LibraryPanel() {
       await putTrack(rec);
     }
     setTracks(await listTracks());
-    toast(`${files.length} pista(s) añadidas`);
+    toast(tr("libTracksAdded", { n: files.length }));
   };
 
   // ===== Import folder (with subfolders) using webkitdirectory =====
@@ -213,10 +216,10 @@ export function LibraryPanel() {
     const arr = Array.from(files);
     const accepted = arr.filter((f) => /^(audio|video)\//.test(f.type) || /\.(mp3|wav|flac|m4a|aac|ogg|opus|webm|mp4|mov|mkv)$/i.test(f.name));
     if (accepted.length === 0) {
-      toast("No se encontraron archivos de audio/video en la carpeta");
+      toast(tr("libNoAudioFound"));
       return;
     }
-    toast(`Importando ${accepted.length} archivo(s) de la carpeta…`);
+    toast(tr("libImportingFolder", { n: accepted.length }));
 
     let imported = 0;
     for (const f of accepted) {
@@ -269,7 +272,7 @@ export function LibraryPanel() {
 
     setTracks(await listTracks());
     await refreshFolders();
-    toast.success(`${imported} pista(s) añadidas desde la carpeta`);
+    toast.success(tr("libImportedFromFolder", { n: imported }));
   };
 
   // Aggregate tags across the library for quick chips.
@@ -298,14 +301,14 @@ export function LibraryPanel() {
   const onDropToFolder = async (trackId: string, folderId: string | null) => {
     await moveTrackToFolder(trackId, folderId);
     setTracks(await listTracks());
-    toast("Pista movida");
+    toast(tr("libTrackMoved"));
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button className="vdj-btn" onClick={() => fileRef.current?.click()}>
-          <Upload size={12} /> Importar
+          <Upload size={12} /> {tr("libImport")}
         </button>
         <input
           ref={fileRef}
@@ -318,9 +321,9 @@ export function LibraryPanel() {
         <button
           className="vdj-btn"
           onClick={() => folderRef.current?.click()}
-          title="Importar todas las pistas de una carpeta (incluye subcarpetas)"
+          title={tr("libImportFolderTip")}
         >
-          <FolderSearch size={12} /> Buscar carpeta
+          <FolderSearch size={12} /> {tr("libImportFolder")}
         </button>
         <input
           ref={folderRef}
@@ -334,12 +337,12 @@ export function LibraryPanel() {
         <button
           className="vdj-btn"
           onClick={async () => {
-            const n = window.prompt("Nombre del género o carpeta");
+            const n = window.prompt(tr("libNewFolderPrompt"));
             if (n) await createFolder(n, null);
           }}
-          title="Nueva carpeta raíz"
+          title={tr("libNewRootFolderTip")}
         >
-          <FolderPlus size={12} /> Carpeta
+          <FolderPlus size={12} /> {tr("libNewFolder")}
         </button>
         <div
           className="vdj-panel-inset"
@@ -349,7 +352,7 @@ export function LibraryPanel() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar pistas…"
+            placeholder={tr("libSearchPlaceholder")}
             style={{
               flex: 1,
               background: "transparent",
@@ -360,12 +363,12 @@ export function LibraryPanel() {
             }}
           />
         </div>
-        <span className="vdj-chip">{filtered.length} pistas</span>
+        <span className="vdj-chip">{filtered.length} {tr("libTracksCount")}</span>
         <button
           className="vdj-btn"
           data-active={showFilters}
           onClick={() => setShowFilters((v) => !v)}
-          title="Filtros avanzados (BPM, key, tags)"
+          title={tr("libFiltersTip")}
         >
           <SlidersHorizontal size={12} />
         </button>
@@ -394,13 +397,13 @@ export function LibraryPanel() {
             />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="vdj-label">Compatible con</span>
+            <span className="vdj-label">{tr("libCompatibleWith")}</span>
             <select
               value={compatibleWith}
               onChange={(e) => setCompatibleWith(e.target.value as CamelotKey | "")}
               style={{ background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
             >
-              <option value="">— cualquier key —</option>
+              <option value="">{tr("libAnyKey")}</option>
               {["1A","1B","2A","2B","3A","3B","4A","4B","5A","5B","6A","6B","7A","7B","8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"].map((k) => (
                 <option key={k} value={k}>{k}</option>
               ))}
@@ -409,7 +412,7 @@ export function LibraryPanel() {
           {allTags.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
               <Tag size={11} style={{ color: "var(--text-3)" }} />
-              <button className="vdj-btn" data-active={tagFilter === ""} style={{ padding: "1px 6px", fontSize: 10 }} onClick={() => setTagFilter("")}>Todos</button>
+              <button className="vdj-btn" data-active={tagFilter === ""} style={{ padding: "1px 6px", fontSize: 10 }} onClick={() => setTagFilter("")}>{tr("libAllTags")}</button>
               {allTags.map((tag) => (
                 <button
                   key={tag}
@@ -453,12 +456,12 @@ export function LibraryPanel() {
               marginBottom: 4,
             }}
           >
-            <Folder size={11} /> Todas las pistas
+            <Folder size={11} /> {tr("libAllTracks")}
             <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-3)" }}>{tracks.length}</span>
           </div>
           {rootFolders.length === 0 && (
             <div style={{ fontSize: 10, color: "var(--text-3)", padding: 6, textAlign: "center" }}>
-              Crea carpetas para organizar por géneros y subgéneros.
+              {tr("libCreateFoldersHint")}
             </div>
           )}
           {rootFolders.map((f) => (
@@ -482,11 +485,11 @@ export function LibraryPanel() {
           <thead>
             <tr style={{ color: "var(--text-3)", textAlign: "left" }}>
               <th style={{ padding: 6, fontWeight: 600, width: 18 }}></th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Título</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Artista</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>BPM</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Key</th>
-              <th style={{ padding: 6, fontWeight: 600 }}>Tiempo</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColTitle")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColArtist")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColBpm")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColKey")}</th>
+              <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColTime")}</th>
               <th style={{ padding: 6, fontWeight: 600 }}></th>
             </tr>
           </thead>
@@ -494,7 +497,7 @@ export function LibraryPanel() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={7} style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>
-                  Tu librería está vacía. Importa archivos de audio para comenzar.
+                  {tr("libEmpty")}
                 </td>
               </tr>
             )}
@@ -529,7 +532,7 @@ export function LibraryPanel() {
                   <button
                     className="vdj-btn"
                     style={{ padding: "2px 6px", fontSize: 10 }}
-                    title="Añadir a cola de Radio (Deck A)"
+                    title={tr("libAddToRadioTip")}
                     onClick={() => radioAdd(t.id)}
                   >
                     <Radio size={10} />
@@ -537,7 +540,7 @@ export function LibraryPanel() {
                   {segments.length > 0 && (
                     <select
                       className="vdj-btn"
-                      title="Añadir a un segmento"
+                      title={tr("libAddToSegmentTip")}
                       style={{ padding: "2px 4px", fontSize: 10, maxWidth: 100 }}
                       value=""
                       onChange={(e) => {
@@ -545,11 +548,11 @@ export function LibraryPanel() {
                         if (!sid) return;
                         addTrackToSegment(sid, t.id);
                         const seg = segments.find((s) => s.id === sid);
-                        toast(`Añadida a "${seg?.name ?? "segmento"}"`);
+                        toast(tr("libAddedToSegment", { name: seg?.name ?? "segmento" }));
                         e.target.value = "";
                       }}
                     >
-                      <option value="">+ Segmento</option>
+                      <option value="">{tr("libAddToSegmentPlaceholder")}</option>
                       {segments.map((s) => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
