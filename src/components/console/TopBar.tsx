@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getNextScheduledSegment } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
+import { resolveShortcuts } from "@/lib/shortcutDefs";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);
@@ -16,6 +17,7 @@ export function TopBar() {
   const radio = useApp((s) => s.radio);
   const [, tick] = useState(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const shortcutsCfg = useApp((s) => s.settings.shortcuts);
   const t = useT();
 
   useEffect(() => {
@@ -28,16 +30,25 @@ export function TopBar() {
     return () => clearInterval(i);
   }, []);
 
-  // Global "?" shortcut to open the overlay.
+  // Configurable "show shortcuts" hotkey (default Shift+/ = "?").
   useEffect(() => {
+    const map = resolveShortcuts(shortcutsCfg);
+    const code = map.showShortcuts;
+    if (!code) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select") return;
-      if (e.key === "?") { e.preventDefault(); setShowShortcuts((v) => !v); }
+      if ((window as unknown as { __vdjShortcutCapturing?: boolean }).__vdjShortcutCapturing) return;
+      if (e.code !== code) return;
+      // If the def requires Shift, enforce it.
+      const needsShift = code === "Slash"; // default "?" requires shift
+      if (needsShift && !e.shiftKey) return;
+      e.preventDefault();
+      setShowShortcuts((v) => !v);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [shortcutsCfg]);
 
   const next = radio.enabled ? getNextScheduledSegment() : null;
   void segments;
