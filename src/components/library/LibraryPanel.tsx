@@ -253,7 +253,70 @@ export function LibraryPanel() {
           />
         </div>
         <span className="vdj-chip">{filtered.length} pistas</span>
+        <button
+          className="vdj-btn"
+          data-active={showFilters}
+          onClick={() => setShowFilters((v) => !v)}
+          title="Filtros avanzados (BPM, key, tags)"
+        >
+          <SlidersHorizontal size={12} />
+        </button>
       </div>
+
+      {showFilters && (
+        <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", fontSize: 11 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="vdj-label">BPM</span>
+            <input
+              type="number"
+              value={bpmMin}
+              min={0}
+              max={220}
+              onChange={(e) => setBpmMin(parseInt(e.target.value || "0", 10))}
+              style={{ width: 56, background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
+            />
+            <span style={{ color: "var(--text-3)" }}>—</span>
+            <input
+              type="number"
+              value={bpmMax}
+              min={0}
+              max={220}
+              onChange={(e) => setBpmMax(parseInt(e.target.value || "220", 10))}
+              style={{ width: 56, background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="vdj-label">Compatible con</span>
+            <select
+              value={compatibleWith}
+              onChange={(e) => setCompatibleWith(e.target.value as CamelotKey | "")}
+              style={{ background: "var(--surface-3)", border: "1px solid var(--line)", color: "var(--text-1)", padding: "2px 4px", fontSize: 11 }}
+            >
+              <option value="">— cualquier key —</option>
+              {["1A","1B","2A","2B","3A","3B","4A","4B","5A","5B","6A","6B","7A","7B","8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"].map((k) => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+          </div>
+          {allTags.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+              <Tag size={11} style={{ color: "var(--text-3)" }} />
+              <button className="vdj-btn" data-active={tagFilter === ""} style={{ padding: "1px 6px", fontSize: 10 }} onClick={() => setTagFilter("")}>Todos</button>
+              {allTags.map((tag) => (
+                <button
+                  key={tag}
+                  className="vdj-btn"
+                  data-active={tagFilter === tag}
+                  style={{ padding: "1px 6px", fontSize: 10 }}
+                  onClick={() => setTagFilter(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, flex: 1, minHeight: 0 }}>
         {/* Folder tree sidebar */}
