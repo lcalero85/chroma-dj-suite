@@ -28,6 +28,13 @@ function Index() {
     document.documentElement.setAttribute("data-skin", skin);
   }, [skin]);
 
+  // Keep activeDecks in sync with the user's enabledDecks preference, so
+  // position polling, presets, etc. cover Deck C/D when enabled.
+  useEffect(() => {
+    const next = enabledDecks === 4 ? ["A", "B", "C", "D"] : ["A", "B"];
+    useApp.setState({ activeDecks: next as ("A" | "B" | "C" | "D")[] });
+  }, [enabledDecks]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
