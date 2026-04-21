@@ -4,6 +4,10 @@ import type { TrackRecord, PlaylistRecord, RecordingRecord, FolderRecord } from 
 import type { XfaderCurve } from "@/audio/crossfader";
 import type { CamelotKey } from "@/lib/camelot";
 import type { FxKind } from "@/audio/fx";
+import { defaultMidiSettings, type MidiSettings } from "@/midi/engine";
+
+export type MidiState = MidiSettings & { _devicesVersion?: number };
+void defaultMidiSettings;
 
 export type DeckId = "A" | "B" | "C" | "D";
 export type SkinId =
@@ -179,6 +183,7 @@ interface AppState {
   videoMix: VideoMixState;
   selectedFolderId: string | null;
   folders: FolderRecord[];
+  midi: MidiState;
 
   // setters
   updateDeck: (id: DeckId, patch: Partial<DeckState>) => void;
@@ -264,6 +269,7 @@ export const useApp = create<AppState>()(
       videoMix: { videoXfader: 0, linkAudioXfader: true, showStage: true },
       selectedFolderId: null,
       folders: [],
+      midi: defaultMidiSettings,
 
       updateDeck: (id, patch) =>
         set((s) => ({ decks: { ...s.decks, [id]: { ...s.decks[id], ...patch } } })),
@@ -302,6 +308,7 @@ export const useApp = create<AppState>()(
         mixer: s.mixer,
         radio: s.radio,
         videoMix: s.videoMix,
+        midi: s.midi,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppState>;
@@ -312,6 +319,7 @@ export const useApp = create<AppState>()(
           settings: { ...current.settings, ...(p.settings ?? {}) },
           radio: { ...current.radio, ...(p.radio ?? {}) },
           videoMix: { ...current.videoMix, ...(p.videoMix ?? {}) },
+          midi: { ...current.midi, ...(p.midi ?? {}) },
         };
       },
     },
