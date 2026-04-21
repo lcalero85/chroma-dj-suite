@@ -273,9 +273,10 @@ export function setVocalCut(id: DeckId, amount: number) {
   const d = getDeck(id);
   const { ctx } = getEngine();
   const a = Math.max(0, Math.min(1, amount));
-  // Equal-power-ish crossfade with bass compensation: keep dry partially even at full kill
-  const wet = a;
-  const dry = 1 - a * 0.85;
+  // Smooth equal-power crossfade between original (dry) and side-channel (wet = instrumental).
+  // At a=0 → pure original. At a=1 → pure (L-R) instrumental signal.
+  const wet = Math.sin((a * Math.PI) / 2);
+  const dry = Math.cos((a * Math.PI) / 2);
   const tau = 0.15;
   d.vocalWet.gain.setTargetAtTime(wet, ctx.currentTime, tau);
   d.vocalDry.gain.setTargetAtTime(dry, ctx.currentTime, tau);
