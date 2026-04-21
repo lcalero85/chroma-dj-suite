@@ -422,6 +422,35 @@ export const useApp = create<AppState>()(
         midi: s.midi,
         segments: s.segments,
         mixPresets: s.mixPresets,
+        // Persist deck mixer/fx settings (NOT transient playback state).
+        decks: Object.fromEntries(
+          (Object.keys(s.decks) as DeckId[]).map((id) => {
+            const d = s.decks[id];
+            return [
+              id,
+              {
+                gain: d.gain,
+                hi: d.hi,
+                mid: d.mid,
+                lo: d.lo,
+                filter: d.filter,
+                fader: d.fader,
+                pitch: d.pitch,
+                pitchRange: d.pitchRange,
+                keyLock: d.keyLock,
+                vocalCut: d.vocalCut,
+                reverse: d.reverse,
+                slip: d.slip,
+                videoFx: d.videoFx,
+              },
+            ];
+          }),
+        ) as Record<DeckId, Partial<DeckState>>,
+        fx: s.fx,
+        activeDecks: s.activeDecks,
+        activeBottomTab: s.activeBottomTab,
+        selectedFolderId: s.selectedFolderId,
+        selectedPlaylistId: s.selectedPlaylistId,
         stream: {
           ...s.stream,
           // do not persist transient runtime fields
@@ -438,9 +467,27 @@ export const useApp = create<AppState>()(
         const builtinIds = new Set(DEFAULT_MIX_PRESETS.map((x) => x.id));
         const userPresets = (p.mixPresets ?? []).filter((x) => !builtinIds.has(x.id));
         const mergedPresets = [...DEFAULT_MIX_PRESETS, ...userPresets];
+        // Re-merge persisted deck mixer/fx settings on top of fresh defaults
+        // so transient playback fields (position, isPlaying, peaks, trackId…)
+        // always start clean.
+        const mergedDecks = { ...current.decks };
+        if (p.decks) {
+          (Object.keys(mergedDecks) as DeckId[]).forEach((id) => {
+            const persistedDeck = (p.decks as Record<DeckId, Partial<DeckState>>)[id];
+            if (persistedDeck) {
+              mergedDecks[id] = { ...mergedDecks[id], ...persistedDeck };
+            }
+          });
+        }
         return {
           ...current,
           ...p,
+          decks: mergedDecks,
+          fx: p.fx ?? current.fx,
+          activeDecks: p.activeDecks ?? current.activeDecks,
+          activeBottomTab: p.activeBottomTab ?? current.activeBottomTab,
+          selectedFolderId: p.selectedFolderId ?? current.selectedFolderId,
+          selectedPlaylistId: p.selectedPlaylistId ?? current.selectedPlaylistId,
           mixer: { ...current.mixer, ...(p.mixer ?? {}) },
           settings: { ...current.settings, ...(p.settings ?? {}) },
           radio: { ...current.radio, ...(p.radio ?? {}) },
