@@ -6,6 +6,7 @@ import type { CamelotKey } from "@/lib/camelot";
 import type { FxKind } from "@/audio/fx";
 import { defaultMidiSettings, type MidiSettings } from "@/midi/engine";
 import { defaultShortcutMap } from "@/lib/shortcutDefs";
+import { DEFAULT_MIX_PRESETS, type MixPreset } from "@/lib/mixPresets";
 
 export type MidiState = MidiSettings & { _devicesVersion?: number };
 void defaultMidiSettings;
@@ -27,7 +28,12 @@ export type SkinId =
   | "arctic"
   | "blood"
   | "gold"
-  | "ocean";
+  | "ocean"
+  | "lava"
+  | "forest"
+  | "candy"
+  | "matrix"
+  | "royal";
 
 export interface DeckState {
   trackId: string | null;
@@ -231,7 +237,7 @@ interface AppState {
   playlists: PlaylistRecord[];
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
-  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online";
+  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets";
   drawer: null | "settings" | "skins" | "help";
   search: string;
   selectedPlaylistId: string | null;
@@ -242,6 +248,7 @@ interface AppState {
   midi: MidiState;
   segments: RadioSegment[];
   stream: StreamConfig;
+  mixPresets: MixPreset[];
 
   // setters
   updateDeck: (id: DeckId, patch: Partial<DeckState>) => void;
@@ -265,6 +272,9 @@ interface AppState {
   upsertSegment: (s: RadioSegment) => void;
   removeSegment: (id: string) => void;
   updateStream: (patch: Partial<StreamConfig>) => void;
+  setMixPresets: (p: MixPreset[]) => void;
+  upsertMixPreset: (p: MixPreset) => void;
+  removeMixPreset: (id: string) => void;
 }
 
 const defaultSettings: SettingsState = {
@@ -342,6 +352,7 @@ export const useApp = create<AppState>()(
         bytesSent: 0,
         startedAt: null,
       },
+      mixPresets: DEFAULT_MIX_PRESETS,
 
       updateDeck: (id, patch) =>
         set((s) => ({ decks: { ...s.decks, [id]: { ...s.decks[id], ...patch } } })),
@@ -382,6 +393,17 @@ export const useApp = create<AppState>()(
         }),
       removeSegment: (id) => set((s) => ({ segments: s.segments.filter((x) => x.id !== id) })),
       updateStream: (patch) => set((s) => ({ stream: { ...s.stream, ...patch } })),
+      setMixPresets: (mixPresets) => set({ mixPresets }),
+      upsertMixPreset: (p) =>
+        set((s) => {
+          const idx = s.mixPresets.findIndex((x) => x.id === p.id);
+          if (idx === -1) return { mixPresets: [...s.mixPresets, p] };
+          const next = [...s.mixPresets];
+          next[idx] = p;
+          return { mixPresets: next };
+        }),
+      removeMixPreset: (id) =>
+        set((s) => ({ mixPresets: s.mixPresets.filter((x) => x.id !== id) })),
     }),
     {
       name: "vdj-pro-state",
@@ -393,6 +415,7 @@ export const useApp = create<AppState>()(
         videoMix: s.videoMix,
         midi: s.midi,
         segments: s.segments,
+        mixPresets: s.mixPresets,
         stream: {
           ...s.stream,
           // do not persist transient runtime fields
@@ -404,6 +427,11 @@ export const useApp = create<AppState>()(
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppState>;
+        // Always re-merge built-in presets (so updates ship to existing users)
+        // while preserving any user-created presets.
+        const builtinIds = new Set(DEFAULT_MIX_PRESETS.map((x) => x.id));
+        const userPresets = (p.mixPresets ?? []).filter((x) => !builtinIds.has(x.id));
+        const mergedPresets = [...DEFAULT_MIX_PRESETS, ...userPresets];
         return {
           ...current,
           ...p,
@@ -413,6 +441,7 @@ export const useApp = create<AppState>()(
           videoMix: { ...current.videoMix, ...(p.videoMix ?? {}) },
           midi: { ...current.midi, ...(p.midi ?? {}) },
           segments: p.segments ?? current.segments,
+          mixPresets: mergedPresets,
           stream: { ...current.stream, ...(p.stream ?? {}) },
         };
       },

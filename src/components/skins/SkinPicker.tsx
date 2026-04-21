@@ -17,6 +17,11 @@ const SKINS: { id: SkinId; name: string; desc: string }[] = [
   { id: "blood", name: "Blood Moon", desc: "Rojo intenso sobre negro" },
   { id: "gold", name: "Gold Master", desc: "Negro + dorado lujo" },
   { id: "ocean", name: "Deep Ocean", desc: "Turquesa abismal" },
+  { id: "lava", name: "Lava Flow", desc: "Naranja incandescente" },
+  { id: "forest", name: "Forest Deep", desc: "Verde bosque oscuro" },
+  { id: "candy", name: "Candy Pop", desc: "Rosa y menta dulce" },
+  { id: "matrix", name: "Matrix Rain", desc: "Verde digital sobre negro" },
+  { id: "royal", name: "Royal Purple", desc: "Púrpura real elegante" },
 ];
 
 export function SkinPicker() {
