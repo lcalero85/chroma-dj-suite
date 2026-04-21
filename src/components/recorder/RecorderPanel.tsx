@@ -58,6 +58,7 @@ function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecord
 }
 
 export function RecorderPanel() {
+  const t = useT();
   const recordings = useApp((s) => s.recordings);
   const setRecordings = useApp((s) => s.setRecordings);
   const hasVideo = useApp((s) => !!(s.decks.A.hasVideo || s.decks.B.hasVideo));
@@ -107,22 +108,22 @@ export function RecorderPanel() {
                     createdAt: Date.now(),
                   });
                   setRecordings(await listRecordings());
-                  toast.success("Grabación guardada", { description: `Archivo ${fileExt(r.mime).toUpperCase()} listo para reproducir.` });
+                    toast.success(t("recSavedTitle"), { description: t("recSavedDesc", { ext: fileExt(r.mime).toUpperCase() }) });
                 }
               } else {
                 await startRecording();
-                toast("Grabando…", { description: "Se capturará el master completo y el voice-over." });
+                  toast(t("recRecordingNow"), { description: t("recRecordingDesc") });
               }
             } catch (error) {
               console.error(error);
-              toast.error("No se pudo iniciar la grabación");
+                toast.error(t("recCouldNotStart"));
             }
             force((x) => x + 1);
           }}
           style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 122, justifyContent: "center", minHeight: 40 }}
         >
           {rec ? <Square size={12} /> : <Circle size={12} fill="currentColor" />}
-          {rec ? "Detener" : "Grabar"}
+            {rec ? t("recBtnStop") : t("recBtnStart")}
         </button>
         <span className="vdj-readout" style={{ color: rec ? "var(--bad)" : "var(--text-3)", display: "flex", alignItems: "center" }}>
           {formatTime(recordingElapsed())}
