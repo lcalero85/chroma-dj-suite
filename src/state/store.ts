@@ -5,6 +5,7 @@ import type { XfaderCurve } from "@/audio/crossfader";
 import type { CamelotKey } from "@/lib/camelot";
 import type { FxKind } from "@/audio/fx";
 import { defaultMidiSettings, type MidiSettings } from "@/midi/engine";
+import { defaultShortcutMap } from "@/lib/shortcutDefs";
 
 export type MidiState = MidiSettings & { _devicesVersion?: number };
 void defaultMidiSettings;
@@ -272,15 +273,7 @@ const defaultSettings: SettingsState = {
   vuResponse: 0.6,
   defaultPitchRange: 8,
   defaultKeyLock: true,
-  shortcuts: {
-    playA: "Space",
-    playB: "ShiftRight",
-    cueA: "KeyQ",
-    cueB: "KeyW",
-    syncA: "KeyA",
-    syncB: "KeyS",
-    record: "KeyR",
-  },
+  shortcuts: defaultShortcutMap(),
   appName: "VDJ PRO",
   lang: "en",
   appMode: "advanced",
