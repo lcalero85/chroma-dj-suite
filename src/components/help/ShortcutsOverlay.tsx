@@ -1,55 +1,20 @@
 import { X, Keyboard } from "lucide-react";
 import { useEffect } from "react";
-
-const SECTIONS: { title: string; rows: { keys: string; desc: string }[] }[] = [
-  {
-    title: "Decks & playback",
-    rows: [
-      { keys: "Space", desc: "Play / Pause Deck A" },
-      { keys: "Shift Right / J", desc: "Play / Pause Deck A (J) o Deck B (Shift)" },
-      { keys: "L", desc: "Play / Pause Deck B" },
-      { keys: "Q / W", desc: "Cue Deck A / Deck B" },
-      { keys: "A / S", desc: "Sync Deck A / Deck B" },
-      { keys: "O / U", desc: "Brake / Stop Deck A" },
-      { keys: "B / V (+Shift)", desc: "Brake / Reverse — A o B" },
-    ],
-  },
-  {
-    title: "Mezcla",
-    rows: [
-      { keys: "M", desc: "Auto-mix (8s) entre decks" },
-      { keys: "T", desc: "Tap tempo" },
-      { keys: "R", desc: "Iniciar/parar grabación" },
-      { keys: "N", desc: "Voice-over ON/OFF" },
-      { keys: "Shift+L", desc: "Radio: siguiente pista" },
-      { keys: "`", desc: "Alternar deck destino del numpad (A↔B)" },
-    ],
-  },
-  {
-    title: "Hot cues & loops",
-    rows: [
-      { keys: "1..8", desc: "Hot cues Deck A (Shift = Deck B)" },
-      { keys: "[ / ]", desc: "Beat jump Deck A ±4" },
-      { keys: "; / '", desc: "Beat jump Deck B ±4" },
-    ],
-  },
-  {
-    title: "Numpad (deck activo)",
-    rows: [
-      { keys: "Num 1..8", desc: "Hot cues (Shift = otro deck)" },
-      { keys: "Num 9 / 0", desc: "Loop 4 beats / toggle loop" },
-      { keys: "Num + / −", desc: "Sampler pad 1 / 2" },
-      { keys: "Num * / /", desc: "FX 1 / FX 2 toggle" },
-      { keys: "Num Enter", desc: "Rec start / stop" },
-    ],
-  },
-  {
-    title: "Interfaz",
-    rows: [{ keys: "?", desc: "Mostrar / ocultar este panel" }],
-  },
-];
+import { useApp } from "@/state/store";
+import { SHORTCUT_DEFS, formatKeyCode, resolveShortcuts } from "@/lib/shortcutDefs";
 
 export function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
+  const settings = useApp((s) => s.settings);
+  const map = resolveShortcuts(settings.shortcuts);
+  const groups = Array.from(new Set(SHORTCUT_DEFS.map((d) => d.group)));
+  const SECTIONS = groups.map((g) => ({
+    title: g,
+    rows: SHORTCUT_DEFS.filter((d) => d.group === g).map((d) => ({
+      keys: (d.shift ? "Shift+" : "") + (map[d.id] ? formatKeyCode(map[d.id]) : "—"),
+      desc: d.label,
+    })),
+  }));
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();

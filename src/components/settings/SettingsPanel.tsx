@@ -2,6 +2,7 @@ import { useApp } from "@/state/store";
 import { useT } from "@/lib/i18n";
 import { MidiPanel } from "./MidiPanel";
 import { StreamSettings } from "./StreamSettings";
+import { ShortcutsSettings } from "./ShortcutsSettings";
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
@@ -62,16 +63,8 @@ export function SettingsPanel() {
           <option value={50}>±50%</option>
         </select>
       </Row>
-      <div className="vdj-label" style={{ marginTop: 12 }}>{t("shortcuts")}</div>
-      <pre className="vdj-panel-inset" style={{ padding: 10, fontSize: 11, lineHeight: 1.6, color: "var(--text-2)" }}>
-{`Space        Play / Pause Deck A
-Shift Right  Play / Pause Deck B
-Q / W        Cue Deck A / B
-A / S        Sync Deck A / B
-R            Iniciar / detener grabación
-1..8         Hot cues Deck A
-Shift 1..8   Hot cues Deck B`}
-      </pre>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
+      <ShortcutsSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <MidiPanel />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
