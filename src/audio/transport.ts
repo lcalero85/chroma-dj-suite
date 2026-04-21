@@ -115,8 +115,8 @@ export function autoMixTo(target: -1 | 1, seconds = 8): boolean {
   const a = getDeck("A");
   const b = getDeck("B");
   if (!a.buffer || !b.buffer || !decks.A.trackId || !decks.B.trackId) {
-    toast.error("Auto-mix requiere ambos decks cargados", {
-      description: "Carga una pista en Deck A y otra en Deck B antes de usar Auto-Mix.",
+    toast.error(t("autoMixNeedsBoth"), {
+      description: t("autoMixNeedsBothDesc"),
     });
     return false;
   }

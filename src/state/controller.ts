@@ -194,7 +194,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     loopActive: false,
     hasVideo: isVideo,
   });
-  toast(`Cargada en Deck ${deckId}`, { description: t.title });
+  toast(`${tI18n("loadedToast")} ${deckId}`, { description: t.title });
 
   // Track stats + play count
   sessionStats.tracksPlayed += 1;

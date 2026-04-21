@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { t as tGlobal } from "@/lib/i18n";
 
 interface WaveformProps {
   peaks: number[];
@@ -69,7 +70,7 @@ export function Waveform({
         ctx.fillRect(0, h / 2 - 1, w, 2);
         ctx.fillStyle = text3;
         ctx.font = "10px system-ui";
-        ctx.fillText(variant === "main" ? "Carga una pista" : "—", 8, h / 2 - 6);
+        ctx.fillText(variant === "main" ? tGlobal("loadTrackHint") : "—", 8, h / 2 - 6);
         return;
       }
 
