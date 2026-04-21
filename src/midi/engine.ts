@@ -312,7 +312,7 @@ function onMessage(e: { data: Uint8Array }) {
 // ---------- LED feedback ----------
 const lastLedSent = new Map<string, number>();
 
-function sendLed(o: MIDIOutput, ledKey: string, status: number, data1: number, value: number) {
+function sendLed(o: MidiOutputLike, ledKey: string, status: number, data1: number, value: number) {
   const k = `${ledKey}`;
   const last = lastLedSent.get(k);
   if (last === value) return;
