@@ -317,6 +317,22 @@ export function LibraryPanel() {
         />
         <button
           className="vdj-btn"
+          onClick={() => folderRef.current?.click()}
+          title="Importar todas las pistas de una carpeta (incluye subcarpetas)"
+        >
+          <FolderSearch size={12} /> Buscar carpeta
+        </button>
+        <input
+          ref={folderRef}
+          type="file"
+          hidden
+          multiple
+          // Non-standard attributes to enable directory picker
+          {...({ webkitdirectory: "", directory: "", mozdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+          onChange={(e) => handleFolderImport(e.target.files)}
+        />
+        <button
+          className="vdj-btn"
           onClick={async () => {
             const n = window.prompt("Nombre del género o carpeta");
             if (n) await createFolder(n, null);
