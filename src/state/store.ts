@@ -122,6 +122,7 @@ export interface SettingsState {
   defaultPitchRange: 8 | 16 | 50;
   defaultKeyLock: boolean;
   shortcuts: Record<string, string>;
+  appName: string;
 }
 
 const defaultDeck = (): DeckState => ({
@@ -212,6 +213,7 @@ const defaultSettings: SettingsState = {
     syncB: "KeyS",
     record: "KeyR",
   },
+  appName: "VDJ PRO",
 };
 
 export const useApp = create<AppState>()(
