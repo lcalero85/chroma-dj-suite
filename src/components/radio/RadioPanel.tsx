@@ -383,6 +383,7 @@ function TrackPicker({
   excludeIds: string[];
   tracks: ReturnType<typeof useApp.getState>["tracks"];
 }) {
+  const tr = useT();
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
     const ex = new Set(excludeIds);
@@ -400,7 +401,7 @@ function TrackPicker({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar pista para añadir al segmento…"
+          placeholder={tr("radioPickerPlaceholder")}
           style={{ flex: 1, background: "transparent", border: 0, color: "var(--text-1)", outline: "none", fontSize: 12 }}
         />
         <span className="vdj-chip">{filtered.length}</span>
@@ -408,7 +409,7 @@ function TrackPicker({
       {q && (
         <div style={{ maxHeight: 180, overflow: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
           {filtered.length === 0 && (
-            <div style={{ padding: 8, fontSize: 10, color: "var(--text-3)", textAlign: "center" }}>Sin resultados</div>
+            <div style={{ padding: 8, fontSize: 10, color: "var(--text-3)", textAlign: "center" }}>{tr("radioPickerNoResults")}</div>
           )}
           {filtered.map((t) => (
             <button
@@ -433,6 +434,7 @@ function TrackPicker({
 }
 
 function LiveView() {
+  const tr = useT();
   const stream = useApp((s) => s.stream);
   const setDrawer = useApp((s) => s.setDrawer);
   const kb = (n: number) => (n / 1024).toFixed(1) + " KB";
@@ -453,7 +455,7 @@ function LiveView() {
               onClick={() => void stopLiveStream()}
               style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 160, minHeight: 44, justifyContent: "center", fontWeight: 800 }}
             >
-              <WifiOff size={16} /> DETENER TRANSMISIÓN
+              <WifiOff size={16} /> {tr("streamStopLiveBtn")}
             </button>
           ) : (
             <button
@@ -463,26 +465,26 @@ function LiveView() {
               onClick={() => void startLiveStream()}
               style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 160, minHeight: 44, justifyContent: "center", fontWeight: 800 }}
             >
-              <Wifi size={16} /> {stream.status === "connecting" ? "CONECTANDO…" : "TRANSMITIR EN VIVO"}
+              <Wifi size={16} /> {stream.status === "connecting" ? tr("streamConnecting") : tr("streamStartLiveBtn")}
             </button>
           )}
-          <button className="vdj-btn" onClick={() => setDrawer("settings")} title="Abrir Ajustes">
-            <Pencil size={11} /> Configurar servidor
+          <button className="vdj-btn" onClick={() => setDrawer("settings")} title={tr("settings")}>
+            <Pencil size={11} /> {tr("streamConfigureBtn")}
           </button>
           {!stream.enabled && (
             <span className="vdj-chip" style={{ color: "var(--warning, #ffb000)" }}>
-              ⚠ Activa la transmisión en Ajustes
+              {tr("streamWarnEnable")}
             </span>
           )}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-          <Stat label="Estado" value={stream.status.toUpperCase()} tone={stream.status === "live" ? "live" : stream.status === "error" ? "warn" : undefined} />
-          <Stat label="Servidor" value={stream.serverUrl ? new URL(stream.serverUrl).host : "—"} />
-          <Stat label="Mount" value={stream.mount || "—"} />
-          <Stat label="Bitrate" value={`${stream.bitrate} kbps`} />
-          <Stat label="Tiempo" value={`${hh}:${mm}:${ss}`} />
-          <Stat label="Enviado" value={stream.bytesSent < 1024 * 1024 ? kb(stream.bytesSent) : mb(stream.bytesSent)} />
+          <Stat label={tr("streamStatus")} value={stream.status.toUpperCase()} tone={stream.status === "live" ? "live" : stream.status === "error" ? "warn" : undefined} />
+          <Stat label={tr("streamServer")} value={stream.serverUrl ? new URL(stream.serverUrl).host : "—"} />
+          <Stat label={tr("streamMountLbl")} value={stream.mount || "—"} />
+          <Stat label={tr("streamBitrateLbl")} value={`${stream.bitrate} kbps`} />
+          <Stat label={tr("streamElapsed")} value={`${hh}:${mm}:${ss}`} />
+          <Stat label={tr("streamSent")} value={stream.bytesSent < 1024 * 1024 ? kb(stream.bytesSent) : mb(stream.bytesSent)} />
         </div>
 
         {stream.lastError && (
@@ -492,8 +494,7 @@ function LiveView() {
         )}
 
         <div className="vdj-label" style={{ fontSize: 10, color: "var(--text-3)", lineHeight: 1.5 }}>
-          La transmisión envía el audio del MASTER (incluyendo la voz en off del micrófono) hacia tu servidor Icecast/SHOUTcast.
-          Configura el servidor en <b>Ajustes → Radio en vivo</b>. Compatible con Icecast 2.4+ vía PUT, formato Opus.
+          {tr("streamHelpFooter")}
         </div>
       </div>
     </div>
