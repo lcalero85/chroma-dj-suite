@@ -2,8 +2,23 @@ import { useState } from "react";
 import { useApp, type DeckId } from "@/state/store";
 import { applyMixPreset, captureMixPreset, deleteMixPreset, resetDefaultMixPresets } from "@/state/controller";
 import { Plus, Trash2, RotateCcw } from "lucide-react";
-import { CATEGORY_LABELS, CATEGORY_ORDER, type PresetCategory } from "@/lib/mixPresets";
+import { CATEGORY_ORDER, type PresetCategory } from "@/lib/mixPresets";
 import { useT } from "@/lib/i18n";
+import type { DictKey } from "@/lib/i18n/dict";
+
+/** Map a builtin preset id to its base i18n key (e.g. "builtin-lp-intro" → "preset_lp_intro"). */
+function presetI18nBase(id: string): string {
+  return "preset_" + id.replace(/^builtin-/, "").replace(/-/g, "_");
+}
+
+const CATEGORY_KEY: Record<PresetCategory, DictKey> = {
+  general: "catGeneral",
+  reggaeton: "catReggaeton",
+  pop: "catPop",
+  electronica: "catElectronica",
+  rap: "catRap",
+  rock: "catRock",
+};
 
 /**
  * Mix Presets — quick DJ recipes.
@@ -13,6 +28,21 @@ import { useT } from "@/lib/i18n";
  */
 export function MixPresetsPanel() {
   const t = useT();
+  const labelFor = (cat: PresetCategory) => t(CATEGORY_KEY[cat]);
+  // Resolve a built-in preset's name/description via the dictionary; fall back
+  // to the stored Spanish copy for user presets or unknown ids.
+  const resolveName = (p: { id: string; name: string; builtin?: boolean }) => {
+    if (!p.builtin) return p.name;
+    const k = `${presetI18nBase(p.id)}_name` as DictKey;
+    const v = t(k);
+    return v === k ? p.name : v;
+  };
+  const resolveDesc = (p: { id: string; description: string; builtin?: boolean }) => {
+    if (!p.builtin) return p.description;
+    const k = `${presetI18nBase(p.id)}_desc` as DictKey;
+    const v = t(k);
+    return v === k ? p.description : v;
+  };
   const presets = useApp((s) => s.mixPresets);
   const activeDecks = useApp((s) => s.activeDecks);
   const [target, setTarget] = useState<DeckId>(activeDecks[0] ?? "A");
