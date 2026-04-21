@@ -8,6 +8,8 @@ export interface SamplerSlot {
   color: string;
   /** 0..1.5 — per-pad volume so samples can sit on top of the mix */
   volume: number;
+  /** When true, hold-to-play loops the sample while the pad is held. */
+  loop?: boolean;
 }
 
 const slots: SamplerSlot[] = [];
@@ -50,6 +52,16 @@ export function setSlotVolume(slotId: number, v: number) {
   if (slot) slot.volume = Math.max(0, Math.min(1.5, v));
 }
 
+export function setSlotColor(slotId: number, color: string) {
+  const slot = slots.find((s) => s.id === slotId);
+  if (slot) slot.color = color;
+}
+
+export function setSlotLoop(slotId: number, loop: boolean) {
+  const slot = slots.find((s) => s.id === slotId);
+  if (slot) slot.loop = loop;
+}
+
 export function triggerSlot(slotId: number, gain = 1) {
   const slot = slots.find((s) => s.id === slotId);
   if (!slot || !slot.buffer) return;
@@ -61,4 +73,29 @@ export function triggerSlot(slotId: number, gain = 1) {
   src.connect(g);
   g.connect(master);
   src.start();
+}
+
+/** Start a looped playback. Returns a stop function. */
+export function startSlotLoop(slotId: number, gain = 1): (() => void) | null {
+  const slot = slots.find((s) => s.id === slotId);
+  if (!slot || !slot.buffer) return null;
+  const { ctx, master } = getEngine();
+  const src = ctx.createBufferSource();
+  src.buffer = slot.buffer;
+  src.loop = true;
+  const g = ctx.createGain();
+  g.gain.value = gain * slot.volume;
+  src.connect(g);
+  g.connect(master);
+  src.start();
+  return () => {
+    try {
+      // Quick fade to avoid clicks
+      const t = ctx.currentTime;
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(0, t + 0.05);
+      src.stop(t + 0.06);
+    } catch { /* noop */ }
+  };
 }
