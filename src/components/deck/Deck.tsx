@@ -21,6 +21,7 @@ import { JogWheel } from "./JogWheel";
 import { Fader } from "../console/Fader";
 import { VuMeter } from "../console/VuMeter";
 import { ProControls } from "./ProControls";
+import { BpmControls } from "./BpmControls";
 import { getDeck } from "@/audio/deck";
 import { formatTime } from "@/lib/format";
 import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown } from "lucide-react";
@@ -209,6 +210,7 @@ export function Deck({ id, side }: DeckProps) {
             <TimeDisplay deck={ds} />
             <Transport id={id} masterId={masterId} />
             <PitchSection id={id} />
+            <BpmControls id={id} />
           </div>
         )}
         <JogWheel
@@ -223,6 +225,7 @@ export function Deck({ id, side }: DeckProps) {
             <TimeDisplay deck={ds} />
             <Transport id={id} masterId={masterId} />
             <PitchSection id={id} />
+            <BpmControls id={id} />
           </div>
         )}
       </div>

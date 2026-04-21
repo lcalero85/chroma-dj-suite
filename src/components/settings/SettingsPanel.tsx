@@ -5,6 +5,17 @@ export function SettingsPanel() {
   const update = useApp((s) => s.updateSettings);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Row label="Nombre de la app">
+        <input
+          type="text"
+          className="vdj-btn"
+          style={{ width: 180, textAlign: "left", padding: "6px 8px" }}
+          value={settings.appName}
+          maxLength={32}
+          placeholder="VDJ PRO"
+          onChange={(e) => update({ appName: e.target.value })}
+        />
+      </Row>
       <Row label="Animaciones">
         <input type="checkbox" checked={settings.animations} onChange={(e) => update({ animations: e.target.checked })} />
       </Row>

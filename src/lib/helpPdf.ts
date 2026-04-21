@@ -190,7 +190,15 @@ export function downloadHelpPdf() {
   };
 
   // Cover
-  writeLine("VDJ PRO", 28, true, [20, 20, 60]);
+  const appName = (typeof window !== "undefined"
+    ? (window.localStorage.getItem("vdj-pro-state") ? (() => {
+        try {
+          const s = JSON.parse(window.localStorage.getItem("vdj-pro-state") || "{}");
+          return s?.state?.settings?.appName || s?.settings?.appName;
+        } catch { return null; }
+      })() : null)
+    : null) || "VDJ PRO";
+  writeLine(appName, 28, true, [20, 20, 60]);
   writeLine("Documentación técnica y atajos de teclado", 13, false, [80, 80, 80]);
   y += 8;
   writeLine(
@@ -213,9 +221,10 @@ export function downloadHelpPdf() {
     doc.setPage(i);
     doc.setFontSize(9);
     doc.setTextColor(150, 150, 150);
-    doc.text(`VDJ PRO · ${i} / ${pages}`, pageW - margin, pageH - 20, { align: "right" });
+    doc.text(`${appName} · ${i} / ${pages}`, pageW - margin, pageH - 20, { align: "right" });
     doc.text(new Date().toLocaleString(), margin, pageH - 20);
   }
 
-  doc.save(`vdj-pro-manual-${Date.now()}.pdf`);
+  const slug = appName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "app";
+  doc.save(`${slug}-manual-${Date.now()}.pdf`);
 }
