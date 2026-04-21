@@ -19,168 +19,184 @@ import { pause } from "@/audio/deck";
 import { triggerSlot } from "@/audio/sampler";
 import { setFxMix, type FxRackHandles } from "@/audio/fx";
 import { listRecordings, putRecording, uid } from "./db";
+import { resolveShortcuts } from "./shortcutDefs";
 import { toast } from "sonner";
 
-// FX racks reference (populated by FxPanel mount via window). Keep simple bridge.
 declare global {
   interface Window {
     __vdjFxRacks?: Record<number, FxRackHandles>;
   }
 }
 
-export function installShortcuts() {
-  if ((window as unknown as { __vdjShortcutsInstalled?: boolean }).__vdjShortcutsInstalled) return;
-  (window as unknown as { __vdjShortcutsInstalled?: boolean }).__vdjShortcutsInstalled = true;
-  window.addEventListener("keydown", async (e) => {
-    const target = e.target as HTMLElement;
-    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+/** Build a reverse map: code -> Set<actionId>, so a single key can fire multiple
+ *  branches (e.g. "KeyL" fires playB; "KeyL"+Shift fires radioNext). */
+function buildCodeMap(): Record<string, string[]> {
+  const cfg = resolveShortcuts(useApp.getState().settings.shortcuts);
+  const out: Record<string, string[]> = {};
+  for (const [actionId, code] of Object.entries(cfg)) {
+    if (!code) continue;
+    if (!out[code]) out[code] = [];
+    out[code].push(actionId);
+  }
+  return out;
+}
 
-    if (e.code === "Space") { e.preventDefault(); await togglePlay("A"); return; }
-    if (e.code === "ShiftRight") { e.preventDefault(); await togglePlay("B"); return; }
-    // J = play/pause Deck A · L = play/pause Deck B
-    if (e.code === "KeyJ") { e.preventDefault(); await togglePlay("A"); return; }
-    // O = brake Deck A · U = stop Deck A
-    if (e.code === "KeyO") { e.preventDefault(); brake("A", 1.4); return; }
-    if (e.code === "KeyU") { e.preventDefault(); pause("A"); useApp.getState().updateDeck("A", { isPlaying: false }); toast("Deck A: STOP"); return; }
-    if (e.code === "KeyQ") { cueDeck("A"); return; }
-    if (e.code === "KeyW") { cueDeck("B"); return; }
-    if (e.code === "KeyA") { syncDeck("A", "B"); return; }
-    if (e.code === "KeyS") { syncDeck("B", "A"); return; }
-    if (e.code === "KeyR") {
-      await ensureRunning();
-      if (isRecording()) {
-        const r = await stopRecording();
-        if (r) {
-          await putRecording({ id: uid(), name: `Set ${new Date().toLocaleString()}`, blob: r.blob, mime: r.mime, duration: r.duration, createdAt: Date.now() });
-          useApp.getState().setRecordings(await listRecordings());
-          toast("Grabación detenida");
-        }
-      } else {
-        await startRecording();
-        toast("Grabando…");
-      }
-      return;
+async function fireRecord() {
+  await ensureRunning();
+  if (isRecording()) {
+    const r = await stopRecording();
+    if (r) {
+      await putRecording({ id: uid(), name: `Set ${new Date().toLocaleString()}`, blob: r.blob, mime: r.mime, duration: r.duration, createdAt: Date.now() });
+      useApp.getState().setRecordings(await listRecordings());
+      toast("Grabación detenida");
     }
-    // Voice-over toggle (Shift+M reserved? use KeyN for "narrate")
-    if (e.code === "KeyN") {
-      const cur = useApp.getState().mixer.micOn;
-      await setMicOn(!cur);
-      return;
-    }
-    // Backquote: toggle numpad target deck (A <-> B)
-    if (e.code === "Backquote") {
-      const cur = useApp.getState().mixer.numpadDeck;
-      setNumpadDeck(cur === "A" ? "B" : "A");
-      return;
-    }
-    // KeyL: play/pause Deck B (Shift+L = radio next)
-    if (e.code === "KeyL") {
+  } else {
+    await startRecording();
+    toast("Grabando…");
+  }
+}
+
+async function runAction(id: string, e: KeyboardEvent) {
+  switch (id) {
+    case "playA": e.preventDefault(); await togglePlay("A"); return true;
+    case "playA2": e.preventDefault(); await togglePlay("A"); return true;
+    case "playB": e.preventDefault(); await togglePlay("B"); return true;
+    case "playB2":
+      // Shift+L is radioNext; plain L is playB. Skip if Shift held (radioNext handles it).
+      if (e.shiftKey) return false;
+      e.preventDefault(); await togglePlay("B"); return true;
+    case "cueA": cueDeck("A"); return true;
+    case "cueB": cueDeck("B"); return true;
+    case "syncA": syncDeck("A", "B"); return true;
+    case "syncB": syncDeck("B", "A"); return true;
+    case "brakeA": e.preventDefault(); brake("A", 1.4); return true;
+    case "stopA":
       e.preventDefault();
-      if (e.shiftKey) { void radioNext(); return; }
-      await togglePlay("B");
-      return;
+      pause("A");
+      useApp.getState().updateDeck("A", { isPlaying: false });
+      toast("Deck A: STOP");
+      return true;
+    case "brakeAB": brake(e.shiftKey ? "B" : "A", 1.4); return true;
+    case "reverseAB": {
+      const id2: DeckId = e.shiftKey ? "B" : "A";
+      const cur = useApp.getState().decks[id2].reverse;
+      setReverse(id2, !cur);
+      return true;
     }
-    // Beat jump: [/] for deck A, ;/' for deck B
-    if (e.code === "BracketLeft") { beatJump("A", -4); return; }
-    if (e.code === "BracketRight") { beatJump("A", 4); return; }
-    if (e.code === "Semicolon") { beatJump("B", -4); return; }
-    if (e.code === "Quote") { beatJump("B", 4); return; }
-    // Brake / Reverse
-    if (e.code === "KeyB") { brake(e.shiftKey ? "B" : "A", 1.4); return; }
-    if (e.code === "KeyV") {
-      const id: DeckId = e.shiftKey ? "B" : "A";
-      const cur = useApp.getState().decks[id].reverse;
-      setReverse(id, !cur); return;
-    }
-    // Auto-mix
-    if (e.code === "KeyM") {
+    case "automix": {
       e.preventDefault();
       const x = useApp.getState().mixer.xfader;
       const target = x >= 0 ? -1 : 1;
       const ok = autoMixTo(target, 8);
       if (ok) toast(`Auto-mix → Deck ${target === -1 ? "A" : "B"} (8s)`);
-      return;
+      return true;
     }
-    // Tap tempo
-    if (e.code === "KeyT") {
+    case "tap": {
       const bpm = tap();
       if (bpm) toast(`Tap: ${bpm.toFixed(1)} BPM`);
-      return;
+      return true;
     }
-
-    // ===== NUMPAD =====
-    // Numpad 1-8: hot cues on the selected numpadDeck (Shift overrides to the OTHER deck)
-    const numpadDeck = useApp.getState().mixer.numpadDeck;
-    const otherDeck: DeckId = numpadDeck === "A" ? "B" : "A";
-    const np = e.code.match(/^Numpad([1-8])$/);
-    if (np) {
-      const slot = parseInt(np[1]) - 1;
-      const deck: DeckId = e.shiftKey ? otherDeck : numpadDeck;
-      const cue = useApp.getState().decks[deck].hotCues.find((c) => c.id === slot);
-      if (cue) jumpHotCue(deck, slot); else addHotCue(deck, slot);
-      return;
+    case "record": e.preventDefault(); await fireRecord(); return true;
+    case "micToggle": {
+      const cur = useApp.getState().mixer.micOn;
+      await setMicOn(!cur);
+      return true;
     }
-    // Numpad 0: toggle loop on/off (Shift => other deck)
-    if (e.code === "Numpad0") {
-      toggleLoop(e.shiftKey ? otherDeck : numpadDeck);
-      return;
+    case "radioNext":
+      // requires Shift
+      if (!e.shiftKey) return false;
+      e.preventDefault(); void radioNext(); return true;
+    case "numpadToggle": {
+      const cur = useApp.getState().mixer.numpadDeck;
+      setNumpadDeck(cur === "A" ? "B" : "A");
+      return true;
     }
-    // Numpad 9: 4-beat loop (Shift => other deck)
-    if (e.code === "Numpad9") {
+    case "jumpAback":  beatJump("A", -4); return true;
+    case "jumpAfwd":   beatJump("A",  4); return true;
+    case "jumpBback":  beatJump("B", -4); return true;
+    case "jumpBfwd":   beatJump("B",  4); return true;
+    case "npLoop4": {
+      const numpadDeck = useApp.getState().mixer.numpadDeck;
+      const otherDeck: DeckId = numpadDeck === "A" ? "B" : "A";
       const deck: DeckId = e.shiftKey ? otherDeck : numpadDeck;
       setLoop(deck, 4);
       toast(`Loop 4 beats deck ${deck}`);
-      return;
+      return true;
     }
-    // NumpadDecimal: clear loop
-    if (e.code === "NumpadDecimal") {
+    case "npLoopToggle": {
+      const numpadDeck = useApp.getState().mixer.numpadDeck;
+      const otherDeck: DeckId = numpadDeck === "A" ? "B" : "A";
+      toggleLoop(e.shiftKey ? otherDeck : numpadDeck);
+      return true;
+    }
+    case "npLoopClear": {
+      const numpadDeck = useApp.getState().mixer.numpadDeck;
+      const otherDeck: DeckId = numpadDeck === "A" ? "B" : "A";
       clearLoop(e.shiftKey ? otherDeck : numpadDeck);
-      return;
+      return true;
     }
-    // NumpadAdd / NumpadSubtract: trigger sampler pads 0 / 1
-    if (e.code === "NumpadAdd") { triggerSlot(0); return; }
-    if (e.code === "NumpadSubtract") { triggerSlot(1); return; }
-    // NumpadMultiply / NumpadDivide: toggle FX 1 and FX 2 quickly
-    if (e.code === "NumpadMultiply") {
+    case "npSampler1": triggerSlot(0); return true;
+    case "npSampler2": triggerSlot(1); return true;
+    case "npFx1": {
       const fx = useApp.getState().fx[0];
       const next = fx.wet > 0.05 ? 0 : 0.5;
       useApp.getState().updateFx(1, { wet: next });
       const r = window.__vdjFxRacks?.[1];
       if (r) setFxMix(r, next);
-      return;
+      return true;
     }
-    if (e.code === "NumpadDivide") {
+    case "npFx2": {
       const fx = useApp.getState().fx[1];
       const next = fx.wet > 0.05 ? 0 : 0.5;
       useApp.getState().updateFx(2, { wet: next });
       const r = window.__vdjFxRacks?.[2];
       if (r) setFxMix(r, next);
-      return;
+      return true;
     }
-    // NumpadEnter: rec start/stop
-    if (e.code === "NumpadEnter") {
-      await ensureRunning();
-      if (isRecording()) {
-        const r = await stopRecording();
-        if (r) {
-          await putRecording({ id: uid(), name: `Set ${new Date().toLocaleString()}`, blob: r.blob, mime: r.mime, duration: r.duration, createdAt: Date.now() });
-          useApp.getState().setRecordings(await listRecordings());
-          toast("Grabación detenida");
-        }
-      } else {
-        await startRecording();
-        toast("Grabando…");
+    case "npRecord": e.preventDefault(); await fireRecord(); return true;
+    // showShortcuts is handled in TopBar (it owns the overlay state)
+  }
+  return false;
+}
+
+export function installShortcuts() {
+  if ((window as unknown as { __vdjShortcutsInstalled?: boolean }).__vdjShortcutsInstalled) return;
+  (window as unknown as { __vdjShortcutsInstalled?: boolean }).__vdjShortcutsInstalled = true;
+
+  window.addEventListener("keydown", async (e) => {
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+    // Suspend when capturing a new shortcut from the settings UI.
+    if ((window as unknown as { __vdjShortcutCapturing?: boolean }).__vdjShortcutCapturing) return;
+
+    const codeMap = buildCodeMap();
+    const ids = codeMap[e.code];
+    if (ids && ids.length) {
+      for (const id of ids) {
+        const handled = await runAction(id, e);
+        if (handled) return;
       }
-      return;
     }
 
-    // Hot cues 1..8 with optional Shift for deck B
+    // Hot cues 1..8 (Digit keys) — fixed, not configurable per cue, but kept for parity.
     const m = e.code.match(/^Digit([1-8])$/);
     if (m) {
       const slot = parseInt(m[1]) - 1;
       const deck: DeckId = e.shiftKey ? "B" : "A";
       const cue = useApp.getState().decks[deck].hotCues.find((c) => c.id === slot);
       if (cue) jumpHotCue(deck, slot); else addHotCue(deck, slot);
+      return;
+    }
+    // Numpad 1-8 hot cues on the selected numpadDeck (Shift => other deck)
+    const np = e.code.match(/^Numpad([1-8])$/);
+    if (np) {
+      const slot = parseInt(np[1]) - 1;
+      const numpadDeck = useApp.getState().mixer.numpadDeck;
+      const otherDeck: DeckId = numpadDeck === "A" ? "B" : "A";
+      const deck: DeckId = e.shiftKey ? otherDeck : numpadDeck;
+      const cue = useApp.getState().decks[deck].hotCues.find((c) => c.id === slot);
+      if (cue) jumpHotCue(deck, slot); else addHotCue(deck, slot);
+      return;
     }
   });
 }
