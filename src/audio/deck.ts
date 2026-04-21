@@ -74,13 +74,20 @@ export function getDeck(id: DeckId): DeckHandles {
   // Anything panned to the center (most lead vocals) cancels out.
   // Dry/Wet ramp lets us blend smoothly between original and instrumental.
   const splitter = ctx.createChannelSplitter(2);
-  const merger = ctx.createChannelMerger(2);
   const invert = ctx.createGain();
   invert.gain.value = -1;
-  // L straight, R inverted → both channels carry (L - R), summed = side signal (instrumental-ish)
-  splitter.connect(merger, 0, 0);
+  // True (L - R) mono side signal: sum L (positive) and R (inverted) into a single mono node,
+  // then duplicate that mono signal to both output channels via a merger.
+  const sideMono = ctx.createGain();
+  sideMono.channelCount = 1;
+  sideMono.channelCountMode = "explicit";
+  sideMono.channelInterpretation = "speakers";
+  splitter.connect(sideMono, 0);          // +L
   splitter.connect(invert, 1);
-  invert.connect(merger, 0, 1);
+  invert.connect(sideMono);               // -R
+  const merger = ctx.createChannelMerger(2);
+  sideMono.connect(merger, 0, 0);          // mono side → Left
+  sideMono.connect(merger, 0, 1);          // mono side → Right
 
   const vocalDry = ctx.createGain();
   vocalDry.gain.value = 1;
@@ -266,9 +273,10 @@ export function setVocalCut(id: DeckId, amount: number) {
   const d = getDeck(id);
   const { ctx } = getEngine();
   const a = Math.max(0, Math.min(1, amount));
-  // Equal-power-ish crossfade with bass compensation: keep dry partially even at full kill
-  const wet = a;
-  const dry = 1 - a * 0.85;
+  // Smooth equal-power crossfade between original (dry) and side-channel (wet = instrumental).
+  // At a=0 → pure original. At a=1 → pure (L-R) instrumental signal.
+  const wet = Math.sin((a * Math.PI) / 2);
+  const dry = Math.cos((a * Math.PI) / 2);
   const tau = 0.15;
   d.vocalWet.gain.setTargetAtTime(wet, ctx.currentTime, tau);
   d.vocalDry.gain.setTargetAtTime(dry, ctx.currentTime, tau);
