@@ -632,10 +632,13 @@ export function startSegmentScheduler() {
     const segs = useApp.getState().segments.filter((s) => !!s.scheduledAt);
     if (segs.length === 0) return;
     const now = new Date();
+    const dow = now.getDay();
     const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const dayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${hhmm}`;
     for (const s of segs) {
       if (s.scheduledAt !== hhmm) continue;
+      // Respect day-of-week filter if set.
+      if (s.scheduledDays && s.scheduledDays.length > 0 && !s.scheduledDays.includes(dow)) continue;
       const key = `${s.id}-${dayKey}`;
       if (lastFiredKey === key) continue;
       lastFiredKey = key;
@@ -648,12 +651,18 @@ export function startSegmentScheduler() {
 // ===== Live streaming =====
 export function initStreamStatus() {
   setStreamStatusListener((info) => {
+    const cur = useApp.getState().stream;
     useApp.getState().updateStream({
       status: info.status,
       bytesSent: info.bytesSent,
       lastError: info.error ?? null,
-      startedAt: info.status === "live" && useApp.getState().stream.startedAt === null ? Date.now() : useApp.getState().stream.startedAt,
+      startedAt: info.status === "live" && cur.startedAt === null ? Date.now() : cur.startedAt,
     });
+    // Auto-reconnect on error if user opted in.
+    const settings = useApp.getState().settings;
+    if (info.status === "error" && settings.streamAutoReconnect) {
+      try { scheduleReconnect(); } catch { /* noop */ }
+    }
   });
 }
 
