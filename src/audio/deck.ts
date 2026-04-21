@@ -250,6 +250,20 @@ export function setGain(id: DeckId, v: number) {
   d.channelGain.gain.setTargetAtTime(Math.max(0, Math.min(2, v)), ctx.currentTime, 0.01);
 }
 
+/**
+ * Per-deck auto-gain compensation in dB. Multiplies the user gain knob's
+ * linear value so the user can still ride volume, but quiet/loud tracks land
+ * at roughly the same level.
+ */
+const _autoGainDb: Partial<Record<DeckId, number>> = {};
+
+export function setAutoGainDb(id: DeckId, db: number) {
+  _autoGainDb[id] = db;
+}
+export function getAutoGainDb(id: DeckId): number {
+  return _autoGainDb[id] ?? 0;
+}
+
 export function setFader(id: DeckId, v: number) {
   const d = getDeck(id);
   const { ctx } = getEngine();
