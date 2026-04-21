@@ -14,6 +14,7 @@ export const DICT = {
     fx: "FX",
     sampler: "Sampler",
     recorder: "Recorder",
+    mixPresets: "Presets",
     // Deck
     play: "Play",
     pause: "Pause",
@@ -117,6 +118,7 @@ export const DICT = {
     fx: "FX",
     sampler: "Sampler",
     recorder: "Grabadora",
+    mixPresets: "Presets",
     play: "Play",
     pause: "Pausa",
     cue: "Cue",
