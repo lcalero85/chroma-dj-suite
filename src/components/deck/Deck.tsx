@@ -14,6 +14,7 @@ import {
   clearLoop,
   seekDeck,
   nudgeDeck,
+  loadTrackToDeck,
 } from "@/state/controller";
 import { Waveform } from "./Waveform";
 import { JogWheel } from "./JogWheel";
@@ -25,6 +26,8 @@ import { formatTime } from "@/lib/format";
 import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown } from "lucide-react";
 import { keyName } from "@/lib/camelot";
 import { VideoFxPanel } from "../video/VideoFxPanel";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface DeckProps {
   id: DeckId;
@@ -36,12 +39,32 @@ export function Deck({ id, side }: DeckProps) {
   const masterId: DeckId = id === "A" ? "B" : "A";
 
   const handle = getDeck(id);
+  const [dragOver, setDragOver] = useState(false);
 
   return (
     <div
       className="vdj-panel"
       data-loaded={!!ds.duration && !ds.isPlaying}
       data-playing={ds.isPlaying}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("text/track-id")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+          if (!dragOver) setDragOver(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        // Only clear when leaving the deck container
+        if (e.currentTarget === e.target) setDragOver(false);
+      }}
+      onDrop={(e) => {
+        const tid = e.dataTransfer.getData("text/track-id");
+        setDragOver(false);
+        if (!tid) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void loadTrackToDeck(id, tid).then(() => toast(`Cargada en Deck ${id}`));
+      }}
       style={{
         padding: 12,
         display: "flex",
@@ -50,8 +73,34 @@ export function Deck({ id, side }: DeckProps) {
         height: "100%",
         minHeight: 0,
         overflow: "hidden",
+        position: "relative",
+        outline: dragOver ? "2px dashed var(--accent)" : undefined,
+        outlineOffset: dragOver ? -4 : undefined,
+        boxShadow: dragOver ? "inset 0 0 0 9999px color-mix(in oklab, var(--accent) 8%, transparent)" : undefined,
+        transition: "outline-color 120ms",
       }}
     >
+      {dragOver && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 8,
+            borderRadius: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--accent)",
+            fontWeight: 800,
+            fontSize: 14,
+            letterSpacing: 1,
+            pointerEvents: "none",
+            zIndex: 5,
+            background: "color-mix(in oklab, var(--accent) 6%, transparent)",
+          }}
+        >
+          SOLTAR PARA CARGAR EN DECK {id}
+        </div>
+      )}
       {/* header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
