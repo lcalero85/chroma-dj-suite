@@ -70,6 +70,48 @@ export const DEFAULT_MIX_PRESETS: MixPreset[] = [
     hi: 0.1, mid: -0.2, lo: -0.5, filter: 0.2, vocalCut: 0,
     fx: { slot: 1, kind: "echo", wet: 0.55, param1: 0.5, param2: 0.5 },
   },
+  {
+    id: "builtin-bass-boost",
+    name: "Bass Boost",
+    description: "Bajos en máximo, agudos suaves. Ideal para clímax con kick fuerte.",
+    emoji: "🔊",
+    builtin: true,
+    hi: -0.15, mid: 0, lo: 0.6, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-radio-tele",
+    name: "Radio FM",
+    description: "Suena como una radio AM/FM (sin graves ni agudos extremos).",
+    emoji: "📻",
+    builtin: true,
+    hi: -0.5, mid: 0.3, lo: -0.7, filter: 0.25, vocalCut: 0,
+  },
+  {
+    id: "builtin-reverb-wash",
+    name: "Reverb Wash",
+    description: "Reverb amplio + medios reducidos. Transiciones etéreas.",
+    emoji: "🌫️",
+    builtin: true,
+    hi: 0, mid: -0.4, lo: -0.2, filter: 0,  vocalCut: 0,
+    fx: { slot: 1, kind: "reverb", wet: 0.6, param1: 0.7, param2: 0.5 },
+  },
+  {
+    id: "builtin-drum-only",
+    name: "Drums Only",
+    description: "Mata medios y agudos. Quedan kicks/percusión para mezclar.",
+    emoji: "🥁",
+    builtin: true,
+    hi: -1, mid: -0.7, lo: 0.2, filter: -0.2, vocalCut: 0,
+  },
+  {
+    id: "builtin-flanger-fx",
+    name: "Flanger Sweep",
+    description: "Flanger animado para giros y tensión rítmica.",
+    emoji: "🌀",
+    builtin: true,
+    hi: 0.1, mid: 0, lo: -0.1, filter: 0, vocalCut: 0,
+    fx: { slot: 2, kind: "flanger", wet: 0.55, param1: 0.4, param2: 0.6 },
+  },
 ];
 
 export function genPresetId(): string {
