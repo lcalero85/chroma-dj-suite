@@ -17,6 +17,7 @@ import { useT } from "@/lib/i18n";
 type Tab = "queue" | "segments" | "live";
 
 export function RadioPanel() {
+  const t = useT();
   const radio = useApp((s) => s.radio);
   const tracks = useApp((s) => s.tracks);
   const updateRadio = useApp((s) => s.updateRadio);
@@ -32,10 +33,10 @@ export function RadioPanel() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4 }}>
         <button className="vdj-btn" data-active={tab === "queue"} onClick={() => setTab("queue")}>
-          <ListMusic size={12} style={{ marginRight: 4 }} /> Cola
+          <ListMusic size={12} style={{ marginRight: 4 }} /> {t("radioTabQueue")}
         </button>
         <button className="vdj-btn" data-active={tab === "segments"} onClick={() => setTab("segments")}>
-          <Disc3 size={12} style={{ marginRight: 4 }} /> Segmentos
+          <Disc3 size={12} style={{ marginRight: 4 }} /> {t("radioTabSegments")}
           <span className="vdj-chip" style={{ marginLeft: 6 }}>{segments.length}</span>
         </button>
         <button
@@ -45,8 +46,8 @@ export function RadioPanel() {
           onClick={() => setTab("live")}
         >
           {stream.status === "live" ? <Wifi size={12} style={{ marginRight: 4 }} /> : <WifiOff size={12} style={{ marginRight: 4 }} />}
-          En Vivo
-          {stream.status === "live" && <span className="vdj-loaded-badge" data-tone="live" style={{ marginLeft: 6 }}>● ON AIR</span>}
+          {t("radioTabLive")}
+          {stream.status === "live" && <span className="vdj-loaded-badge" data-tone="live" style={{ marginLeft: 6 }}>● {t("onAir")}</span>}
         </button>
       </div>
 
