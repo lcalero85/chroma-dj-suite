@@ -34,6 +34,8 @@ import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFol
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
 import { setVideo, clearVideo, syncVideo, getVideo, isVideoBlob } from "@/audio/videoDeck";
+import { startStream as engStartStream, stopStream as engStopStream, setStreamStatusListener, isStreaming } from "@/audio/iceStreamer";
+import type { RadioSegment } from "./store";
 
 let pollStarted = false;
 
@@ -439,6 +441,140 @@ export async function radioPlayIndex(idx: number): Promise<void> {
   if (idx < 0 || idx >= r.queue.length) return;
   useApp.getState().updateRadio({ currentIndex: idx - 1 });
   await radioNext();
+}
+
+// ===== Radio segments =====
+function genId() {
+  return Math.random().toString(36).slice(2, 11) + Date.now().toString(36);
+}
+
+const SEGMENT_PALETTE = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
+
+export function createSegment(name: string): RadioSegment {
+  const segs = useApp.getState().segments;
+  const seg: RadioSegment = {
+    id: genId(),
+    name: name.trim() || "Nuevo segmento",
+    color: SEGMENT_PALETTE[segs.length % SEGMENT_PALETTE.length],
+    trackIds: [],
+    scheduledAt: null,
+    recurring: true,
+    createdAt: Date.now(),
+  };
+  useApp.getState().upsertSegment(seg);
+  toast.success("Segmento creado", { description: seg.name });
+  return seg;
+}
+
+export function renameSegment(id: string, name: string) {
+  const s = useApp.getState().segments.find((x) => x.id === id);
+  if (!s) return;
+  useApp.getState().upsertSegment({ ...s, name: name.trim() || s.name });
+}
+
+export function deleteSegment(id: string) {
+  useApp.getState().removeSegment(id);
+  toast("Segmento eliminado");
+}
+
+export function addTrackToSegment(segmentId: string, trackId: string) {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  if (s.trackIds.includes(trackId)) return;
+  useApp.getState().upsertSegment({ ...s, trackIds: [...s.trackIds, trackId] });
+}
+
+export function removeTrackFromSegment(segmentId: string, trackId: string) {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  useApp.getState().upsertSegment({ ...s, trackIds: s.trackIds.filter((t) => t !== trackId) });
+}
+
+export function setSegmentSchedule(segmentId: string, time: string | null, recurring: boolean) {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  useApp.getState().upsertSegment({ ...s, scheduledAt: time, recurring });
+}
+
+/** Replace radio queue with segment tracks (or append). */
+export async function loadSegmentToRadio(segmentId: string, mode: "replace" | "append" = "replace") {
+  const s = useApp.getState().segments.find((x) => x.id === segmentId);
+  if (!s) return;
+  if (s.trackIds.length === 0) {
+    toast("El segmento está vacío");
+    return;
+  }
+  const r = useApp.getState().radio;
+  const queue = mode === "replace" ? [...s.trackIds] : [...r.queue, ...s.trackIds];
+  useApp.getState().updateRadio({ queue, currentIndex: mode === "replace" ? -1 : r.currentIndex });
+  toast(`Segmento "${s.name}" → cola (${s.trackIds.length} pistas)`);
+  if (mode === "replace" && useApp.getState().radio.enabled) {
+    await radioNext();
+  }
+}
+
+// ===== Segment scheduler — checks every minute =====
+let schedulerStarted = false;
+let lastFiredKey: string | null = null;
+export function startSegmentScheduler() {
+  if (schedulerStarted) return;
+  schedulerStarted = true;
+  setInterval(() => {
+    const radio = useApp.getState().radio;
+    if (!radio.enabled) return;
+    const segs = useApp.getState().segments.filter((s) => !!s.scheduledAt);
+    if (segs.length === 0) return;
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const dayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${hhmm}`;
+    for (const s of segs) {
+      if (s.scheduledAt !== hhmm) continue;
+      const key = `${s.id}-${dayKey}`;
+      if (lastFiredKey === key) continue;
+      lastFiredKey = key;
+      void loadSegmentToRadio(s.id, "replace");
+      toast.success(`📻 Segmento programado: ${s.name}`);
+    }
+  }, 30_000);
+}
+
+// ===== Live streaming =====
+export function initStreamStatus() {
+  setStreamStatusListener((info) => {
+    useApp.getState().updateStream({
+      status: info.status,
+      bytesSent: info.bytesSent,
+      lastError: info.error ?? null,
+      startedAt: info.status === "live" && useApp.getState().stream.startedAt === null ? Date.now() : useApp.getState().stream.startedAt,
+    });
+  });
+}
+
+export async function startLiveStream() {
+  const cfg = useApp.getState().stream;
+  if (!cfg.enabled) {
+    toast("Activa la transmisión en Ajustes primero");
+    return;
+  }
+  try {
+    useApp.getState().updateStream({ status: "connecting", lastError: null, bytesSent: 0, startedAt: null });
+    await engStartStream(cfg);
+    toast.success("🔴 Transmisión en vivo iniciada");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    useApp.getState().updateStream({ status: "error", lastError: msg });
+    toast.error("No se pudo iniciar la transmisión", { description: msg });
+  }
+}
+
+export async function stopLiveStream() {
+  await engStopStream();
+  useApp.getState().updateStream({ status: "idle", startedAt: null });
+  toast("Transmisión detenida");
+}
+
+export function isLiveStreaming() {
+  return isStreaming();
 }
 
 // ===== Folders =====
