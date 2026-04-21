@@ -9,6 +9,7 @@ import { formatTime } from "@/lib/format";
 import { Circle, Square, Download, Trash2, Mic, MicOff, Wand2, Keyboard, Video } from "lucide-react";
 import { toast } from "sonner";
 import { setMicOn, setMicLevel, setMicDuck, setVoicePreset, setNumpadDeck } from "@/state/controller";
+import { useT } from "@/lib/i18n";
 
 function fileExt(mime: string) {
   if (mime.includes("wav")) return "wav";

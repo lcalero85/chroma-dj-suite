@@ -8,6 +8,7 @@ import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, Chevro
 import { toast } from "sonner";
 import { radioAdd, addTrackToSegment } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
+import { useT } from "@/lib/i18n";
 
 function FolderNode({
   folder,

@@ -12,6 +12,7 @@ import {
 import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 type Tab = "queue" | "segments" | "live";
 
