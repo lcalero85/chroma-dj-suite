@@ -1,5 +1,6 @@
 import { useApp } from "@/state/store";
 import { useT } from "@/lib/i18n";
+import { MidiPanel } from "./MidiPanel";
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
@@ -70,6 +71,8 @@ R            Iniciar / detener grabación
 1..8         Hot cues Deck A
 Shift 1..8   Hot cues Deck B`}
       </pre>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
+      <MidiPanel />
     </div>
   );
 }

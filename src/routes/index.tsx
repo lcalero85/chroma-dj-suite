@@ -4,6 +4,7 @@ import { useApp } from "@/state/store";
 import { ensureRunning, getEngine } from "@/audio/engine";
 import { startPositionPolling } from "@/state/controller";
 import { installShortcuts } from "@/lib/shortcuts";
+import { bootMidi } from "@/midi/engine";
 import { Toaster } from "@/components/ui/sonner";
 import { TopBar } from "@/components/console/TopBar";
 import { Drawer } from "@/components/console/Drawer";
@@ -40,6 +41,7 @@ function Index() {
       await ensureRunning();
       startPositionPolling();
       installShortcuts();
+      void bootMidi();
       window.removeEventListener("pointerdown", boot);
       window.removeEventListener("keydown", boot);
     };
@@ -49,6 +51,7 @@ function Index() {
     getEngine();
     startPositionPolling();
     installShortcuts();
+    void bootMidi();
   }, [mounted]);
 
   if (!mounted) {
