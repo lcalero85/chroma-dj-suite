@@ -1,13 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getSoundCloudClientId, invalidateSoundCloudClientId } from "@/lib/scClientId";
 
-// Public SoundCloud search proxy. Uses a default client_id that can be
-// overridden via the SOUNDCLOUD_CLIENT_ID env var if the public one rotates.
-// This avoids CORS by routing the request through the server.
+// Public SoundCloud search proxy. The client_id is auto-scraped from
+// soundcloud.com because the historical public id rotates frequently.
+// Override with SOUNDCLOUD_CLIENT_ID env var if needed.
 
-const FALLBACK_CLIENT_ID = "a3e059563d7fd3372b49b37f00a00bcf"; // widely-known public id
-
-function getClientId(): string {
-  return process.env.SOUNDCLOUD_CLIENT_ID || FALLBACK_CLIENT_ID;
+async function callSearch(q: string, limit: string, clientId: string) {
+  const sc = new URL("https://api-v2.soundcloud.com/search/tracks");
+  sc.searchParams.set("q", q);
+  sc.searchParams.set("client_id", clientId);
+  sc.searchParams.set("limit", limit);
+  sc.searchParams.set("offset", "0");
+  sc.searchParams.set("linked_partitioning", "1");
+  sc.searchParams.set("app_locale", "en");
+  return fetch(sc.toString(), {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      Accept: "application/json",
+    },
+  });
 }
 
 export const Route = createFileRoute("/api/soundcloud/search")({
@@ -20,23 +32,15 @@ export const Route = createFileRoute("/api/soundcloud/search")({
         if (!q) {
           return Response.json({ error: "missing q" }, { status: 400 });
         }
-        const clientId = getClientId();
-        const sc = new URL("https://api-v2.soundcloud.com/search/tracks");
-        sc.searchParams.set("q", q);
-        sc.searchParams.set("client_id", clientId);
-        sc.searchParams.set("limit", limit);
-        sc.searchParams.set("offset", "0");
-        sc.searchParams.set("linked_partitioning", "1");
-        sc.searchParams.set("app_version", "1714398769");
-        sc.searchParams.set("app_locale", "en");
         try {
-          const res = await fetch(sc.toString(), {
-            headers: {
-              "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-              Accept: "application/json",
-            },
-          });
+          let clientId = await getSoundCloudClientId();
+          let res = await callSearch(q, limit, clientId);
+          if (res.status === 401 || res.status === 403) {
+            // cached id is stale — refresh and retry once
+            invalidateSoundCloudClientId();
+            clientId = await getSoundCloudClientId(true);
+            res = await callSearch(q, limit, clientId);
+          }
           if (!res.ok) {
             const body = await res.text();
             return Response.json(
