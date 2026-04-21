@@ -15,6 +15,9 @@ import {
   seekDeck,
   nudgeDeck,
   loadTrackToDeck,
+  beginScratchDeck,
+  scratchDeck,
+  endScratchDeck,
 } from "@/state/controller";
 import { Waveform } from "./Waveform";
 import { JogWheel } from "./JogWheel";
