@@ -4,6 +4,9 @@ import type { TrackRecord, PlaylistRecord, RecordingRecord, FolderRecord } from 
 import type { XfaderCurve } from "@/audio/crossfader";
 import type { CamelotKey } from "@/lib/camelot";
 import type { FxKind } from "@/audio/fx";
+import { defaultMidiSettings, type MidiSettings } from "@/midi/engine";
+
+export type MidiState = MidiSettings & { _devicesVersion?: number };
 
 export type DeckId = "A" | "B" | "C" | "D";
 export type SkinId =
@@ -179,6 +182,7 @@ interface AppState {
   videoMix: VideoMixState;
   selectedFolderId: string | null;
   folders: FolderRecord[];
+  midi: MidiState;
 
   // setters
   updateDeck: (id: DeckId, patch: Partial<DeckState>) => void;
