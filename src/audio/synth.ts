@@ -254,7 +254,10 @@ let _widthMid: GainNode | null = null;
 let _widthSide: GainNode | null = null;
 
 let _currentPreset: SynthPreset = SYNTH_PRESETS[0];
-const activeVoices = new Map<number, Voice>();
+/** Active layered presets — when length > 1 each MIDI note plays across all of them. */
+let _activeLayers: SynthPresetId[] = [];
+/** Active voices keyed by `${midi}:${presetId}` so layered notes don't collide. */
+const activeVoices = new Map<string, Voice>();
 
 function makeImpulse(ctx: AudioContext, seconds = 2.2, decay = 2.5): AudioBuffer {
   const rate = ctx.sampleRate;
@@ -492,6 +495,22 @@ export function setSynthPreset(id: SynthPresetId) {
 export function getCurrentSynthPreset(): SynthPresetId {
   return _currentPreset.id;
 }
+
+/**
+ * Configure additional layered presets that play on top of the main preset.
+ * Pass [] to disable layering (single-preset mode).
+ */
+export function setSynthLayers(ids: SynthPresetId[]) {
+  // Filter to known presets and de-duplicate
+  const valid = SYNTH_PRESETS.map((p) => p.id);
+  const seen = new Set<SynthPresetId>();
+  _activeLayers = [];
+  for (const id of ids) {
+    if (valid.includes(id) && !seen.has(id)) { _activeLayers.push(id); seen.add(id); }
+  }
+}
+
+export function getSynthLayers(): SynthPresetId[] { return [..._activeLayers]; }
 
 export function setSynthFx(fx: Partial<SynthFx>) {
   ensureSynth();
