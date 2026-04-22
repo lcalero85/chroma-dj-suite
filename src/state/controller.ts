@@ -408,6 +408,22 @@ export function deleteHotCue(id: DeckId, slot: number) {
   useApp.getState().updateDeck(id, { hotCues: cues });
 }
 
+/** Clear all hot cues on a deck. Also persists the change in the track record. */
+export function clearHotCues(id: DeckId) {
+  const ds = useApp.getState().decks[id];
+  useApp.getState().updateDeck(id, { hotCues: [] });
+  if (ds.trackId) {
+    void getTrack(ds.trackId).then((tr) => {
+      if (tr) putTrack({ ...tr, hotCues: [] });
+    });
+  }
+}
+
+/** Clear hot cues on every deck. */
+export function clearAllHotCues() {
+  (["A", "B", "C", "D"] as DeckId[]).forEach((id) => clearHotCues(id));
+}
+
 export function setLoop(id: DeckId, beats: number) {
   const ds = useApp.getState().decks[id];
   if (!ds.bpm) return;
