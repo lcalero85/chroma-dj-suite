@@ -191,6 +191,18 @@ export interface SettingsState {
   synthEnabled?: boolean;
   /** Enable the live vocal panel (autotune + harmonizer + FX). Default false. */
   liveVocalEnabled?: boolean;
+  /** Selected microphone input device id (V8, USB mic, etc.). Empty = system default. */
+  audioInputDeviceId?: string;
+  /** Selected audio output device id. Empty = system default. */
+  audioOutputDeviceId?: string;
+  /** Web monitoring (route master to default browser output). When false, only the selected output (e.g. V8) plays. Default true. */
+  webMonitoring?: boolean;
+  /** Microphone noise suppression. */
+  micNoiseSuppression?: boolean;
+  /** Microphone echo cancellation. */
+  micEchoCancellation?: boolean;
+  /** Microphone auto-gain control. */
+  micAutoGainControl?: boolean;
 }
 
 export interface SessionStats {
@@ -299,6 +311,12 @@ const defaultSettings: SettingsState = {
   waveformStyle: "classic",
   synthEnabled: false,
   liveVocalEnabled: false,
+  audioInputDeviceId: "",
+  audioOutputDeviceId: "",
+  webMonitoring: true,
+  micNoiseSuppression: true,
+  micEchoCancellation: true,
+  micAutoGainControl: false,
 };
 
 export const useApp = create<AppState>()(
