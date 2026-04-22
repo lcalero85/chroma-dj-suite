@@ -607,8 +607,34 @@ export function LibraryPanel() {
                 key={t.id}
                 draggable
                 onDragStart={(e) => e.dataTransfer.setData("text/track-id", t.id)}
-                style={{ borderTop: "1px solid var(--line)" }}
+                className="vdj-row-focusable"
+                tabIndex={0}
+                role="row"
+                aria-label={`${t.title}${t.artist ? " — " + t.artist : ""}${t.bpm ? " · " + t.bpm.toFixed(1) + " BPM" : ""}`}
+                style={{ borderTop: "1px solid var(--line)", outline: "none" }}
                 onDoubleClick={() => loadTrackToDeck("A", t.id)}
+                onKeyDown={(e) => {
+                  // Keyboard navigation:
+                  //   Enter           → load on Deck A
+                  //   Shift+Enter     → load on Deck B
+                  //   Delete/Backspace→ remove track
+                  //   ArrowDown/Up    → move focus to sibling row
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void loadTrackToDeck(e.shiftKey ? "B" : "A", t.id);
+                  } else if (e.key === "Delete" || e.key === "Backspace") {
+                    e.preventDefault();
+                    void deleteTrack(t.id).then(async () => setTracks(await listTracks()));
+                  } else if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    const next = (e.currentTarget.nextElementSibling as HTMLElement | null);
+                    next?.focus();
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    const prev = (e.currentTarget.previousElementSibling as HTMLElement | null);
+                    prev?.focus();
+                  }
+                }}
               >
                 <td style={{ padding: 6, color: t.kind === "video" ? "var(--accent)" : "var(--text-3)" }}>
                   {t.kind === "video" ? <Film size={12} /> : null}

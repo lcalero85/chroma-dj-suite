@@ -574,6 +574,26 @@ html[data-skin="royal"] {
   box-shadow: 0 0 0 2px currentColor inset, 0 0 14px currentColor;
 }
 
+/* ===== Accessibility: focus-visible ring (keyboard navigation only) =====
+ * Applies to all interactive controls when focused via keyboard. Mouse focus
+ * is suppressed by :focus-visible spec, so this only appears for tab nav.
+ */
+.vdj-btn:focus-visible,
+.vdj-pad:focus-visible,
+.vdj-knob:focus-visible,
+.vdj-fader-track:focus-visible,
+.vdj-panel-inset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 35%, transparent);
+}
+/* Focusable rows in the library table */
+tr.vdj-row-focusable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
 @keyframes vdj-pulse {
   0%, 100% { box-shadow: var(--beat-glow); }
   50% { box-shadow: none; }
@@ -589,6 +609,31 @@ html[data-skin="royal"] {
 .vdj-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .vdj-scroll::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
 .vdj-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ===== Accessibility: prefers-reduced-motion =====
+ * Disable / soften animations for users who request reduced motion at the OS
+ * level. We keep functional transitions (e.g. fader caps) but kill purely
+ * decorative loops (pulses, spins, beat glow) that can trigger vestibular
+ * issues. Audio-driven feedback (VU meter canvas) is unaffected since it is
+ * not a CSS animation.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .vdj-pulse,
+  .vdj-spin,
+  .vdj-panel[data-loaded="true"],
+  .vdj-panel[data-playing="true"],
+  .vdj-loaded-badge {
+    animation: none !important;
+  }
+}
 
 /* Deck "track loaded" indicator: pulsing border + soft glow */
 @keyframes vdj-loaded-border {
