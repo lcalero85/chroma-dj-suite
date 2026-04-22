@@ -7,10 +7,14 @@ import { toast } from "sonner";
 export type MidiSettings = {
   enabled: boolean;
   profileId: string;
-  /** id of selected MIDIInput; null = auto-match by profile.inputMatch */
+  /** Legacy single-input id (kept for back-compat). null = auto-match by profile.inputMatch */
   inputId: string | null;
-  /** id of selected MIDIOutput; null = auto-match by profile.outputMatch */
+  /** Legacy single-output id (kept for back-compat). null = auto-match by profile.outputMatch */
   outputId: string | null;
+  /** Multiple active input device ids (multi-controller). If empty → fall back to inputId / auto-match. */
+  enabledInputIds?: string[];
+  /** Multiple active output device ids for LED feedback. If empty → fall back to outputId / auto-match. */
+  enabledOutputIds?: string[];
   ledFeedback: boolean;
   /** Custom user bindings layered on top of profile bindings */
   customBindings: MidiBinding[];
@@ -21,6 +25,8 @@ export const defaultMidiSettings: MidiSettings = {
   profileId: "generic",
   inputId: null,
   outputId: null,
+  enabledInputIds: [],
+  enabledOutputIds: [],
   ledFeedback: true,
   customBindings: [],
 };
@@ -37,8 +43,10 @@ type MidiAccessLike = {
 interface DeviceInfo { id: string; name: string; }
 
 let access: MidiAccessLike | null = null;
-let currentInput: MidiInputLike | null = null;
-let currentOutput: MidiOutputLike | null = null;
+/** All currently active inputs (multi-controller). */
+let currentInputs: MidiInputLike[] = [];
+/** All currently active outputs for LED feedback. */
+let currentOutputs: MidiOutputLike[] = [];
 let learning: { resolve: (b: MidiBinding | null) => void } | null = null;
 let activityListeners: ((b: MidiBinding) => void)[] = [];
 let unsubLed: (() => void) | null = null;
@@ -105,16 +113,46 @@ function findDevice<T extends { id: string; name: string | null }>(
 function attachDevices(settings: MidiSettings) {
   if (!access) return;
   const profile = getProfile(settings.profileId);
-  if (currentInput) currentInput.onmidimessage = null;
-  currentInput = findDevice(access.inputs, settings.inputId, profile.inputMatch);
-  currentOutput = findDevice(access.outputs, settings.outputId, profile.outputMatch);
-  if (currentInput) currentInput.onmidimessage = onMessage;
+  // Detach all previous handlers first.
+  for (const i of currentInputs) i.onmidimessage = null;
+  currentInputs = [];
+  currentOutputs = [];
+
+  // Resolve inputs: prefer multi-select list; fall back to legacy single id; then auto-match.
+  const inIds = settings.enabledInputIds && settings.enabledInputIds.length > 0
+    ? settings.enabledInputIds
+    : (settings.inputId ? [settings.inputId] : []);
+  if (inIds.length > 0) {
+    for (const id of inIds) {
+      const dev = access.inputs.get(id);
+      if (dev) currentInputs.push(dev);
+    }
+  } else {
+    const auto = findDevice(access.inputs, null, profile.inputMatch);
+    if (auto) currentInputs.push(auto);
+  }
+
+  // Resolve outputs (LED feedback) the same way.
+  const outIds = settings.enabledOutputIds && settings.enabledOutputIds.length > 0
+    ? settings.enabledOutputIds
+    : (settings.outputId ? [settings.outputId] : []);
+  if (outIds.length > 0) {
+    for (const id of outIds) {
+      const dev = access.outputs.get(id);
+      if (dev) currentOutputs.push(dev);
+    }
+  } else {
+    const auto = findDevice(access.outputs, null, profile.outputMatch);
+    if (auto) currentOutputs.push(auto);
+  }
+
+  for (const i of currentInputs) i.onmidimessage = onMessage;
 }
 
 function detachDevices() {
-  if (currentInput) currentInput.onmidimessage = null;
-  currentInput = null;
-  currentOutput = null;
+  for (const i of currentInputs) i.onmidimessage = null;
+  currentInputs = [];
+  currentOutputs = [];
 }
 
 function getMidiSettings(): MidiSettings {
@@ -157,6 +195,29 @@ export function setMidiInput(id: string | null) {
 export function setMidiOutput(id: string | null) {
   useApp.setState((s) => ({ midi: { ...s.midi, outputId: id } }));
   if (getMidiSettings().enabled) attachLedFeedback();
+}
+
+/** Toggle a single input device on/off in the multi-controller list. */
+export function toggleMidiInput(id: string, on: boolean) {
+  useApp.setState((s) => {
+    const cur = s.midi.enabledInputIds ?? [];
+    const next = on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id);
+    return { midi: { ...s.midi, enabledInputIds: next } };
+  });
+  if (getMidiSettings().enabled) attachDevices(getMidiSettings());
+}
+
+/** Toggle a single output device on/off in the multi-controller list. */
+export function toggleMidiOutput(id: string, on: boolean) {
+  useApp.setState((s) => {
+    const cur = s.midi.enabledOutputIds ?? [];
+    const next = on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id);
+    return { midi: { ...s.midi, enabledOutputIds: next } };
+  });
+  if (getMidiSettings().enabled) {
+    attachDevices(getMidiSettings());
+    attachLedFeedback();
+  }
 }
 
 export function setLedFeedback(on: boolean) {
@@ -312,21 +373,24 @@ function onMessage(e: { data: Uint8Array }) {
 // ---------- LED feedback ----------
 const lastLedSent = new Map<string, number>();
 
-function sendLed(o: MidiOutputLike, ledKey: string, status: number, data1: number, value: number) {
-  const k = `${ledKey}`;
+function sendLed(outs: MidiOutputLike[], ledKey: string, status: number, data1: number, value: number) {
+  const k = ledKey;
   const last = lastLedSent.get(k);
   if (last === value) return;
   lastLedSent.set(k, value);
-  try {
-    o.send([status, data1, Math.max(0, Math.min(127, value | 0))]);
-    activityFlashCb?.("out");
-  } catch (e) {
-    console.warn("MIDI send failed", e);
+  const v = Math.max(0, Math.min(127, value | 0));
+  for (const o of outs) {
+    try {
+      o.send([status, data1, v]);
+      activityFlashCb?.("out");
+    } catch (e) {
+      console.warn("MIDI send failed", e);
+    }
   }
 }
 
 function pushLeds() {
-  if (!currentOutput) return;
+  if (currentOutputs.length === 0) return;
   const settings = getMidiSettings();
   if (!settings.ledFeedback) return;
   const profile = getProfile(settings.profileId);
@@ -337,13 +401,13 @@ function pushLeds() {
     const v = a.ledState();
     if (v === null) continue;
     const status = led.type === "note" ? (0x90 | (led.channel & 0x0F)) : (0xB0 | (led.channel & 0x0F));
-    sendLed(currentOutput, a.id, status, led.data1, v);
+    sendLed(currentOutputs, a.id, status, led.data1, v);
   }
 }
 
 function attachLedFeedback() {
   detachLedFeedback();
-  if (!currentOutput) return;
+  if (currentOutputs.length === 0) return;
   // Push initial state, then subscribe to store changes (light polling)
   pushLeds();
   const id = window.setInterval(pushLeds, 80);

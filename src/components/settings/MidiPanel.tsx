@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n";
 import {
   MIDI_ACTIONS, MIDI_PROFILES,
   setMidiEnabled, setMidiProfile, setMidiInput, setMidiOutput, setLedFeedback,
+  toggleMidiInput, toggleMidiOutput,
   startLearn, cancelLearn, removeCustomBinding, clearCustomBindings,
   exportMidiMappings, importMidiMappings, listMidiDevices, isMidiSupported,
   initMidi, onMidiActivity, subscribeMidiActivity,
@@ -31,6 +32,8 @@ export function MidiPanel() {
 
   const supported = isMidiSupported();
   const devices = useMemo(() => (midi.enabled ? listMidiDevices() : { inputs: [], outputs: [] }), [midi.enabled, midi._devicesVersion]);
+  const enabledIns = midi.enabledInputIds ?? [];
+  const enabledOuts = midi.enabledOutputIds ?? [];
 
   const onLearn = async (actionId: string) => {
     if (!midi.enabled) {
@@ -120,6 +123,43 @@ export function MidiPanel() {
           {devices.outputs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
       </Row>
+
+      {/* Multi-controller: enable several devices at once */}
+      <div className="vdj-label" style={{ marginTop: 4 }}>{t("midiMultiInputs")}</div>
+      <div className="vdj-panel-inset" style={{ padding: 6, maxHeight: 110, overflow: "auto" }}>
+        {devices.inputs.length === 0 && (
+          <div style={{ fontSize: 11, color: "var(--text-3)" }}>{t("midiNoDevice")}</div>
+        )}
+        {devices.inputs.map((d) => (
+          <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, padding: "2px 0" }}>
+            <input
+              type="checkbox"
+              disabled={!midi.enabled}
+              checked={enabledIns.includes(d.id)}
+              onChange={(e) => toggleMidiInput(d.id, e.target.checked)}
+            />
+            <span>{d.name}</span>
+          </label>
+        ))}
+      </div>
+
+      <div className="vdj-label">{t("midiMultiOutputs")}</div>
+      <div className="vdj-panel-inset" style={{ padding: 6, maxHeight: 110, overflow: "auto" }}>
+        {devices.outputs.length === 0 && (
+          <div style={{ fontSize: 11, color: "var(--text-3)" }}>{t("midiNoDevice")}</div>
+        )}
+        {devices.outputs.map((d) => (
+          <label key={d.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, padding: "2px 0" }}>
+            <input
+              type="checkbox"
+              disabled={!midi.enabled}
+              checked={enabledOuts.includes(d.id)}
+              onChange={(e) => toggleMidiOutput(d.id, e.target.checked)}
+            />
+            <span>{d.name}</span>
+          </label>
+        ))}
+      </div>
 
       <Row label={t("midiLedFeedback")}>
         <input type="checkbox" checked={midi.ledFeedback} onChange={(e) => setLedFeedback(e.target.checked)} />

@@ -233,6 +233,8 @@ export const DICT = {
     midiImported: "Mappings imported",
     midiImportFailed: "Invalid mapping file",
     midiLearnBtn: "Learn",
+    midiMultiInputs: "Active inputs (multi-controller)",
+    midiMultiOutputs: "Active outputs (LED feedback)",
 
     // ===== Stream / Live =====
     streamSectionTitle: "Live radio (Internet broadcast)",
@@ -810,6 +812,8 @@ export const DICT = {
     midiImported: "Mapeos importados",
     midiImportFailed: "Archivo de mapeos inválido",
     midiLearnBtn: "Aprender",
+    midiMultiInputs: "Entradas activas (multi-controlador)",
+    midiMultiOutputs: "Salidas activas (feedback LED)",
 
     streamSectionTitle: "Radio en vivo (transmisión por Internet)",
     streamEnable: "Activar transmisión",
