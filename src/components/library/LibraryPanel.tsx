@@ -123,6 +123,8 @@ export function LibraryPanel() {
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [dropActive, setDropActive] = useState(false);
+  const dragDepthRef = useRef(0);
 
   // Advanced filters
   const [showFilters, setShowFilters] = useState(false);
@@ -305,7 +307,63 @@ export function LibraryPanel() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        height: "100%",
+        position: "relative",
+        outline: dropActive ? "2px dashed var(--accent)" : "none",
+        outlineOffset: -4,
+        borderRadius: 6,
+        transition: "outline-color 0.15s",
+      }}
+      onDragEnter={(e) => {
+        // Highlight only when external files are being dragged in.
+        if (e.dataTransfer.types.includes("Files")) {
+          dragDepthRef.current += 1;
+          setDropActive(true);
+        }
+      }}
+      onDragLeave={() => {
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+        if (dragDepthRef.current === 0) setDropActive(false);
+      }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+        e.preventDefault();
+        dragDepthRef.current = 0;
+        setDropActive(false);
+        void handleFiles(e.dataTransfer.files);
+      }}
+    >
+      {dropActive && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 8,
+            background: "color-mix(in oklab, var(--accent) 14%, transparent)",
+            border: "2px dashed var(--accent)",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--accent)",
+            fontWeight: 700,
+            fontSize: 14,
+            letterSpacing: "0.06em",
+            pointerEvents: "none",
+            zIndex: 10,
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <Upload size={18} style={{ marginRight: 8 }} /> {tr("libDropHere")}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button className="vdj-btn" onClick={() => fileRef.current?.click()}>
           <Upload size={12} /> {tr("libImport")}
@@ -496,8 +554,51 @@ export function LibraryPanel() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>
-                  {tr("libEmpty")}
+                <td colSpan={7} style={{ padding: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 12,
+                      padding: "44px 16px",
+                      color: "var(--text-3)",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "color-mix(in oklab, var(--accent) 12%, transparent)",
+                        color: "var(--accent)",
+                      }}
+                    >
+                      <Upload size={26} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-1)" }}>
+                      {tracks.length === 0 ? tr("libEmptyHintTitle") : tr("libEmpty")}
+                    </div>
+                    {tracks.length === 0 && (
+                      <div style={{ fontSize: 11, maxWidth: 380, lineHeight: 1.5 }}>
+                        {tr("libEmptyHintBody")}
+                      </div>
+                    )}
+                    {tracks.length === 0 && (
+                      <button
+                        className="vdj-btn"
+                        style={{ marginTop: 4 }}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        <Upload size={12} /> {tr("libImport")}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             )}

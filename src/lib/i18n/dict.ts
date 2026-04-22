@@ -318,6 +318,10 @@ export const DICT = {
     recVoicePresetToast: "Voice effect: {label}",
     recNoRecordings: "No recordings yet.",
     recNumpadToggleHint: "(` to toggle)",
+    recEmptyHint: "Press the red REC button above to capture your master output. Files are saved automatically and can be downloaded as WebM/WAV.",
+    libDropHere: "Drop audio or video files to import",
+    libEmptyHintTitle: "Your library is empty",
+    libEmptyHintBody: "Drop tracks here or use the Import button above. Supported: MP3, WAV, FLAC, M4A, MP4, MOV, WebM.",
 
     // ===== Radio panel =====
     radioTabQueue: "Queue",
@@ -832,6 +836,10 @@ export const DICT = {
     recVoicePresetToast: "Efecto voz: {label}",
     recNoRecordings: "Sin grabaciones aún.",
     recNumpadToggleHint: "(` para alternar)",
+    recEmptyHint: "Pulsa el botón rojo REC arriba para capturar el master. Los archivos se guardan automáticamente y se pueden descargar como WebM/WAV.",
+    libDropHere: "Suelta archivos de audio o vídeo para importarlos",
+    libEmptyHintTitle: "Tu biblioteca está vacía",
+    libEmptyHintBody: "Suelta pistas aquí o usa el botón Importar arriba. Compatible: MP3, WAV, FLAC, M4A, MP4, MOV, WebM.",
 
     radioTabQueue: "Cola",
     radioTabSegments: "Segmentos",

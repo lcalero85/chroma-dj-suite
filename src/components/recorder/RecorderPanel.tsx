@@ -296,7 +296,34 @@ export function RecorderPanel() {
 
       <div className="vdj-panel-inset vdj-scroll" style={{ flex: 1, overflow: "auto", padding: 6 }}>
         {recordings.length === 0 && (
-          <div style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>{t("recNoRecordings")}</div>
+          <div
+            style={{
+              padding: "36px 16px",
+              textAlign: "center",
+              color: "var(--text-3)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "color-mix(in oklab, var(--bad) 14%, transparent)",
+                color: "var(--bad)",
+              }}
+            >
+              <Circle size={22} fill="currentColor" />
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-1)" }}>{t("recNoRecordings")}</div>
+            <div style={{ fontSize: 11, maxWidth: 360, lineHeight: 1.5 }}>{t("recEmptyHint")}</div>
+          </div>
         )}
         {recordings.map((r) => (
           <RecordingRow
