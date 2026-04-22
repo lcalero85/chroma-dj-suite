@@ -3,6 +3,7 @@ import { useT, LANG_LABELS, type Lang } from "@/lib/i18n";
 import { MidiPanel } from "./MidiPanel";
 import { StreamSettings } from "./StreamSettings";
 import { ShortcutsSettings } from "./ShortcutsSettings";
+import { AudioDevicesPanel } from "./AudioDevicesPanel";
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
@@ -112,6 +113,8 @@ export function SettingsPanel() {
       </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <ShortcutsSettings />
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
+      <AudioDevicesPanel />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <MidiPanel />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />

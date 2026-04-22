@@ -323,7 +323,13 @@ export function setMasterVolume(v: number) {
 export async function setMicOn(on: boolean): Promise<boolean> {
   await ensureRunning();
   if (on) {
-    const ok = await engEnableMic();
+    const s = useApp.getState().settings;
+    const ok = await engEnableMic({
+      deviceId: s.audioInputDeviceId || undefined,
+      noiseSuppression: s.micNoiseSuppression ?? true,
+      echoCancellation: s.micEchoCancellation ?? true,
+      autoGainControl: s.micAutoGainControl ?? false,
+    });
     if (!ok) {
       toast("No se pudo activar el micrófono");
       return false;

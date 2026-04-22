@@ -203,6 +203,23 @@ export const DICT = {
     liveVocalDelayTime: "Delay time",
     liveVocalDelayFb: "Feedback",
 
+    // ===== Audio interface (V8, USB cards…) =====
+    audioInterface: "AUDIO INTERFACE",
+    audioInput: "Input device (mic)",
+    audioOutput: "Output device",
+    audioDeviceDefault: "System default",
+    audioWebMonitoring: "Web monitoring (browser output)",
+    audioWebMonitoringTip: "If disabled, audio plays only through the selected output device (e.g. Behringer V8). The browser default output is muted.",
+    audioMicProcessing: "MIC PROCESSING",
+    audioNoiseSuppression: "Noise suppression",
+    audioNoiseSuppressionTip: "Removes background hiss and ambient noise from the microphone.",
+    audioEchoCancellation: "Echo cancellation",
+    audioAutoGainControl: "Auto-gain control",
+    audioMicRestartHint: "Tip: settings apply on next mic enable.",
+    audioGrantPerm: "Grant microphone permission to see device names.",
+    audioGrantBtn: "Grant",
+    audioSinkUnsupported: "This browser does not support output device selection (use Chrome/Edge).",
+
     // ===== Help =====
     downloadPdf: "Download PDF manual",
     pdfDownloaded: "PDF manual downloaded",
@@ -831,6 +848,23 @@ export const DICT = {
     liveVocalDelayMix: "Mezcla delay",
     liveVocalDelayTime: "Tiempo delay",
     liveVocalDelayFb: "Feedback",
+
+    // ===== Interfaz de audio (V8, tarjetas USB…) =====
+    audioInterface: "INTERFAZ DE AUDIO",
+    audioInput: "Entrada (micrófono)",
+    audioOutput: "Salida de audio",
+    audioDeviceDefault: "Predeterminado del sistema",
+    audioWebMonitoring: "Monitorización web (salida del navegador)",
+    audioWebMonitoringTip: "Si está desactivado, el audio sale solo por la interfaz seleccionada (ej. Behringer V8). La salida del navegador queda en silencio.",
+    audioMicProcessing: "PROCESAMIENTO DEL MIC",
+    audioNoiseSuppression: "Eliminar ruido",
+    audioNoiseSuppressionTip: "Quita el ruido de fondo y el siseo ambiente del micrófono.",
+    audioEchoCancellation: "Cancelación de eco",
+    audioAutoGainControl: "Control automático de ganancia",
+    audioMicRestartHint: "Los cambios se aplican al volver a activar el micrófono.",
+    audioGrantPerm: "Otorga permiso de micrófono para ver los nombres de los dispositivos.",
+    audioGrantBtn: "Permitir",
+    audioSinkUnsupported: "Este navegador no permite seleccionar dispositivo de salida (usa Chrome/Edge).",
 
     downloadPdf: "Descargar manual PDF",
     pdfDownloaded: "Manual PDF descargado",
