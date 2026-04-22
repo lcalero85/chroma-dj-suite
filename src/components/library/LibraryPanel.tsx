@@ -554,8 +554,51 @@ export function LibraryPanel() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: 24, textAlign: "center", color: "var(--text-3)" }}>
-                  {tr("libEmpty")}
+                <td colSpan={7} style={{ padding: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 12,
+                      padding: "44px 16px",
+                      color: "var(--text-3)",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "color-mix(in oklab, var(--accent) 12%, transparent)",
+                        color: "var(--accent)",
+                      }}
+                    >
+                      <Upload size={26} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-1)" }}>
+                      {tracks.length === 0 ? tr("libEmptyHintTitle") : tr("libEmpty")}
+                    </div>
+                    {tracks.length === 0 && (
+                      <div style={{ fontSize: 11, maxWidth: 380, lineHeight: 1.5 }}>
+                        {tr("libEmptyHintBody")}
+                      </div>
+                    )}
+                    {tracks.length === 0 && (
+                      <button
+                        className="vdj-btn"
+                        style={{ marginTop: 4 }}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        <Upload size={12} /> {tr("libImport")}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             )}
