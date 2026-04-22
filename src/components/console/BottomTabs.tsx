@@ -8,11 +8,12 @@ import { OnlinePanel } from "../online/OnlinePanel";
 import { MixPresetsPanel } from "../presets/MixPresetsPanel";
 import { SynthPanel } from "@/components/synth/SynthPanel";
 import { LiveVocalPanel } from "@/components/livevocal/LiveVocalPanel";
+import { BeatMakerPanel } from "@/components/beatmaker/BeatMakerPanel";
 import { useApp as useAppStore } from "@/state/store";
 import { useT, type DictKey } from "@/lib/i18n";
 import { useEffect } from "react";
 
-type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets" | "synth" | "livevocal";
+type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets" | "synth" | "livevocal" | "beatmaker";
 
 const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "library",  key: "library",  advanced: false },
@@ -24,6 +25,7 @@ const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "presets",  key: "mixPresets", advanced: false },
   { id: "synth",    key: "synth",      advanced: false },
   { id: "livevocal", key: "liveVocal",  advanced: false },
+  { id: "beatmaker", key: "beatMaker",  advanced: false },
 ];
 
 export function BottomTabs() {
@@ -47,10 +49,13 @@ export function BottomTabs() {
       presets: panelVis?.presets,
       synth: panelVis?.synth,
       livevocal: panelVis?.livevocal,
+      beatmaker: panelVis?.beatmaker,
     };
     if (visMap[tb.id] === false) return false;
     if (tb.id === "synth" && !synthEnabled) return false;
     if (tb.id === "livevocal" && !liveVocalEnabled) return false;
+    // Beat Maker is opt-in via Settings (panelVisibility.beatmaker === true).
+    if (tb.id === "beatmaker" && panelVis?.beatmaker !== true) return false;
     return mode === "advanced" || !tb.advanced;
   });
 
@@ -78,6 +83,7 @@ export function BottomTabs() {
         {tab === "presets" && <MixPresetsPanel />}
         {synthEnabled && tab === "synth" && <SynthPanel />}
         {liveVocalEnabled && tab === "livevocal" && <LiveVocalPanel />}
+        {panelVis?.beatmaker === true && tab === "beatmaker" && <BeatMakerPanel />}
       </div>
     </div>
   );

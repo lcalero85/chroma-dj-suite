@@ -150,6 +150,7 @@ function PanelVisibilityRows() {
     { key: "presets",   label: t("panelPresets") },
     { key: "synth",     label: t("panelSynth") },
     { key: "livevocal", label: t("panelLiveVocal") },
+    { key: "beatmaker", label: t("panelBeatMaker") },
   ];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

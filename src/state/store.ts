@@ -215,6 +215,7 @@ export interface SettingsState {
     presets?: boolean;
     synth?: boolean;
     livevocal?: boolean;
+    beatmaker?: boolean;
   };
 }
 
@@ -270,7 +271,7 @@ interface AppState {
   playlists: PlaylistRecord[];
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
-  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets" | "synth" | "livevocal";
+  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets" | "synth" | "livevocal" | "beatmaker";
   drawer: null | "settings" | "skins" | "help" | "about";
   search: string;
   selectedPlaylistId: string | null;
@@ -340,6 +341,7 @@ const defaultSettings: SettingsState = {
     presets: true,
     synth: false,
     livevocal: false,
+    beatmaker: false,
   },
 };
 
