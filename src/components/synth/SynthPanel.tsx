@@ -282,6 +282,34 @@ export function SynthPanel() {
         </div>
       </div>
 
+      {/* Layered presets */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
+          <div className="vdj-label" title={t("synthLayersTip")}>{t("synthLayers")} ({layers.length})</div>
+          <button className="vdj-btn" onClick={() => setLayersState([])} disabled={layers.length === 0}>{t("synthLayersClear")}</button>
+        </div>
+        <div style={{ fontSize: 10, opacity: 0.65, marginBottom: 6 }}>{t("synthLayersHint")}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 4 }}>
+          {SYNTH_PRESETS.map((p) => {
+            const isMain = p.id === preset;
+            const isLayer = layers.includes(p.id);
+            return (
+              <button
+                key={p.id}
+                className="vdj-btn"
+                data-active={isLayer}
+                disabled={isMain}
+                onClick={() => toggleLayer(p.id)}
+                title={isMain ? "Main preset" : p.label}
+                style={{ padding: "6px 4px", fontSize: 10, fontWeight: 600, opacity: isMain ? 0.45 : 1 }}
+              >
+                {isLayer ? "✓ " : ""}{p.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* FX knobs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
         <FxKnob label={t("synthFxReverb")}   value={fx.reverb}   onChange={(v) => setFx((f) => ({ ...f, reverb: v }))} />
