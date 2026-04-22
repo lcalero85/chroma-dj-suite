@@ -324,24 +324,48 @@ export async function enableMic(opts: MicOptions = {}): Promise<boolean> {
     if (opts.deviceId !== undefined) disableMic();
     else return true;
   }
-  try {
-    const audio: MediaTrackConstraints = {
-      echoCancellation: opts.echoCancellation ?? true,
-      noiseSuppression: opts.noiseSuppression ?? true,
-      autoGainControl: opts.autoGainControl ?? false,
-    };
-    if (opts.deviceId) audio.deviceId = { exact: opts.deviceId };
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio,
-    });
-    _micStream = stream;
-    _micSource = ctx.createMediaStreamSource(stream);
-    _micSource.connect(micGain);
-    return true;
-  } catch (e) {
-    console.error("Mic error", e);
-    return false;
+  // Build a list of progressively-relaxed constraint attempts. If a saved
+  // deviceId no longer exists (or sample rate / processing flags aren't
+ // supported), getUserMedia throws OverconstrainedError. We retry with
+  // softer constraints before giving up.
+  const attempts: MediaTrackConstraints[] = [];
+  const base: MediaTrackConstraints = {
+    echoCancellation: opts.echoCancellation ?? true,
+    noiseSuppression: opts.noiseSuppression ?? true,
+    autoGainControl: opts.autoGainControl ?? false,
+  };
+  if (opts.deviceId) {
+    // 1) exact device with processing
+    attempts.push({ ...base, deviceId: { exact: opts.deviceId } });
+    // 2) preferred device (ideal) with processing — falls back to default if missing
+    attempts.push({ ...base, deviceId: { ideal: opts.deviceId } });
   }
+  // 3) processing flags only
+  attempts.push({ ...base });
+  // 4) bare minimum — just audio:true
+  attempts.push({});
+
+  let lastErr: unknown = null;
+  for (const audio of attempts) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: Object.keys(audio).length ? audio : true,
+      });
+      _micStream = stream;
+      _micSource = ctx.createMediaStreamSource(stream);
+      _micSource.connect(micGain);
+      return true;
+    } catch (e) {
+      lastErr = e;
+      const name = (e as DOMException)?.name;
+      // Only retry on constraint-related failures. Permission errors are terminal.
+      if (name !== "OverconstrainedError" && name !== "NotFoundError" && name !== "NotReadableError") {
+        break;
+      }
+    }
+  }
+  console.error("Mic error", lastErr);
+  return false;
 }
 
 /** List available audio input/output devices. Requires prior mic permission for full labels. */
