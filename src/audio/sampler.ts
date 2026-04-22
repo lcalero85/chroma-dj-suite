@@ -14,6 +14,9 @@ export interface SamplerSlot {
 
 const slots: SamplerSlot[] = [];
 
+/** Track active one-shot sources per slot so they can be stopped. */
+const activeSources = new Map<number, Set<{ src: AudioBufferSourceNode; gain: GainNode }>>();
+
 export function initSampler(banks = 4, padsPerBank = 16) {
   if (slots.length > 0) return slots;
   const palette = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
