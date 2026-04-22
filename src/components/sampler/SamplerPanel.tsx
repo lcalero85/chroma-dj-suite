@@ -49,9 +49,40 @@ export function SamplerPanel() {
             className="vdj-pad"
             data-armed={!!s.buffer}
             style={{ color: s.color, height: "auto", flexDirection: "column", padding: 6, gap: 4, justifyContent: "space-between" }}
+            role="group"
+            aria-label={s.buffer ? `Sampler pad ${s.id - bank * 16 + 1}: ${s.name}` : `Empty sampler pad ${s.id - bank * 16 + 1}`}
           >
             <div
               style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", width: "100%" }}
+              role="button"
+              tabIndex={0}
+              aria-label={
+                s.buffer
+                  ? t("samplerTipLoaded", { action: s.loop ? t("samplerActionLoop") : t("samplerActionTrigger"), name: s.name })
+                  : t("samplerTipEmpty")
+              }
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                if (!s.buffer) {
+                  setTarget(s.id);
+                  fileRef.current?.click();
+                  return;
+                }
+                if (s.loop) {
+                  const existing = stopFns.current.get(s.id);
+                  if (existing) {
+                    existing();
+                    stopFns.current.delete(s.id);
+                  } else {
+                    const stop = startSlotLoop(s.id);
+                    if (stop) stopFns.current.set(s.id, stop);
+                  }
+                  force((x) => x + 1);
+                  return;
+                }
+                triggerSlot(s.id);
+              }}
               onClick={() => {
                 if (!s.buffer) {
                   setTarget(s.id);
