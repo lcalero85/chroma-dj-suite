@@ -849,6 +849,23 @@ export const DICT = {
     liveVocalDelayTime: "Tiempo delay",
     liveVocalDelayFb: "Feedback",
 
+    // ===== Interfaz de audio (V8, tarjetas USB…) =====
+    audioInterface: "INTERFAZ DE AUDIO",
+    audioInput: "Entrada (micrófono)",
+    audioOutput: "Salida de audio",
+    audioDeviceDefault: "Predeterminado del sistema",
+    audioWebMonitoring: "Monitorización web (salida del navegador)",
+    audioWebMonitoringTip: "Si está desactivado, el audio sale solo por la interfaz seleccionada (ej. Behringer V8). La salida del navegador queda en silencio.",
+    audioMicProcessing: "PROCESAMIENTO DEL MIC",
+    audioNoiseSuppression: "Eliminar ruido",
+    audioNoiseSuppressionTip: "Quita el ruido de fondo y el siseo ambiente del micrófono.",
+    audioEchoCancellation: "Cancelación de eco",
+    audioAutoGainControl: "Control automático de ganancia",
+    audioMicRestartHint: "Los cambios se aplican al volver a activar el micrófono.",
+    audioGrantPerm: "Otorga permiso de micrófono para ver los nombres de los dispositivos.",
+    audioGrantBtn: "Permitir",
+    audioSinkUnsupported: "Este navegador no permite seleccionar dispositivo de salida (usa Chrome/Edge).",
+
     downloadPdf: "Descargar manual PDF",
     pdfDownloaded: "Manual PDF descargado",
     pdfFailed: "No se pudo generar el PDF",
