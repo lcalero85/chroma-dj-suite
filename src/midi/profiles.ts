@@ -369,6 +369,57 @@ const chocolate: MidiProfile = {
   ledMap: {},
 };
 
+// ---------------- M-Vave SMK-25 II (25-key MIDI keyboard + 8 pads + 8 knobs) ----------------
+// The SMK-25 II is a portable wireless/USB MIDI keyboard. Keyboard sends Note On/Off on
+// channel 0 (standard MIDI note numbers). Pads send notes 36..43 on channel 9 (drum-style).
+// Knobs (CC 21..28 on ch 0 by default) and transport buttons (CC 115..118) round out the controls.
+// We map pads/knobs/transport to DJ functions; the keyboard notes pass through to the Synth panel
+// when it is enabled (handled by the synth engine itself, not by a binding here).
+const smk25ii: MidiProfile = {
+  id: "mvave-smk-25ii",
+  name: "M-Vave SMK-25 II",
+  inputMatch: "SMK-25",
+  outputMatch: "SMK-25",
+  bindings: [
+    // Pads (ch 9, notes 36..43): Hot cues A (row 1) + Hot cues B (row 2)
+    { type: "note", channel: 9, data1: 36, actionId: "deck.A.hotcue.0" },
+    { type: "note", channel: 9, data1: 37, actionId: "deck.A.hotcue.1" },
+    { type: "note", channel: 9, data1: 38, actionId: "deck.A.hotcue.2" },
+    { type: "note", channel: 9, data1: 39, actionId: "deck.A.hotcue.3" },
+    { type: "note", channel: 9, data1: 40, actionId: "deck.B.hotcue.0" },
+    { type: "note", channel: 9, data1: 41, actionId: "deck.B.hotcue.1" },
+    { type: "note", channel: 9, data1: 42, actionId: "deck.B.hotcue.2" },
+    { type: "note", channel: 9, data1: 43, actionId: "deck.B.hotcue.3" },
+    // Knobs (ch 0, CC 21..28): EQ + filter for both decks
+    { type: "cc", channel: 0, data1: 21, actionId: "deck.A.eq.hi" },
+    { type: "cc", channel: 0, data1: 22, actionId: "deck.A.eq.mid" },
+    { type: "cc", channel: 0, data1: 23, actionId: "deck.A.eq.lo" },
+    { type: "cc", channel: 0, data1: 24, actionId: "deck.A.filter" },
+    { type: "cc", channel: 0, data1: 25, actionId: "deck.B.eq.hi" },
+    { type: "cc", channel: 0, data1: 26, actionId: "deck.B.eq.mid" },
+    { type: "cc", channel: 0, data1: 27, actionId: "deck.B.eq.lo" },
+    { type: "cc", channel: 0, data1: 28, actionId: "deck.B.filter" },
+    // Transport buttons (ch 0, CC 115..118): Play A/B + Sync A/B
+    { type: "cc", channel: 0, data1: 115, actionId: "deck.A.play" },
+    { type: "cc", channel: 0, data1: 116, actionId: "deck.B.play" },
+    { type: "cc", channel: 0, data1: 117, actionId: "deck.A.sync" },
+    { type: "cc", channel: 0, data1: 118, actionId: "deck.B.sync" },
+    // Mod wheel (CC 1) → master volume; Pitch bend → crossfader
+    { type: "cc", channel: 0, data1: 1, actionId: "mixer.master" },
+    { type: "pitchbend", channel: 0, data1: 0, actionId: "mixer.xfader" },
+  ],
+  ledMap: {
+    "deck.A.hotcue.0": { type: "note", channel: 9, data1: 36 },
+    "deck.A.hotcue.1": { type: "note", channel: 9, data1: 37 },
+    "deck.A.hotcue.2": { type: "note", channel: 9, data1: 38 },
+    "deck.A.hotcue.3": { type: "note", channel: 9, data1: 39 },
+    "deck.B.hotcue.0": { type: "note", channel: 9, data1: 40 },
+    "deck.B.hotcue.1": { type: "note", channel: 9, data1: 41 },
+    "deck.B.hotcue.2": { type: "note", channel: 9, data1: 42 },
+    "deck.B.hotcue.3": { type: "note", channel: 9, data1: 43 },
+  },
+};
+
 export const MIDI_PROFILES: MidiProfile[] = [
   generic, smcPad, smk25ii, generic16Pads, lpd8, chocolate, ddj400, mixtrack, inpulse,
 ];
