@@ -36,6 +36,7 @@ export const DICT = {
     sampler: "Sampler",
     recorder: "Recorder",
     mixPresets: "Presets",
+    synth: "Synth",
 
     // ===== Deck =====
     play: "Play",
