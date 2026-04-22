@@ -298,6 +298,7 @@ const defaultSettings: SettingsState = {
   enabledDecks: 2,
   waveformStyle: "classic",
   synthEnabled: false,
+  liveVocalEnabled: false,
 };
 
 export const useApp = create<AppState>()(
