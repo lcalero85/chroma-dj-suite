@@ -1065,6 +1065,7 @@ export const DICT = {
     skinsTitle: "Skins",
 
     videoMixLabel: "● VIDEO MIX",
+    // skin name keys are global (skin_*_name / skin_*_desc) — Spanish overrides:
     videoHide: "Ocultar pantalla",
     videoShowBtn: "▶ MOSTRAR VIDEO",
     videoResize: "Redimensionar",
