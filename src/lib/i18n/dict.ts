@@ -36,6 +36,7 @@ export const DICT = {
     sampler: "Sampler",
     recorder: "Recorder",
     mixPresets: "Presets",
+    synth: "Synth",
 
     // ===== Deck =====
     play: "Play",
@@ -141,6 +142,18 @@ export const DICT = {
     wfClassic: "Classic (filled)",
     wfBars: "Separated bars",
     wfDual: "Dual (Serato)",
+    synthEnableLabel: "Live synthesizer",
+    synthEnableTip: "Enable the Synth tab (64-key keyboard + FX)",
+    synthPresetLabel: "Sound",
+    synthFxReverb: "Reverb",
+    synthFxDelay: "Delay",
+    synthFxFilter: "Filter",
+    synthFxChorus: "Chorus",
+    synthVolume: "Volume",
+    synthOctave: "Octave",
+    synthQwertyTip: "QWERTY shortcuts (toggle)",
+    synthPanic: "Panic (all notes off)",
+    synthHelp: "Click the keys, use QWERTY, or connect a MIDI controller.",
 
     // ===== Help =====
     downloadPdf: "Download PDF manual",
@@ -605,6 +618,7 @@ export const DICT = {
     sampler: "Sampler",
     recorder: "Grabadora",
     mixPresets: "Presets",
+    synth: "Sintetizador",
 
     play: "Play",
     pause: "Pausa",
@@ -707,6 +721,18 @@ export const DICT = {
     wfClassic: "Clásico (relleno)",
     wfBars: "Barras separadas",
     wfDual: "Dual (Serato)",
+    synthEnableLabel: "Sintetizador en vivo",
+    synthEnableTip: "Habilita la pestaña Sintetizador (teclado de 64 teclas + FX)",
+    synthPresetLabel: "Sonido",
+    synthFxReverb: "Reverb",
+    synthFxDelay: "Delay",
+    synthFxFilter: "Filter",
+    synthFxChorus: "Chorus",
+    synthVolume: "Volumen",
+    synthOctave: "Octava",
+    synthQwertyTip: "Atajos QWERTY (toggle)",
+    synthPanic: "Pánico (silenciar)",
+    synthHelp: "Click en las teclas, usa QWERTY o conecta un MIDI controller.",
 
     downloadPdf: "Descargar manual PDF",
     pdfDownloaded: "Manual PDF descargado",

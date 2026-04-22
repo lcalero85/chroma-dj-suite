@@ -6,10 +6,12 @@ import { RecorderPanel } from "../recorder/RecorderPanel";
 import { RadioPanel } from "../radio/RadioPanel";
 import { OnlinePanel } from "../online/OnlinePanel";
 import { MixPresetsPanel } from "../presets/MixPresetsPanel";
+import { SynthPanel } from "../synth/SynthPanel";
+import { useApp as useAppStore } from "@/state/store";
 import { useT, type DictKey } from "@/lib/i18n";
 import { useEffect } from "react";
 
-type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets";
+type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets" | "synth";
 
 const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "library",  key: "library",  advanced: false },
@@ -19,14 +21,19 @@ const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "fx",       key: "fx",       advanced: true },
   { id: "sampler",  key: "sampler",  advanced: true },
   { id: "presets",  key: "mixPresets", advanced: false },
+  { id: "synth",    key: "synth",      advanced: false },
 ];
 
 export function BottomTabs() {
   const tab = useApp((s) => s.activeBottomTab);
   const setTab = useApp((s) => s.setActiveBottomTab);
   const mode = useApp((s) => s.settings.appMode);
+  const synthEnabled = useAppStore((s) => s.settings.synthEnabled ?? false);
   const t = useT();
-  const tabs = ALL_TABS.filter((tb) => mode === "advanced" || !tb.advanced);
+  const tabs = ALL_TABS.filter((tb) => {
+    if (tb.id === "synth" && !synthEnabled) return false;
+    return mode === "advanced" || !tb.advanced;
+  });
 
   // If we're in basic mode and the active tab is hidden, fall back to library.
   useEffect(() => {
@@ -50,6 +57,7 @@ export function BottomTabs() {
         {mode === "advanced" && tab === "sampler" && <SamplerPanel />}
         {tab === "recorder" && <RecorderPanel />}
         {tab === "presets" && <MixPresetsPanel />}
+        {synthEnabled && tab === "synth" && <SynthPanel />}
       </div>
     </div>
   );
