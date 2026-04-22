@@ -407,6 +407,7 @@ export const DICT = {
     samplerLoopTip: "Loop mode: click to start/stop",
     samplerColorTip: "Change color",
     samplerLoopBadge: "● LOOP",
+    samplerStopTip: "Stop sample playback",
 
     // ===== Presets panel =====
     presetsApplyTo: "Apply to Deck",
