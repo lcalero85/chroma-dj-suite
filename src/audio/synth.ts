@@ -274,14 +274,14 @@ function ensureSynth() {
   // Drive
   _drivePre = ctx.createGain(); _drivePre.gain.value = 1;
   _driveShaper = ctx.createWaveShaper();
-  _driveShaper.curve = makeDriveCurve(40) as unknown as Float32Array;
+  _driveShaper.curve = makeDriveCurve(40) as unknown as WaveShaperNode["curve"];
   _driveShaper.oversample = "2x";
   _driveDry = ctx.createGain(); _driveDry.gain.value = 1;
   _driveWet = ctx.createGain(); _driveWet.gain.value = 0;
 
   // Bitcrush
   _bitcrushShaper = ctx.createWaveShaper();
-  _bitcrushShaper.curve = makeBitcrushCurve(8) as unknown as Float32Array;
+  _bitcrushShaper.curve = makeBitcrushCurve(8) as unknown as WaveShaperNode["curve"];
   _bitcrushDry = ctx.createGain(); _bitcrushDry.gain.value = 1;
   _bitcrushWet = ctx.createGain(); _bitcrushWet.gain.value = 0;
 
@@ -488,7 +488,7 @@ export function setSynthFx(fx: Partial<SynthFx>) {
     _bitcrushWet.gain.setTargetAtTime(w, t, tau);
     // Re-map curve based on amount: more crush = fewer bits
     const bits = Math.max(2, Math.round(12 - w * 10));
-    _bitcrushShaper.curve = makeBitcrushCurve(bits) as unknown as Float32Array;
+    _bitcrushShaper.curve = makeBitcrushCurve(bits) as unknown as WaveShaperNode["curve"];
   }
   if (typeof fx.phaser === "number" && _phaserWet && _phaserDry) {
     const w = Math.max(0, Math.min(1, fx.phaser));
