@@ -12,6 +12,7 @@ export function VuMeter({ analyser, orientation = "vertical", width = 8, height 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const peakRef = useRef<number[]>([0, 0]);
   const peakTsRef = useRef<number[]>([0, 0]);
+  const clipTsRef = useRef<number>(0);
 
   useEffect(() => {
     if (!analyser) return;
@@ -34,16 +35,27 @@ export function VuMeter({ analyser, orientation = "vertical", width = 8, height 
     const draw = () => {
       analyser.getFloatTimeDomainData(data);
       let rms = 0;
-      for (let i = 0; i < data.length; i++) rms += data[i] * data[i];
+      let absPeak = 0;
+      for (let i = 0; i < data.length; i++) {
+        const s = data[i];
+        rms += s * s;
+        const a = Math.abs(s);
+        if (a > absPeak) absPeak = a;
+      }
       rms = Math.sqrt(rms / data.length);
       const level = Math.min(1, rms * 4);
 
       const now = performance.now();
+      // Clipping flash: triggers when sample exceeds 0 dBFS (~0.99 amplitude),
+      // visible for 600ms after the last detected clip.
+      if (absPeak >= 0.99) clipTsRef.current = now;
+      const clipping = now - clipTsRef.current < 600;
       if (level > peakRef.current[0]) {
         peakRef.current[0] = level;
         peakTsRef.current[0] = now;
-      } else if (now - peakTsRef.current[0] > 700) {
-        peakRef.current[0] = Math.max(0, peakRef.current[0] - 0.01);
+      } else if (now - peakTsRef.current[0] > 1200) {
+        // Slow falloff for peak-hold indicator
+        peakRef.current[0] = Math.max(0, peakRef.current[0] - 0.008);
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -59,8 +71,10 @@ export function VuMeter({ analyser, orientation = "vertical", width = 8, height 
         else if (t > 0.65) color = "var(--vu-mid)";
         const root = getComputedStyle(document.documentElement);
         const c = root.getPropertyValue(color.replace("var(", "").replace(")", "")).trim() || "#2ecc71";
-        ctx.globalAlpha = i < lit || i === peakSeg ? 1 : 0.12;
-        ctx.fillStyle = c;
+        const isPeak = i === peakSeg && peakSeg > 0;
+        ctx.globalAlpha = i < lit ? 1 : isPeak ? 0.9 : 0.12;
+        // Peak-hold marker: brighter color (white tint) for visibility.
+        ctx.fillStyle = isPeak && !(i < lit) ? "#ffffff" : c;
         if (orientation === "vertical") {
           const y = height - (i + 1) * (segH + 1);
           ctx.fillRect(1, y, segW, segH);
@@ -69,6 +83,17 @@ export function VuMeter({ analyser, orientation = "vertical", width = 8, height 
           ctx.fillRect(x, 1, segH, segW);
         }
       }
+      // Clipping flash: red overlay across the whole meter for 600ms after clip.
+      if (clipping) {
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = "#ff2a2a";
+        if (orientation === "vertical") {
+          ctx.fillRect(0, 0, segW + 2, height);
+        } else {
+          ctx.fillRect(0, 0, height, segW + 2);
+        }
+      }
+      ctx.globalAlpha = 1;
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
