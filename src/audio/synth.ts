@@ -596,10 +596,24 @@ export async function noteOn(midi: number, velocity = 0.85) {
   await ensureRunning();
   if (!_input) return;
   const { ctx } = getEngine();
-  const existing = activeVoices.get(midi);
+
+  // Build the list of presets to play: main + any extra layers.
+  const layerIds: SynthPresetId[] = [_currentPreset.id];
+  for (const lid of _activeLayers) {
+    if (lid !== _currentPreset.id && !layerIds.includes(lid)) layerIds.push(lid);
+  }
+  for (const pid of layerIds) {
+    const p = SYNTH_PRESETS.find((x) => x.id === pid);
+    if (p) startVoice(midi, velocity, p, ctx);
+  }
+}
+
+function startVoice(midi: number, velocity: number, p: SynthPreset, ctx: AudioContext) {
+  if (!_input) return;
+  const key = `${midi}:${p.id}`;
+  const existing = activeVoices.get(key);
   if (existing) existing.noteOff(ctx.currentTime);
 
-  const p = _currentPreset;
   const freq = midiToFreq(midi);
   const t0 = ctx.currentTime;
 
@@ -654,15 +668,18 @@ export async function noteOn(midi: number, velocity = 0.85) {
     setTimeout(() => {
       try { envGain.disconnect(); filter.disconnect(); } catch { /* noop */ }
     }, (p.env.release + 0.2) * 1000);
-    activeVoices.delete(midi);
+    activeVoices.delete(key);
   };
 
-  activeVoices.set(midi, { oscs, envGain, filter, noteOff });
+  activeVoices.set(key, { oscs, envGain, filter, noteOff });
 }
 
 export function noteOff(midi: number) {
-  const v = activeVoices.get(midi);
-  if (v) v.noteOff();
+  // Stop every layer's voice for this midi note.
+  const prefix = `${midi}:`;
+  for (const [k, v] of activeVoices) {
+    if (k.startsWith(prefix)) v.noteOff();
+  }
 }
 
 export function allNotesOff() {
