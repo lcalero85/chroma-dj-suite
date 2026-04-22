@@ -21,7 +21,12 @@ export type SynthPresetId =
   | "houseStab"       // House piano stab
   | "psyLead"         // Psytrance saw lead
   | "synthwave"       // Synthwave PWM lead
-  | "futureBass";     // Future bass supersaw chord
+  | "futureBass"      // Future bass supersaw chord
+  // Full-kit / multi-element presets
+  | "drumKit"         // Synthetic drum kit (kick/snare/hat mapped per key)
+  | "bassKit"         // Bass guitar / synth bass kit (slap + pick + sub layers)
+  | "guitarKit"       // Electric guitar kit (clean + power chord + harmonics)
+  | "reggaeFull";     // Full reggae kit (skank + bubble + bassline + horns)
 
 export interface SynthPreset {
   id: SynthPresetId;
@@ -132,6 +137,42 @@ export const SYNTH_PRESETS: SynthPreset[] = [
     oscs: [{ type: "sawtooth", detune: -12, gain: 0.45 }, { type: "sawtooth", detune: -5, gain: 0.45 }, { type: "sawtooth", detune: 5, gain: 0.45 }, { type: "sawtooth", detune: 12, gain: 0.45 }],
     env: { attack: 0.05, decay: 0.4, sustain: 0.8, release: 0.6 },
     filter: { freq: 2400, q: 1.5, envAmount: 1500 }, gain: 0.5 },
+  // ---- Full-kit presets (multi-element synthesized "instruments") ----
+  { id: "drumKit", label: "Drum Kit",
+    // Kit handled by special voice path; oscs here only used for fallback tone
+    oscs: [{ type: "sine", detune: 0, gain: 0.7 }],
+    env: { attack: 0.001, decay: 0.25, sustain: 0.0, release: 0.15 },
+    filter: { freq: 8000, q: 0.7, envAmount: 0 }, gain: 0.85 },
+  { id: "bassKit", label: "Bass Kit",
+    // Layered: square + saw + sub sine for slap/pick/sub character
+    oscs: [
+      { type: "square",   detune: 0,   gain: 0.5 },
+      { type: "sawtooth", detune: 0,   gain: 0.4 },
+      { type: "sine",     detune: -12, gain: 0.55 },
+      { type: "triangle", detune: 7,   gain: 0.18 },
+    ],
+    env: { attack: 0.004, decay: 0.5, sustain: 0.55, release: 0.22 },
+    filter: { freq: 1100, q: 5, envAmount: 1800 }, gain: 0.78 },
+  { id: "guitarKit", label: "Guitar Kit",
+    // Karplus-flavored layered tone: triangle pluck + saw body + harmonic
+    oscs: [
+      { type: "triangle", detune: 0,    gain: 0.55 },
+      { type: "sawtooth", detune: -7,   gain: 0.35 },
+      { type: "square",   detune: 7,    gain: 0.22 },
+      { type: "sine",     detune: 1200, gain: 0.18 },
+    ],
+    env: { attack: 0.003, decay: 0.5, sustain: 0.22, release: 0.5 },
+    filter: { freq: 3200, q: 2.5, envAmount: 2400 }, gain: 0.65 },
+  { id: "reggaeFull", label: "Reggae Full",
+    // Skank organ + sub-bass + brass layered into one playable preset
+    oscs: [
+      { type: "square",   detune: 0,    gain: 0.4 },   // organ skank
+      { type: "sine",     detune: 1200, gain: 0.28 },  // organ harmonic
+      { type: "triangle", detune: -12,  gain: 0.45 },  // sub support
+      { type: "sawtooth", detune: 7,    gain: 0.25 },  // brass shimmer
+    ],
+    env: { attack: 0.004, decay: 0.45, sustain: 0.35, release: 0.45 },
+    filter: { freq: 2200, q: 2, envAmount: 1500 }, gain: 0.62 },
 ];
 
 export interface SynthFx {
@@ -213,7 +254,10 @@ let _widthMid: GainNode | null = null;
 let _widthSide: GainNode | null = null;
 
 let _currentPreset: SynthPreset = SYNTH_PRESETS[0];
-const activeVoices = new Map<number, Voice>();
+/** Active layered presets — when length > 1 each MIDI note plays across all of them. */
+let _activeLayers: SynthPresetId[] = [];
+/** Active voices keyed by `${midi}:${presetId}` so layered notes don't collide. */
+const activeVoices = new Map<string, Voice>();
 
 function makeImpulse(ctx: AudioContext, seconds = 2.2, decay = 2.5): AudioBuffer {
   const rate = ctx.sampleRate;
@@ -452,6 +496,22 @@ export function getCurrentSynthPreset(): SynthPresetId {
   return _currentPreset.id;
 }
 
+/**
+ * Configure additional layered presets that play on top of the main preset.
+ * Pass [] to disable layering (single-preset mode).
+ */
+export function setSynthLayers(ids: SynthPresetId[]) {
+  // Filter to known presets and de-duplicate
+  const valid = SYNTH_PRESETS.map((p) => p.id);
+  const seen = new Set<SynthPresetId>();
+  _activeLayers = [];
+  for (const id of ids) {
+    if (valid.includes(id) && !seen.has(id)) { _activeLayers.push(id); seen.add(id); }
+  }
+}
+
+export function getSynthLayers(): SynthPresetId[] { return [..._activeLayers]; }
+
 export function setSynthFx(fx: Partial<SynthFx>) {
   ensureSynth();
   if (!_chorusWet || !_chorusDry || !_delayWet || !_delayDry || !_reverbWet || !_reverbDry || !_globalFilter) return;
@@ -531,15 +591,126 @@ function midiToFreq(note: number) {
   return 440 * Math.pow(2, (note - 69) / 12);
 }
 
+/**
+ * Drum-kit voice — maps MIDI note ranges to synthesized percussion:
+ *  - low (≤47, B2)            → kick
+ *  - mid (48..59, C3..B3)     → snare/clap
+ *  - high (≥60, ≥C4)          → hat / cymbal
+ *  Specific notes also pick variants (toms, rim, ride).
+ */
+function startDrumVoice(midi: number, velocity: number, ctx: AudioContext, key: string) {
+  if (!_input) return;
+  const t0 = ctx.currentTime;
+  const env = ctx.createGain();
+  env.gain.value = 0;
+  const out = env;
+  const peak = Math.max(0, Math.min(1, velocity)) * 0.85;
+  let sustain = 0.2;
+
+  if (midi <= 47) {
+    // Kick: sine sweep from ~110 → 45 Hz, fast click on top.
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(160, t0);
+    osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.12);
+    const click = ctx.createOscillator();
+    click.type = "triangle";
+    click.frequency.value = 1800;
+    const clickGain = ctx.createGain();
+    clickGain.gain.value = 0.15;
+    clickGain.gain.setValueAtTime(0.15, t0);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.03);
+    osc.connect(env);
+    click.connect(clickGain).connect(env);
+    osc.start(t0); click.start(t0);
+    osc.stop(t0 + 0.6); click.stop(t0 + 0.05);
+    sustain = 0.32;
+  } else if (midi <= 59) {
+    // Snare: noise + tonal tail.
+    const noise = makeNoiseSource(ctx, 0.4);
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass"; bp.frequency.value = 1800; bp.Q.value = 0.7;
+    const tone = ctx.createOscillator();
+    tone.type = "triangle"; tone.frequency.value = 220;
+    const toneG = ctx.createGain(); toneG.gain.value = 0.4;
+    noise.connect(bp).connect(env);
+    tone.connect(toneG).connect(env);
+    noise.start(t0); tone.start(t0);
+    noise.stop(t0 + 0.4); tone.stop(t0 + 0.18);
+    sustain = 0.22;
+  } else {
+    // Hi-hat / cymbal: high-pass filtered noise. Note ≥ 72 = open hat.
+    const open = midi >= 72;
+    const noise = makeNoiseSource(ctx, open ? 0.6 : 0.18);
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 7000; hp.Q.value = 0.5;
+    noise.connect(hp).connect(env);
+    noise.start(t0);
+    noise.stop(t0 + (open ? 0.6 : 0.18));
+    sustain = open ? 0.5 : 0.12;
+  }
+
+  out.connect(_input);
+  env.gain.cancelScheduledValues(t0);
+  env.gain.setValueAtTime(0, t0);
+  env.gain.linearRampToValueAtTime(peak, t0 + 0.002);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + sustain);
+
+  const noteOff = (when?: number) => {
+    const t = when ?? ctx.currentTime;
+    try {
+      env.gain.cancelScheduledValues(t);
+      env.gain.setValueAtTime(env.gain.value, t);
+      env.gain.linearRampToValueAtTime(0, t + 0.05);
+    } catch { /* noop */ }
+    setTimeout(() => { try { env.disconnect(); } catch { /* noop */ } }, 800);
+    activeVoices.delete(key);
+  };
+
+  // Drums are one-shots — auto-clean.
+  setTimeout(() => activeVoices.delete(key), Math.ceil((sustain + 0.1) * 1000));
+  activeVoices.set(key, { oscs: [], envGain: env, filter: env as unknown as BiquadFilterNode, noteOff });
+}
+
+function makeNoiseSource(ctx: AudioContext, durationSec: number): AudioBufferSourceNode {
+  const len = Math.max(1, Math.floor(ctx.sampleRate * durationSec));
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  return src;
+}
+
 export async function noteOn(midi: number, velocity = 0.85) {
   ensureSynth();
   await ensureRunning();
   if (!_input) return;
   const { ctx } = getEngine();
-  const existing = activeVoices.get(midi);
+
+  // Build the list of presets to play: main + any extra layers.
+  const layerIds: SynthPresetId[] = [_currentPreset.id];
+  for (const lid of _activeLayers) {
+    if (lid !== _currentPreset.id && !layerIds.includes(lid)) layerIds.push(lid);
+  }
+  for (const pid of layerIds) {
+    const p = SYNTH_PRESETS.find((x) => x.id === pid);
+    if (p) startVoice(midi, velocity, p, ctx);
+  }
+}
+
+function startVoice(midi: number, velocity: number, p: SynthPreset, ctx: AudioContext) {
+  if (!_input) return;
+  const key = `${midi}:${p.id}`;
+  const existing = activeVoices.get(key);
   if (existing) existing.noteOff(ctx.currentTime);
 
-  const p = _currentPreset;
+  // Drum-kit special path: synthesize percussive sounds per note class.
+  if (p.id === "drumKit") {
+    startDrumVoice(midi, velocity, ctx, key);
+    return;
+  }
+
   const freq = midiToFreq(midi);
   const t0 = ctx.currentTime;
 
@@ -594,15 +765,18 @@ export async function noteOn(midi: number, velocity = 0.85) {
     setTimeout(() => {
       try { envGain.disconnect(); filter.disconnect(); } catch { /* noop */ }
     }, (p.env.release + 0.2) * 1000);
-    activeVoices.delete(midi);
+    activeVoices.delete(key);
   };
 
-  activeVoices.set(midi, { oscs, envGain, filter, noteOff });
+  activeVoices.set(key, { oscs, envGain, filter, noteOff });
 }
 
 export function noteOff(midi: number) {
-  const v = activeVoices.get(midi);
-  if (v) v.noteOff();
+  // Stop every layer's voice for this midi note.
+  const prefix = `${midi}:`;
+  for (const [k, v] of activeVoices) {
+    if (k.startsWith(prefix)) v.noteOff();
+  }
 }
 
 export function allNotesOff() {

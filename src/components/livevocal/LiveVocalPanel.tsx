@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Sparkles, Music2, Volume2, RotateCcw } from "lucide-react";
+import { Mic, MicOff, Sparkles, Music2, Volume2, RotateCcw, Play, Square, Disc, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/state/store";
 import { setMicOn, setMicLevel, setMicDuck } from "@/state/controller";
@@ -17,7 +17,21 @@ import {
   type VocalFxParams,
   type ScaleId,
 } from "@/audio/vocalFx";
-import { useT } from "@/lib/i18n";
+import { useT, type DictKey } from "@/lib/i18n";
+import {
+  INSTRUMENTALS,
+  playInstrumental,
+  stopInstrumental,
+  stopAllInstrumentals,
+  isInstrumentalPlaying,
+  setInstrumentalVolume,
+} from "@/audio/vocalInstrumentals";
+import {
+  startMicRecording,
+  stopMicRecording,
+  isMicRecording,
+  type MicRecordingResult,
+} from "@/audio/micRecorder";
 
 const SCALES: ScaleId[] = Object.keys(SCALE_INTERVALS) as ScaleId[];
 
@@ -33,6 +47,11 @@ export function LiveVocalPanel() {
   const [params, setParams] = useState<VocalFxParams>({ ...DEFAULT_VOCAL_FX });
   const [presetId, setPresetId] = useState<string>("off");
   const [detected, setDetected] = useState<{ midi: number; cents: number } | null>(null);
+  const [activeInst, setActiveInst] = useState<string | null>(null);
+  const [instVol, setInstVol] = useState(0.7);
+  const [recording, setRecording] = useState(false);
+  const [lastRec, setLastRec] = useState<MicRecordingResult | null>(null);
+  const [recElapsed, setRecElapsed] = useState(0);
   const mounted = useRef(false);
 
   // Attach the chain on mount; detach on unmount.
@@ -69,6 +88,26 @@ export function LiveVocalPanel() {
     return () => window.clearInterval(id);
   }, []);
 
+  // Instrumental volume sync
+  useEffect(() => { setInstrumentalVolume(instVol); }, [instVol]);
+
+  // Recording elapsed timer
+  useEffect(() => {
+    if (!recording) { setRecElapsed(0); return; }
+    const startedAt = Date.now();
+    const id = window.setInterval(() => setRecElapsed(Date.now() - startedAt), 250);
+    return () => window.clearInterval(id);
+  }, [recording]);
+
+  // Stop instrumentals when leaving panel
+  useEffect(() => {
+    return () => {
+      stopAllInstrumentals();
+      // Don't auto-stop recording on unmount — user may want to keep it,
+      // but clear local UI state.
+    };
+  }, []);
+
   const update = (patch: Partial<VocalFxParams>) => setParams((p) => ({ ...p, ...patch }));
 
   const onPreset = (id: string) => {
@@ -88,6 +127,48 @@ export function LiveVocalPanel() {
   const detectedName = detected
     ? `${NOTE_NAMES[((detected.midi % 12) + 12) % 12]}${Math.floor(detected.midi / 12) - 1}`
     : "—";
+
+  const onInstClick = async (id: string) => {
+    if (activeInst === id) {
+      stopInstrumental(id);
+      setActiveInst(null);
+    } else {
+      stopAllInstrumentals();
+      const ok = await playInstrumental(id, instVol);
+      if (ok) setActiveInst(id);
+      else toast.error("Audio unavailable");
+    }
+  };
+
+  const onRecToggle = async () => {
+    if (recording || isMicRecording()) {
+      const result = await stopMicRecording();
+      setRecording(false);
+      if (result) {
+        setLastRec(result);
+        toast.success(t("liveVocalRecSaved"));
+      }
+    } else {
+      // Auto-enable mic if needed
+      if (!mic.on) {
+        const ok = await setMicOn(true);
+        if (!ok) { toast.error(t("liveVocalRecFailed")); return; }
+      }
+      const ok = await startMicRecording();
+      if (ok) setRecording(true);
+      else toast.error(t("liveVocalRecFailed"));
+    }
+  };
+
+  const onDownload = () => {
+    if (!lastRec) return;
+    const a = document.createElement("a");
+    a.href = lastRec.url;
+    a.download = lastRec.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 12, height: "100%", overflow: "auto" }} className="vdj-scroll">
@@ -220,8 +301,82 @@ export function LiveVocalPanel() {
           <Slider label={t("liveVocalDelayFb")} value={params.delayFb} min={0} max={0.85} step={0.01} onChange={(v) => update({ delayFb: v })} display={(v) => `${Math.round(v * 100)}%`} />
         </div>
       </div>
+
+      {/* Instrumentals */}
+      <div className="vdj-panel-inset" style={{ padding: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+          <div className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Music2 size={12} /> {t("liveVocalInstrumentals")}
+          </div>
+          <label className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Volume2 size={12} />
+            <input type="range" min={0} max={1.2} step={0.01} value={instVol} onChange={(e) => setInstVol(parseFloat(e.target.value))} style={{ width: 100 }} />
+            <span className="vdj-readout" style={{ fontSize: 10, minWidth: 30 }}>{Math.round(instVol * 100)}%</span>
+          </label>
+        </div>
+        <div style={{ fontSize: 10, opacity: 0.65, marginBottom: 6 }}>{t("liveVocalInstrumentalsHint")}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
+          {INSTRUMENTALS.map((inst) => {
+            const playing = activeInst === inst.id || isInstrumentalPlaying(inst.id);
+            return (
+              <button
+                key={inst.id}
+                className="vdj-btn"
+                data-active={playing}
+                onClick={() => onInstClick(inst.id)}
+                style={{ padding: "8px 6px", fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}
+              >
+                <span>{playing ? <Square size={11} /> : <Play size={11} />}</span>
+                <span style={{ flex: 1, textAlign: "left" }}>{t(inst.labelKey as DictKey)}</span>
+                <span style={{ fontSize: 9, opacity: 0.6 }}>{inst.bpm}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Mic recorder */}
+      <div className="vdj-panel-inset" style={{ padding: 10 }}>
+        <div className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <Disc size={12} /> {t("liveVocalRecorder")}
+        </div>
+        <div style={{ fontSize: 10, opacity: 0.65, marginBottom: 8 }}>{t("liveVocalRecHint")}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <button
+            className="vdj-btn"
+            data-active={recording}
+            data-tone={recording ? "danger" : undefined}
+            onClick={() => void onRecToggle()}
+            style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, minHeight: 36 }}
+          >
+            {recording ? <Square size={12} /> : <Disc size={12} />}
+            {recording ? t("liveVocalRecStop") : t("liveVocalRecStart")}
+          </button>
+          {recording && (
+            <span className="vdj-readout" style={{ fontSize: 12, color: "var(--live, #ff5050)", fontWeight: 700 }}>
+              ● {t("liveVocalRecActive")} {formatElapsed(recElapsed)}
+            </span>
+          )}
+          {lastRec && !recording && (
+            <>
+              <audio src={lastRec.url} controls style={{ height: 32, maxWidth: 240 }} />
+              <button className="vdj-btn" onClick={onDownload} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Download size={12} /> {t("liveVocalRecDownload")}
+              </button>
+              <span style={{ fontSize: 10, opacity: 0.7 }}>{lastRec.filename}</span>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
+}
+
+function formatElapsed(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const ss = (s % 60).toString().padStart(2, "0");
+  return `${m}:${ss}`;
 }
 
 function Slider({

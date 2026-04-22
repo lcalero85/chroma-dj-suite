@@ -203,6 +203,19 @@ export interface SettingsState {
   micEchoCancellation?: boolean;
   /** Microphone auto-gain control. */
   micAutoGainControl?: boolean;
+  /** Live synthesizer layered presets — IDs added on top of the main preset. */
+  synthLayers?: string[];
+  /** Per-panel visibility (Library is always shown). */
+  panelVisibility?: {
+    online?: boolean;
+    radio?: boolean;
+    fx?: boolean;
+    sampler?: boolean;
+    recorder?: boolean;
+    presets?: boolean;
+    synth?: boolean;
+    livevocal?: boolean;
+  };
 }
 
 export interface SessionStats {
@@ -258,7 +271,7 @@ interface AppState {
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
   activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets" | "synth" | "livevocal";
-  drawer: null | "settings" | "skins" | "help";
+  drawer: null | "settings" | "skins" | "help" | "about";
   search: string;
   selectedPlaylistId: string | null;
   radio: RadioState;
@@ -317,6 +330,17 @@ const defaultSettings: SettingsState = {
   micNoiseSuppression: true,
   micEchoCancellation: true,
   micAutoGainControl: false,
+  synthLayers: [],
+  panelVisibility: {
+    online: true,
+    radio: true,
+    fx: true,
+    sampler: true,
+    recorder: true,
+    presets: true,
+    synth: false,
+    livevocal: false,
+  },
 };
 
 export const useApp = create<AppState>()(
