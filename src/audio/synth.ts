@@ -591,6 +591,97 @@ function midiToFreq(note: number) {
   return 440 * Math.pow(2, (note - 69) / 12);
 }
 
+/**
+ * Drum-kit voice — maps MIDI note ranges to synthesized percussion:
+ *  - low (≤47, B2)            → kick
+ *  - mid (48..59, C3..B3)     → snare/clap
+ *  - high (≥60, ≥C4)          → hat / cymbal
+ *  Specific notes also pick variants (toms, rim, ride).
+ */
+function startDrumVoice(midi: number, velocity: number, ctx: AudioContext, key: string) {
+  if (!_input) return;
+  const t0 = ctx.currentTime;
+  const env = ctx.createGain();
+  env.gain.value = 0;
+  const out = env;
+  const peak = Math.max(0, Math.min(1, velocity)) * 0.85;
+  let sustain = 0.2;
+
+  if (midi <= 47) {
+    // Kick: sine sweep from ~110 → 45 Hz, fast click on top.
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(160, t0);
+    osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.12);
+    const click = ctx.createOscillator();
+    click.type = "triangle";
+    click.frequency.value = 1800;
+    const clickGain = ctx.createGain();
+    clickGain.gain.value = 0.15;
+    clickGain.gain.setValueAtTime(0.15, t0);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.03);
+    osc.connect(env);
+    click.connect(clickGain).connect(env);
+    osc.start(t0); click.start(t0);
+    osc.stop(t0 + 0.6); click.stop(t0 + 0.05);
+    sustain = 0.32;
+  } else if (midi <= 59) {
+    // Snare: noise + tonal tail.
+    const noise = makeNoiseSource(ctx, 0.4);
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass"; bp.frequency.value = 1800; bp.Q.value = 0.7;
+    const tone = ctx.createOscillator();
+    tone.type = "triangle"; tone.frequency.value = 220;
+    const toneG = ctx.createGain(); toneG.gain.value = 0.4;
+    noise.connect(bp).connect(env);
+    tone.connect(toneG).connect(env);
+    noise.start(t0); tone.start(t0);
+    noise.stop(t0 + 0.4); tone.stop(t0 + 0.18);
+    sustain = 0.22;
+  } else {
+    // Hi-hat / cymbal: high-pass filtered noise. Note ≥ 72 = open hat.
+    const open = midi >= 72;
+    const noise = makeNoiseSource(ctx, open ? 0.6 : 0.18);
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 7000; hp.Q.value = 0.5;
+    noise.connect(hp).connect(env);
+    noise.start(t0);
+    noise.stop(t0 + (open ? 0.6 : 0.18));
+    sustain = open ? 0.5 : 0.12;
+  }
+
+  out.connect(_input);
+  env.gain.cancelScheduledValues(t0);
+  env.gain.setValueAtTime(0, t0);
+  env.gain.linearRampToValueAtTime(peak, t0 + 0.002);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + sustain);
+
+  const noteOff = (when?: number) => {
+    const t = when ?? ctx.currentTime;
+    try {
+      env.gain.cancelScheduledValues(t);
+      env.gain.setValueAtTime(env.gain.value, t);
+      env.gain.linearRampToValueAtTime(0, t + 0.05);
+    } catch { /* noop */ }
+    setTimeout(() => { try { env.disconnect(); } catch { /* noop */ } }, 800);
+    activeVoices.delete(key);
+  };
+
+  // Drums are one-shots — auto-clean.
+  setTimeout(() => activeVoices.delete(key), Math.ceil((sustain + 0.1) * 1000));
+  activeVoices.set(key, { oscs: [], envGain: env, filter: env as unknown as BiquadFilterNode, noteOff });
+}
+
+function makeNoiseSource(ctx: AudioContext, durationSec: number): AudioBufferSourceNode {
+  const len = Math.max(1, Math.floor(ctx.sampleRate * durationSec));
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  return src;
+}
+
 export async function noteOn(midi: number, velocity = 0.85) {
   ensureSynth();
   await ensureRunning();
