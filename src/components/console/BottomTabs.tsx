@@ -6,7 +6,7 @@ import { RecorderPanel } from "../recorder/RecorderPanel";
 import { RadioPanel } from "../radio/RadioPanel";
 import { OnlinePanel } from "../online/OnlinePanel";
 import { MixPresetsPanel } from "../presets/MixPresetsPanel";
-import { SynthPanel } from "../synth/SynthPanel";
+import { SynthPanel } from "@/components/synth/SynthPanel";
 import { useApp as useAppStore } from "@/state/store";
 import { useT, type DictKey } from "@/lib/i18n";
 import { useEffect } from "react";
