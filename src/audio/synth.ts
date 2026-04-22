@@ -230,7 +230,7 @@ function makeImpulse(ctx: AudioContext, seconds = 2.2, decay = 2.5): AudioBuffer
 
 function makeDriveCurve(amount = 50): Float32Array {
   const n = 4096;
-  const curve = new Float32Array(n);
+  const curve = new Float32Array(new ArrayBuffer(n * 4));
   const k = amount;
   const deg = Math.PI / 180;
   for (let i = 0; i < n; i++) {
@@ -242,7 +242,7 @@ function makeDriveCurve(amount = 50): Float32Array {
 
 function makeBitcrushCurve(bits = 6): Float32Array {
   const n = 4096;
-  const curve = new Float32Array(n);
+  const curve = new Float32Array(new ArrayBuffer(n * 4));
   const steps = Math.pow(2, bits);
   for (let i = 0; i < n; i++) {
     const x = (i * 2) / n - 1;
