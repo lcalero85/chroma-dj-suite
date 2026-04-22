@@ -11,10 +11,13 @@ import {
   playDemo,
   stopDemo,
   isDemoPlaying,
+  setSynthLayers,
+  getSynthLayers,
   type SynthPresetId,
   type SynthFx,
 } from "@/audio/synth";
 import { useT } from "@/lib/i18n";
+import { useApp } from "@/state/store";
 
 // 64 keys starting from C2 (MIDI 36) up to D#7 (MIDI 99).
 const FIRST_MIDI = 36;
@@ -51,6 +54,8 @@ const DEFAULT_FX: SynthFx = {
 
 export function SynthPanel() {
   const t = useT();
+  const persistedLayers = useApp((s) => s.settings.synthLayers ?? []);
+  const updateSettings = useApp((s) => s.updateSettings);
   const [preset, setPreset] = useState<SynthPresetId>("piano");
   const [fx, setFx] = useState<SynthFx>(DEFAULT_FX);
   const [volume, setVolumeState] = useState(0.8);
@@ -58,11 +63,28 @@ export function SynthPanel() {
   const [qwertyOn, setQwertyOn] = useState(true);
   const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set());
   const [activeDemo, setActiveDemo] = useState<string | null>(null);
+  const [layers, setLayersState] = useState<SynthPresetId[]>(
+    () => (persistedLayers.filter((id) => SYNTH_PRESETS.some((p) => p.id === id)) as SynthPresetId[]),
+  );
   const heldKeys = useRef<Set<string>>(new Set());
 
   useEffect(() => { setSynthPreset(preset); }, [preset]);
   useEffect(() => { setSynthFx(fx); }, [fx]);
   useEffect(() => { setSynthVolume(volume); }, [volume]);
+  useEffect(() => {
+    setSynthLayers(layers);
+    updateSettings({ synthLayers: layers });
+  }, [layers, updateSettings]);
+  // On mount, sync engine to persisted layers.
+  useEffect(() => { setSynthLayers(getSynthLayers().length ? getSynthLayers() : layers); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const toggleLayer = (id: SynthPresetId) => {
+    setLayersState((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx >= 0) { const n = [...prev]; n.splice(idx, 1); return n; }
+      return [...prev, id];
+    });
+  };
 
   // Poll demo state so the UI stays in sync if external code stops it.
   useEffect(() => {
