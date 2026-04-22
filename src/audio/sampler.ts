@@ -76,6 +76,11 @@ export function triggerSlot(slotId: number, gain = 1) {
   src.connect(g);
   g.connect(master);
   src.start();
+  let set = activeSources.get(slotId);
+  if (!set) { set = new Set(); activeSources.set(slotId, set); }
+  const entry = { src, gain: g };
+  set.add(entry);
+  src.onended = () => { set?.delete(entry); };
 }
 
 /** Start a looped playback. Returns a stop function. */
@@ -101,4 +106,21 @@ export function startSlotLoop(slotId: number, gain = 1): (() => void) | null {
       src.stop(t + 0.06);
     } catch { /* noop */ }
   };
+}
+
+/** Stop all currently-playing one-shot instances for a given slot. */
+export function stopSlot(slotId: number) {
+  const { ctx } = getEngine();
+  const set = activeSources.get(slotId);
+  if (!set) return;
+  const t = ctx.currentTime;
+  for (const { src, gain } of set) {
+    try {
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.05);
+      src.stop(t + 0.06);
+    } catch { /* noop */ }
+  }
+  set.clear();
 }
