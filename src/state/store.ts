@@ -341,6 +341,7 @@ const defaultSettings: SettingsState = {
     presets: true,
     synth: false,
     livevocal: false,
+    beatmaker: false,
   },
 };
 
