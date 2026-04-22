@@ -6,6 +6,7 @@ import {
   setDeckPitch,
   addHotCue,
   jumpHotCue,
+  clearHotCues,
   setLoop,
   loopIn,
   loopOut,
