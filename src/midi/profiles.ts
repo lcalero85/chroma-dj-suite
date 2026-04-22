@@ -370,7 +370,7 @@ const chocolate: MidiProfile = {
 };
 
 export const MIDI_PROFILES: MidiProfile[] = [
-  generic, smcPad, generic16Pads, lpd8, chocolate, ddj400, mixtrack, inpulse,
+  generic, smcPad, smk25ii, generic16Pads, lpd8, chocolate, ddj400, mixtrack, inpulse,
 ];
 
 export function getProfile(id: string): MidiProfile {
