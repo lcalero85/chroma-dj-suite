@@ -16,6 +16,14 @@ let _micSource: MediaStreamAudioSourceNode | null = null;
 let _micStream: MediaStream | null = null;
 let _micAnalyser: AnalyserNode | null = null;
 
+// Web monitoring (default browser output) is on by default. When false, the
+// app routes ONLY through the selected output sink (e.g. an external V8 card)
+// via a hidden <audio> element bound to a MediaStreamDestination.
+let _webMonitoring = true;
+let _sinkAudioEl: HTMLAudioElement | null = null;
+let _sinkStreamDest: MediaStreamAudioDestinationNode | null = null;
+let _currentSinkId = "";
+
 // Mic FX chain: micGain -> micFxIn -> [hp -> peak -> shaperBus -> delayBus] -> micFxOut -> micDuck
 let _micFxIn: GainNode | null = null;
 let _micFxOut: GainNode | null = null;
