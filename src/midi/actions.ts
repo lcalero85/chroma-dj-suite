@@ -8,6 +8,13 @@ import {
 } from "@/state/controller";
 import { useApp, type DeckId } from "@/state/store";
 import { triggerSlot, stopSlot, startSlotLoop, getSlots } from "@/audio/sampler";
+import {
+  SYNTH_PRESETS, SYNTH_DEMOS,
+  setSynthPreset, setSynthFx, setSynthVolume, setSynthLayers, getSynthLayers,
+  noteOn as synthNoteOn, noteOff as synthNoteOff, allNotesOff,
+  playDemo, stopDemo, isDemoPlaying,
+  type SynthPresetId, type SynthFx,
+} from "@/audio/synth";
 
 export type MidiActionKind =
   | "trigger"   // button: any nonzero value triggers
@@ -22,6 +29,8 @@ export interface MidiAction {
   label: string;
   kind: MidiActionKind;
   group: "deckA" | "deckB" | "deckC" | "deckD" | "mixer" | "global" | "sampler";
+  /** Optional secondary group used by the UI; falls back to `group`. */
+  // (kept implicit — no breaking change)
   /** Apply incoming MIDI value (0..1 for value/bipolar/relative; >0 = press for trigger/toggle). */
   apply: (v: number) => void;
   /** Returns LED state for output: 0..127 (button = 0/127 typically). null = no feedback. */
@@ -161,6 +170,87 @@ for (let bank = 0; bank < 4; bank++) {
 }
 
 export const MIDI_ACTIONS = actions;
+
+// =====================================================================
+// Synth MIDI bindings — preset selection, layer toggles, FX, demos, panic
+// =====================================================================
+
+for (const p of SYNTH_PRESETS) {
+  actions.push({
+    id: `synth.preset.${p.id}`,
+    label: `Synth · Preset ${p.label}`,
+    kind: "trigger",
+    group: "global",
+    apply: (v) => { if (v > 0) setSynthPreset(p.id); },
+  });
+  actions.push({
+    id: `synth.layer.${p.id}`,
+    label: `Synth · Toggle Layer ${p.label}`,
+    kind: "trigger",
+    group: "global",
+    apply: (v) => {
+      if (v <= 0) return;
+      const cur = getSynthLayers();
+      const idx = cur.indexOf(p.id);
+      if (idx >= 0) cur.splice(idx, 1); else cur.push(p.id);
+      setSynthLayers(cur);
+    },
+    ledState: () => (getSynthLayers().includes(p.id) ? 127 : 0),
+  });
+}
+
+const SYNTH_FX_PARAMS: Array<keyof SynthFx> = [
+  "reverb", "delay", "filter", "chorus", "drive", "bitcrush",
+  "phaser", "flanger", "tremolo", "eqLow", "eqHi", "width",
+];
+for (const fxId of SYNTH_FX_PARAMS) {
+  actions.push({
+    id: `synth.fx.${fxId}`,
+    label: `Synth · FX ${fxId}`,
+    kind: "value",
+    group: "global",
+    apply: (v) => setSynthFx({ [fxId]: Math.max(0, Math.min(1, v)) } as Partial<SynthFx>),
+  });
+}
+
+actions.push(
+  { id: "synth.volume", label: "Synth · Volume", kind: "value", group: "global",
+    apply: (v) => setSynthVolume(v * 1.5) },
+  { id: "synth.panic", label: "Synth · Panic (all notes off)", kind: "trigger", group: "global",
+    apply: (v) => { if (v > 0) { stopDemo(); allNotesOff(); } } },
+  { id: "synth.layers.clear", label: "Synth · Clear layers", kind: "trigger", group: "global",
+    apply: (v) => { if (v > 0) setSynthLayers([]); } },
+);
+
+for (const d of SYNTH_DEMOS) {
+  actions.push({
+    id: `synth.demo.${d.id}`,
+    label: `Synth · Demo ${d.label}`,
+    kind: "trigger",
+    group: "global",
+    apply: (v) => {
+      if (v <= 0) return;
+      if (isDemoPlaying()) stopDemo(); else void playDemo(d.id);
+    },
+    ledState: () => (isDemoPlaying() ? 127 : 0),
+  });
+}
+
+// Map a contiguous MIDI note range (C2 → D#7) to play synth notes via MIDI triggers.
+// One action per MIDI note so the user can map any pad/key.
+for (let n = 36; n <= 99; n++) {
+  const note = n;
+  actions.push({
+    id: `synth.note.${note}`,
+    label: `Synth · Note ${note}`,
+    kind: "trigger",
+    group: "global",
+    apply: (v) => {
+      if (v > 0) void synthNoteOn(note, v);
+      else synthNoteOff(note);
+    },
+  });
+}
 
 const byId = new Map<string, MidiAction>();
 for (const a of actions) byId.set(a.id, a);
