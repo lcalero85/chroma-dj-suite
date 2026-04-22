@@ -614,6 +614,12 @@ function startVoice(midi: number, velocity: number, p: SynthPreset, ctx: AudioCo
   const existing = activeVoices.get(key);
   if (existing) existing.noteOff(ctx.currentTime);
 
+  // Drum-kit special path: synthesize percussive sounds per note class.
+  if (p.id === "drumKit") {
+    startDrumVoice(midi, velocity, ctx, key);
+    return;
+  }
+
   const freq = midiToFreq(midi);
   const t0 = ctx.currentTime;
 
