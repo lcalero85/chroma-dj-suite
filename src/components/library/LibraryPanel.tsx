@@ -123,6 +123,8 @@ export function LibraryPanel() {
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [dropActive, setDropActive] = useState(false);
+  const dragDepthRef = useRef(0);
 
   // Advanced filters
   const [showFilters, setShowFilters] = useState(false);
