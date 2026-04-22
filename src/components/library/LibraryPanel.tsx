@@ -307,7 +307,63 @@ export function LibraryPanel() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        height: "100%",
+        position: "relative",
+        outline: dropActive ? "2px dashed var(--accent)" : "none",
+        outlineOffset: -4,
+        borderRadius: 6,
+        transition: "outline-color 0.15s",
+      }}
+      onDragEnter={(e) => {
+        // Highlight only when external files are being dragged in.
+        if (e.dataTransfer.types.includes("Files")) {
+          dragDepthRef.current += 1;
+          setDropActive(true);
+        }
+      }}
+      onDragLeave={() => {
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+        if (dragDepthRef.current === 0) setDropActive(false);
+      }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+        e.preventDefault();
+        dragDepthRef.current = 0;
+        setDropActive(false);
+        void handleFiles(e.dataTransfer.files);
+      }}
+    >
+      {dropActive && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 8,
+            background: "color-mix(in oklab, var(--accent) 14%, transparent)",
+            border: "2px dashed var(--accent)",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--accent)",
+            fontWeight: 700,
+            fontSize: 14,
+            letterSpacing: "0.06em",
+            pointerEvents: "none",
+            zIndex: 10,
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <Upload size={18} style={{ marginRight: 8 }} /> {tr("libDropHere")}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button className="vdj-btn" onClick={() => fileRef.current?.click()}>
           <Upload size={12} /> {tr("libImport")}
