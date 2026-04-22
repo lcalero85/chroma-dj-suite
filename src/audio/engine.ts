@@ -201,6 +201,13 @@ export function getEngine(): EngineHandles {
   // Also keep MediaStream destination available (legacy / future use)
   _recordTap.connect(_recorderDest);
 
+  // Sink (custom output device) tap: same content as ctx.destination, but routed
+  // to a hidden <audio> element so we can call setSinkId() to send audio to a
+  // specific output (e.g. Behringer V8 USB card).
+  _sinkStreamDest = _ctx.createMediaStreamDestination();
+  _masterAnalyser.connect(_sinkStreamDest);
+  _micDuck.connect(_sinkStreamDest);
+
   _cueBus = _ctx.createGain();
   _cueBus.gain.value = 0;
   _cueAnalyser = _ctx.createAnalyser();
@@ -252,19 +259,80 @@ export function setLimiter(enabled: boolean) {
     masterDuck.connect(masterAnalyser);
     masterDuck.connect(recordTap);
   }
-  masterAnalyser.connect(ctx.destination);
+  if (_webMonitoring) masterAnalyser.connect(ctx.destination);
+  if (_sinkStreamDest) masterAnalyser.connect(_sinkStreamDest);
   // Reconnect mic into recordTap (was lost on micDuck.disconnect? not called here, but be safe)
   try { micDuck.connect(recordTap); } catch { /* already connected */ }
   recordTap.connect(recorderDest);
 }
 
-// ===== Microphone (voice-over) =====
-export async function enableMic(): Promise<boolean> {
-  const { ctx, micGain } = getEngine();
-  if (_micStream) return true;
+// ===== Output device routing =====
+/** Enable/disable browser default monitoring. When disabled, only the
+ *  selected sink device (e.g. V8) outputs audio. */
+export function setWebMonitoring(on: boolean) {
+  const { masterAnalyser, micDuck, ctx } = getEngine();
+  _webMonitoring = on;
+  try { masterAnalyser.disconnect(ctx.destination); } catch { /* noop */ }
+  try { micDuck.disconnect(ctx.destination); } catch { /* noop */ }
+  if (on) {
+    masterAnalyser.connect(ctx.destination);
+    micDuck.connect(ctx.destination);
+  }
+}
+
+/** Route audio to the given output device id ("" or "default" = system default).
+ *  Uses a hidden <audio> element + setSinkId. Returns true on success. */
+export async function setAudioOutputDevice(deviceId: string): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  getEngine(); // ensure engine and _sinkStreamDest exist
+  if (!_sinkStreamDest) return false;
+  if (!_sinkAudioEl) {
+    _sinkAudioEl = document.createElement("audio");
+    _sinkAudioEl.autoplay = true;
+    (_sinkAudioEl as HTMLAudioElement).srcObject = _sinkStreamDest.stream;
+    _sinkAudioEl.style.display = "none";
+    document.body.appendChild(_sinkAudioEl);
+  }
   try {
+    const el = _sinkAudioEl as HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };
+    if (typeof el.setSinkId !== "function") return false;
+    await el.setSinkId(deviceId || "default");
+    _currentSinkId = deviceId;
+    try { await _sinkAudioEl.play(); } catch { /* user gesture pending */ }
+    return true;
+  } catch (e) {
+    console.warn("setSinkId failed", e);
+    return false;
+  }
+}
+
+export function getCurrentSinkId() { return _currentSinkId; }
+export function isWebMonitoringEnabled() { return _webMonitoring; }
+
+// ===== Microphone (voice-over) =====
+export interface MicOptions {
+  deviceId?: string;
+  noiseSuppression?: boolean;
+  echoCancellation?: boolean;
+  autoGainControl?: boolean;
+}
+
+export async function enableMic(opts: MicOptions = {}): Promise<boolean> {
+  const { ctx, micGain } = getEngine();
+  if (_micStream) {
+    // Already running — if caller wants to switch device, restart.
+    if (opts.deviceId !== undefined) disableMic();
+    else return true;
+  }
+  try {
+    const audio: MediaTrackConstraints = {
+      echoCancellation: opts.echoCancellation ?? true,
+      noiseSuppression: opts.noiseSuppression ?? true,
+      autoGainControl: opts.autoGainControl ?? false,
+    };
+    if (opts.deviceId) audio.deviceId = { exact: opts.deviceId };
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false },
+      audio,
     });
     _micStream = stream;
     _micSource = ctx.createMediaStreamSource(stream);
@@ -274,6 +342,18 @@ export async function enableMic(): Promise<boolean> {
     console.error("Mic error", e);
     return false;
   }
+}
+
+/** List available audio input/output devices. Requires prior mic permission for full labels. */
+export async function listAudioDevices(): Promise<{ inputs: MediaDeviceInfo[]; outputs: MediaDeviceInfo[] }> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) {
+    return { inputs: [], outputs: [] };
+  }
+  const all = await navigator.mediaDevices.enumerateDevices();
+  return {
+    inputs: all.filter((d) => d.kind === "audioinput"),
+    outputs: all.filter((d) => d.kind === "audiooutput"),
+  };
 }
 
 export function disableMic() {
