@@ -341,7 +341,37 @@ const lpd8: MidiProfile = {
   },
 };
 
-export const MIDI_PROFILES: MidiProfile[] = [generic, smcPad, generic16Pads, lpd8, ddj400, mixtrack, inpulse];
+// ---------------- M-Vave Chocolate (8 transport-style buttons + knobs) ----------------
+// Common factory mapping: transport buttons send CC 91..118 on ch 0, knobs CC 14..21.
+// We map only the most useful controls; users can MIDI-Learn the rest.
+const chocolate: MidiProfile = {
+  id: "mvave-chocolate",
+  name: "M-Vave Chocolate",
+  inputMatch: "Chocolate",
+  outputMatch: "Chocolate",
+  bindings: [
+    { type: "cc", channel: 0, data1: 91, actionId: "deck.A.play" },
+    { type: "cc", channel: 0, data1: 92, actionId: "deck.B.play" },
+    { type: "cc", channel: 0, data1: 93, actionId: "deck.A.cue" },
+    { type: "cc", channel: 0, data1: 94, actionId: "deck.B.cue" },
+    { type: "cc", channel: 0, data1: 95, actionId: "deck.A.sync" },
+    { type: "cc", channel: 0, data1: 96, actionId: "deck.B.sync" },
+    // Knobs row
+    { type: "cc", channel: 0, data1: 14, actionId: "deck.A.gain" },
+    { type: "cc", channel: 0, data1: 15, actionId: "deck.A.eq.hi" },
+    { type: "cc", channel: 0, data1: 16, actionId: "deck.A.eq.mid" },
+    { type: "cc", channel: 0, data1: 17, actionId: "deck.A.eq.lo" },
+    { type: "cc", channel: 0, data1: 18, actionId: "deck.B.gain" },
+    { type: "cc", channel: 0, data1: 19, actionId: "deck.B.eq.hi" },
+    { type: "cc", channel: 0, data1: 20, actionId: "deck.B.eq.mid" },
+    { type: "cc", channel: 0, data1: 21, actionId: "deck.B.eq.lo" },
+  ],
+  ledMap: {},
+};
+
+export const MIDI_PROFILES: MidiProfile[] = [
+  generic, smcPad, generic16Pads, lpd8, chocolate, ddj400, mixtrack, inpulse,
+];
 
 export function getProfile(id: string): MidiProfile {
   return MIDI_PROFILES.find((p) => p.id === id) ?? generic;
