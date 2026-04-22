@@ -1,5 +1,5 @@
 import { useApp } from "@/state/store";
-import { useT } from "@/lib/i18n";
+import { useT, LANG_LABELS, type Lang } from "@/lib/i18n";
 import { MidiPanel } from "./MidiPanel";
 import { StreamSettings } from "./StreamSettings";
 import { ShortcutsSettings } from "./ShortcutsSettings";
@@ -25,11 +25,12 @@ export function SettingsPanel() {
         <select
           className="vdj-btn"
           value={settings.lang}
-          onChange={(e) => update({ lang: e.target.value as "en" | "es" })}
+          onChange={(e) => update({ lang: e.target.value as Lang })}
           style={{ padding: "6px 8px" }}
         >
-          <option value="en">{t("english")}</option>
-          <option value="es">{t("spanish")}</option>
+          {(["en", "es", "pt", "fr", "it"] as Lang[]).map((code) => (
+            <option key={code} value={code}>{LANG_LABELS[code]}</option>
+          ))}
         </select>
       </Row>
       <Row label={t("appMode")}>
