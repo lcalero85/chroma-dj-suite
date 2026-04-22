@@ -337,3 +337,42 @@ export function applyVoicePreset(p: VoicePreset) {
 }
 
 export const useAppMasterRef: { current: number | null } = { current: null };
+
+// ===== Vocal FX chain insertion (autotune panel) =====
+import {
+  attachVocalChain,
+  detachVocalChain,
+  type VocalChainHandles,
+} from "./vocalFx";
+
+let _vocalChain: VocalChainHandles | null = null;
+
+/**
+ * Insert the live-vocal FX chain between mic FX output and mic duck.
+ * Called by the controller when the user opens the Live Vocal panel.
+ */
+export function enableVocalChain(): VocalChainHandles | null {
+  const { ctx, micDuck } = getEngine();
+  if (_vocalChain || !_micFxOut) return _vocalChain;
+  try { _micFxOut.disconnect(); } catch { /* noop */ }
+  // Reconnect analyser tap so meters keep working
+  if (_micAnalyser) _micFxOut.connect(_micAnalyser);
+  _vocalChain = attachVocalChain(ctx, _micFxOut, [micDuck]);
+  return _vocalChain;
+}
+
+export function disableVocalChain() {
+  const { micDuck } = getEngine();
+  if (!_vocalChain) return;
+  detachVocalChain();
+  _vocalChain = null;
+  if (_micFxOut) {
+    try { _micFxOut.disconnect(); } catch { /* noop */ }
+    if (_micAnalyser) _micFxOut.connect(_micAnalyser);
+    _micFxOut.connect(micDuck);
+  }
+}
+
+export function isVocalChainEnabled() {
+  return _vocalChain !== null;
+}
