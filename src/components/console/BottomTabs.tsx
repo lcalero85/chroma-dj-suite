@@ -7,11 +7,12 @@ import { RadioPanel } from "../radio/RadioPanel";
 import { OnlinePanel } from "../online/OnlinePanel";
 import { MixPresetsPanel } from "../presets/MixPresetsPanel";
 import { SynthPanel } from "@/components/synth/SynthPanel";
+import { LiveVocalPanel } from "@/components/livevocal/LiveVocalPanel";
 import { useApp as useAppStore } from "@/state/store";
 import { useT, type DictKey } from "@/lib/i18n";
 import { useEffect } from "react";
 
-type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets" | "synth";
+type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets" | "synth" | "livevocal";
 
 const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "library",  key: "library",  advanced: false },
@@ -22,6 +23,7 @@ const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "sampler",  key: "sampler",  advanced: true },
   { id: "presets",  key: "mixPresets", advanced: false },
   { id: "synth",    key: "synth",      advanced: false },
+  { id: "livevocal", key: "liveVocal",  advanced: false },
 ];
 
 export function BottomTabs() {
@@ -29,9 +31,11 @@ export function BottomTabs() {
   const setTab = useApp((s) => s.setActiveBottomTab);
   const mode = useApp((s) => s.settings.appMode);
   const synthEnabled = useAppStore((s) => s.settings.synthEnabled ?? false);
+  const liveVocalEnabled = useAppStore((s) => s.settings.liveVocalEnabled ?? false);
   const t = useT();
   const tabs = ALL_TABS.filter((tb) => {
     if (tb.id === "synth" && !synthEnabled) return false;
+    if (tb.id === "livevocal" && !liveVocalEnabled) return false;
     return mode === "advanced" || !tb.advanced;
   });
 
@@ -58,6 +62,7 @@ export function BottomTabs() {
         {tab === "recorder" && <RecorderPanel />}
         {tab === "presets" && <MixPresetsPanel />}
         {synthEnabled && tab === "synth" && <SynthPanel />}
+        {liveVocalEnabled && tab === "livevocal" && <LiveVocalPanel />}
       </div>
     </div>
   );
