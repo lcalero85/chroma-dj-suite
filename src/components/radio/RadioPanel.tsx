@@ -435,10 +435,11 @@ function TrackPicker({
 
 function LiveView() {
   const tr = useT();
+  const fmt = useFormatNumber();
   const stream = useApp((s) => s.stream);
   const setDrawer = useApp((s) => s.setDrawer);
-  const kb = (n: number) => (n / 1024).toFixed(1) + " KB";
-  const mb = (n: number) => (n / 1024 / 1024).toFixed(2) + " MB";
+  const kb = (n: number) => fmt(n / 1024, { maximumFractionDigits: 1 }) + " KB";
+  const mb = (n: number) => fmt(n / 1024 / 1024, { maximumFractionDigits: 2 }) + " MB";
   const elapsed = stream.startedAt ? Math.floor((Date.now() - stream.startedAt) / 1000) : 0;
   const hh = String(Math.floor(elapsed / 3600)).padStart(2, "0");
   const mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
