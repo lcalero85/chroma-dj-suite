@@ -21,7 +21,12 @@ export type SynthPresetId =
   | "houseStab"       // House piano stab
   | "psyLead"         // Psytrance saw lead
   | "synthwave"       // Synthwave PWM lead
-  | "futureBass";     // Future bass supersaw chord
+  | "futureBass"      // Future bass supersaw chord
+  // Full-kit / multi-element presets
+  | "drumKit"         // Synthetic drum kit (kick/snare/hat mapped per key)
+  | "bassKit"         // Bass guitar / synth bass kit (slap + pick + sub layers)
+  | "guitarKit"       // Electric guitar kit (clean + power chord + harmonics)
+  | "reggaeFull";     // Full reggae kit (skank + bubble + bassline + horns)
 
 export interface SynthPreset {
   id: SynthPresetId;
@@ -132,6 +137,42 @@ export const SYNTH_PRESETS: SynthPreset[] = [
     oscs: [{ type: "sawtooth", detune: -12, gain: 0.45 }, { type: "sawtooth", detune: -5, gain: 0.45 }, { type: "sawtooth", detune: 5, gain: 0.45 }, { type: "sawtooth", detune: 12, gain: 0.45 }],
     env: { attack: 0.05, decay: 0.4, sustain: 0.8, release: 0.6 },
     filter: { freq: 2400, q: 1.5, envAmount: 1500 }, gain: 0.5 },
+  // ---- Full-kit presets (multi-element synthesized "instruments") ----
+  { id: "drumKit", label: "Drum Kit",
+    // Kit handled by special voice path; oscs here only used for fallback tone
+    oscs: [{ type: "sine", detune: 0, gain: 0.7 }],
+    env: { attack: 0.001, decay: 0.25, sustain: 0.0, release: 0.15 },
+    filter: { freq: 8000, q: 0.7, envAmount: 0 }, gain: 0.85 },
+  { id: "bassKit", label: "Bass Kit",
+    // Layered: square + saw + sub sine for slap/pick/sub character
+    oscs: [
+      { type: "square",   detune: 0,   gain: 0.5 },
+      { type: "sawtooth", detune: 0,   gain: 0.4 },
+      { type: "sine",     detune: -12, gain: 0.55 },
+      { type: "triangle", detune: 7,   gain: 0.18 },
+    ],
+    env: { attack: 0.004, decay: 0.5, sustain: 0.55, release: 0.22 },
+    filter: { freq: 1100, q: 5, envAmount: 1800 }, gain: 0.78 },
+  { id: "guitarKit", label: "Guitar Kit",
+    // Karplus-flavored layered tone: triangle pluck + saw body + harmonic
+    oscs: [
+      { type: "triangle", detune: 0,    gain: 0.55 },
+      { type: "sawtooth", detune: -7,   gain: 0.35 },
+      { type: "square",   detune: 7,    gain: 0.22 },
+      { type: "sine",     detune: 1200, gain: 0.18 },
+    ],
+    env: { attack: 0.003, decay: 0.5, sustain: 0.22, release: 0.5 },
+    filter: { freq: 3200, q: 2.5, envAmount: 2400 }, gain: 0.65 },
+  { id: "reggaeFull", label: "Reggae Full",
+    // Skank organ + sub-bass + brass layered into one playable preset
+    oscs: [
+      { type: "square",   detune: 0,    gain: 0.4 },   // organ skank
+      { type: "sine",     detune: 1200, gain: 0.28 },  // organ harmonic
+      { type: "triangle", detune: -12,  gain: 0.45 },  // sub support
+      { type: "sawtooth", detune: 7,    gain: 0.25 },  // brass shimmer
+    ],
+    env: { attack: 0.004, decay: 0.45, sustain: 0.35, release: 0.45 },
+    filter: { freq: 2200, q: 2, envAmount: 1500 }, gain: 0.62 },
 ];
 
 export interface SynthFx {
