@@ -2,6 +2,7 @@ import { useApp } from "@/state/store";
 import { SkinPicker } from "../skins/SkinPicker";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { HelpPanel } from "../help/HelpPanel";
+import { AboutPanel } from "../about/AboutPanel";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
@@ -10,7 +11,7 @@ export function Drawer() {
   const setDrawer = useApp((s) => s.setDrawer);
   const t = useT();
   if (!drawer) return null;
-  const titles = { settings: t("settings"), skins: t("skins"), help: t("help") } as const;
+  const titles = { settings: t("settings"), skins: t("skins"), help: t("help"), about: t("about") } as const;
   return (
     <div
       style={{
@@ -35,6 +36,7 @@ export function Drawer() {
         {drawer === "skins" && <SkinPicker />}
         {drawer === "settings" && <SettingsPanel />}
         {drawer === "help" && <HelpPanel />}
+        {drawer === "about" && <AboutPanel />}
       </div>
     </div>
   );

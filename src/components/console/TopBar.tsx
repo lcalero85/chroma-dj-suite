@@ -1,5 +1,5 @@
 import { useApp } from "@/state/store";
-import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard } from "lucide-react";
+import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
@@ -138,6 +138,9 @@ export function TopBar() {
         </button>
         <button className="vdj-btn" data-active={drawer === "help"} onClick={() => setDrawer(drawer === "help" ? null : "help")}>
           <HelpCircle size={12} /> {t("help")}
+        </button>
+        <button className="vdj-btn" data-active={drawer === "about"} onClick={() => setDrawer(drawer === "about" ? null : "about")} title={t("about")}>
+          <Info size={12} /> {t("about")}
         </button>
       </div>
       {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}

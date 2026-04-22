@@ -32,8 +32,23 @@ export function BottomTabs() {
   const mode = useApp((s) => s.settings.appMode);
   const synthEnabled = useAppStore((s) => s.settings.synthEnabled ?? false);
   const liveVocalEnabled = useAppStore((s) => s.settings.liveVocalEnabled ?? false);
+  const panelVis = useAppStore((s) => s.settings.panelVisibility);
   const t = useT();
   const tabs = ALL_TABS.filter((tb) => {
+    // Library is always shown.
+    if (tb.id === "library") return true;
+    // Per-panel visibility (defaults true except synth/livevocal which remain feature-flagged).
+    const visMap: Record<string, boolean | undefined> = {
+      online: panelVis?.online,
+      radio: panelVis?.radio,
+      fx: panelVis?.fx,
+      sampler: panelVis?.sampler,
+      recorder: panelVis?.recorder,
+      presets: panelVis?.presets,
+      synth: panelVis?.synth,
+      livevocal: panelVis?.livevocal,
+    };
+    if (visMap[tb.id] === false) return false;
     if (tb.id === "synth" && !synthEnabled) return false;
     if (tb.id === "livevocal" && !liveVocalEnabled) return false;
     return mode === "advanced" || !tb.advanced;
