@@ -102,6 +102,14 @@ export function SettingsPanel() {
           title={t("synthEnableTip")}
         />
       </Row>
+      <Row label={t("liveVocalEnableLabel")}>
+        <input
+          type="checkbox"
+          checked={settings.liveVocalEnabled ?? false}
+          onChange={(e) => update({ liveVocalEnabled: e.target.checked })}
+          title={t("liveVocalEnableTip")}
+        />
+      </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <ShortcutsSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
