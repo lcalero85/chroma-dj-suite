@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { clamp } from "@/lib/format";
+import { useApp } from "@/state/store";
 
 interface FaderProps {
   value: number;
@@ -10,11 +11,14 @@ interface FaderProps {
   height?: number;
   label?: string;
   bipolar?: boolean;
+  format?: (v: number) => string;
+  tooltip?: string;
 }
 
-export function Fader({ value, min = 0, max = 1, defaultValue, onChange, height = 160, label, bipolar }: FaderProps) {
+export function Fader({ value, min = 0, max = 1, defaultValue, onChange, height = 160, label, bipolar, format, tooltip }: FaderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef<{ y: number; val: number } | null>(null);
+  const tooltipsEnabled = useApp((s) => s.settings.tooltips);
 
   const norm = (value - min) / (max - min); // 0..1
   const capTop = (1 - norm) * (height - 22);
@@ -46,13 +50,27 @@ export function Fader({ value, min = 0, max = 1, defaultValue, onChange, height 
     if (defaultValue !== undefined) onChange(defaultValue);
   }, [defaultValue, onChange]);
 
+  const liveValue = format ? format(value) : `${Math.round(norm * 100)}%`;
+  const composedTitle = tooltipsEnabled
+    ? [tooltip ?? label, liveValue].filter(Boolean).join(" · ")
+    : undefined;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+      title={composedTitle}
+    >
       <div
         ref={trackRef}
         className="vdj-fader-track"
         style={{ height }}
         onDoubleClick={onDoubleClick}
+        role="slider"
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-valuetext={liveValue}
+        aria-label={label ?? tooltip ?? "fader"}
       >
         {bipolar && (
           <div

@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { clamp } from "@/lib/format";
+import { useApp } from "@/state/store";
 
 interface KnobProps {
   value: number; // -1..1 or 0..1 depending on bipolar
@@ -29,6 +30,7 @@ export function Knob({
   const ref = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const startVal = useRef(0);
+  const tooltipsEnabled = useApp((s) => s.settings.tooltips);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -69,10 +71,16 @@ export function Knob({
   const norm = (value - min) / (max - min); // 0..1
   const angle = -135 + norm * 270;
 
+  // Live tooltip: combine label + current formatted value when tooltips enabled.
+  const liveValue = format ? format(value) : value.toFixed(2);
+  const composedTitle = tooltipsEnabled
+    ? [tooltip ?? label, liveValue].filter(Boolean).join(" · ")
+    : undefined;
+
   return (
     <div
       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
-      title={tooltip}
+      title={composedTitle}
     >
       <div
         ref={ref}
@@ -86,7 +94,9 @@ export function Knob({
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
-        aria-label={label}
+        aria-valuetext={liveValue}
+        aria-label={label ?? tooltip ?? "knob"}
+        tabIndex={0}
       >
         <div className="ind" style={{ transform: `translateX(-50%) rotate(${angle}deg)`, transformOrigin: `50% ${size / 2 - 4}px` }} />
       </div>
