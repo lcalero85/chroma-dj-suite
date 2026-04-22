@@ -187,6 +187,8 @@ export interface SettingsState {
   enabledDecks?: 2 | 4;
   /** Visual style for the deck waveforms. */
   waveformStyle?: "classic" | "bars" | "dual";
+  /** Enable the live synthesizer panel (64-key keyboard + FX). Default false. */
+  synthEnabled?: boolean;
 }
 
 export interface SessionStats {
@@ -241,7 +243,7 @@ interface AppState {
   playlists: PlaylistRecord[];
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
-  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets";
+  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets" | "synth";
   drawer: null | "settings" | "skins" | "help";
   search: string;
   selectedPlaylistId: string | null;
@@ -293,6 +295,7 @@ const defaultSettings: SettingsState = {
   appMode: "advanced",
   enabledDecks: 2,
   waveformStyle: "classic",
+  synthEnabled: false,
 };
 
 export const useApp = create<AppState>()(
