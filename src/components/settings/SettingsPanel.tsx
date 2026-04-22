@@ -94,6 +94,14 @@ export function SettingsPanel() {
           <option value="dual">{t("wfDual")}</option>
         </select>
       </Row>
+      <Row label={t("synthEnableLabel")}>
+        <input
+          type="checkbox"
+          checked={settings.synthEnabled ?? false}
+          onChange={(e) => update({ synthEnabled: e.target.checked })}
+          title={t("synthEnableTip")}
+        />
+      </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <ShortcutsSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
