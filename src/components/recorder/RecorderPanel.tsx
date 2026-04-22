@@ -9,7 +9,7 @@ import { formatTime } from "@/lib/format";
 import { Circle, Square, Download, Trash2, Mic, MicOff, Wand2, Keyboard, Video } from "lucide-react";
 import { toast } from "sonner";
 import { setMicOn, setMicLevel, setMicDuck, setVoicePreset, setNumpadDeck } from "@/state/controller";
-import { useT } from "@/lib/i18n";
+import { useT, useFormatNumber } from "@/lib/i18n";
 
 function fileExt(mime: string) {
   if (mime.includes("wav")) return "wav";
@@ -23,6 +23,7 @@ function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecord
   const url = useMemo(() => URL.createObjectURL(r.blob), [r.blob]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
   const isVideo = r.mime.startsWith("video/");
+  const fmt = useFormatNumber();
 
   return (
     <div
@@ -40,7 +41,7 @@ function RecordingRow({ r, onDelete }: { r: Awaited<ReturnType<typeof listRecord
           {isVideo && <Video size={11} style={{ color: "var(--accent)" }} />}
           {r.name}
         </div>
-        <div className="vdj-label">{formatTime(r.duration)} · {(r.blob.size / 1024 / 1024).toFixed(1)} MB · {fileExt(r.mime).toUpperCase()}</div>
+        <div className="vdj-label">{formatTime(r.duration)} · {fmt(r.blob.size / 1024 / 1024, { maximumFractionDigits: 1 })} MB · {fileExt(r.mime).toUpperCase()}</div>
       </div>
       {isVideo ? (
         <video src={url} controls preload="metadata" style={{ height: 80, maxWidth: "40%", borderRadius: 4, background: "#000" }} />
