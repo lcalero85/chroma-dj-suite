@@ -258,6 +258,16 @@ export function Deck({ id, side }: DeckProps) {
                     addHotCue(id, i);
                   }}
                   title={cue ? t("jumpToCue", { n: i + 1 }) : t("setCue", { n: i + 1 })}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={cue ? t("jumpToCue", { n: i + 1 }) : t("setCue", { n: i + 1 })}
+                  aria-pressed={!!cue}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      cue ? jumpHotCue(id, i) : addHotCue(id, i);
+                    }
+                  }}
                 >
                   {i + 1}
                 </div>
