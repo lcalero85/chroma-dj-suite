@@ -112,6 +112,8 @@ export function SettingsPanel() {
         />
       </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
+      <PanelVisibilityRows />
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <ShortcutsSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <AudioDevicesPanel />
@@ -128,6 +130,40 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
       <span style={{ fontSize: 12 }}>{label}</span>
       <div>{children}</div>
+    </div>
+  );
+}
+
+function PanelVisibilityRows() {
+  const settings = useApp((s) => s.settings);
+  const update = useApp((s) => s.updateSettings);
+  const t = useT();
+  const vis = settings.panelVisibility ?? {};
+  const setVis = (patch: Partial<NonNullable<typeof settings.panelVisibility>>) =>
+    update({ panelVisibility: { ...vis, ...patch } });
+  const items: { key: keyof NonNullable<typeof settings.panelVisibility>; label: string }[] = [
+    { key: "online",    label: t("panelOnline") },
+    { key: "radio",     label: t("panelRadio") },
+    { key: "fx",        label: t("panelFx") },
+    { key: "sampler",   label: t("panelSampler") },
+    { key: "recorder",  label: t("panelRecorder") },
+    { key: "presets",   label: t("panelPresets") },
+    { key: "synth",     label: t("panelSynth") },
+    { key: "livevocal", label: t("panelLiveVocal") },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.85 }}>{t("panelVisibility")}</div>
+      <div style={{ fontSize: 11, opacity: 0.65 }}>{t("panelVisibilityHint")}</div>
+      {items.map((it) => (
+        <Row key={it.key} label={it.label}>
+          <input
+            type="checkbox"
+            checked={vis[it.key] !== false}
+            onChange={(e) => setVis({ [it.key]: e.target.checked })}
+          />
+        </Row>
+      ))}
     </div>
   );
 }
