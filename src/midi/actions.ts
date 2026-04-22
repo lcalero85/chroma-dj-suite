@@ -7,6 +7,7 @@ import {
   setMasterVolume, setXfaderPosition, seekDeck,
 } from "@/state/controller";
 import { useApp, type DeckId } from "@/state/store";
+import { triggerSlot, stopSlot, startSlotLoop, getSlots } from "@/audio/sampler";
 
 export type MidiActionKind =
   | "trigger"   // button: any nonzero value triggers
@@ -20,7 +21,7 @@ export interface MidiAction {
   id: string;
   label: string;
   kind: MidiActionKind;
-  group: "deckA" | "deckB" | "deckC" | "deckD" | "mixer" | "global";
+  group: "deckA" | "deckB" | "deckC" | "deckD" | "mixer" | "global" | "sampler";
   /** Apply incoming MIDI value (0..1 for value/bipolar/relative; >0 = press for trigger/toggle). */
   apply: (v: number) => void;
   /** Returns LED state for output: 0..127 (button = 0/127 typically). null = no feedback. */
@@ -112,6 +113,52 @@ actions.push(
   { id: "mixer.master", label: "Master volume", kind: "value", group: "mixer",
     apply: (v) => setMasterVolume(v) },
 );
+
+// ---------- Sampler pads (4 banks × 16 pads = 64) ----------
+// Active loops kept here so the same MIDI trigger can stop a held loop.
+const samplerActiveLoops = new Map<number, () => void>();
+for (let bank = 0; bank < 4; bank++) {
+  for (let pad = 0; pad < 16; pad++) {
+    const slotId = bank * 16 + pad;
+    actions.push({
+      id: `sampler.bank${bank + 1}.pad${pad + 1}`,
+      label: `Sampler · Bank ${bank + 1} Pad ${pad + 1}`,
+      kind: "trigger",
+      group: "sampler",
+      apply: (v) => {
+        if (v <= 0) return;
+        const slot = getSlots().find((s) => s.id === slotId);
+        if (!slot || !slot.buffer) return;
+        if (slot.loop) {
+          const existing = samplerActiveLoops.get(slotId);
+          if (existing) { existing(); samplerActiveLoops.delete(slotId); }
+          else {
+            const stop = startSlotLoop(slotId);
+            if (stop) samplerActiveLoops.set(slotId, stop);
+          }
+        } else {
+          triggerSlot(slotId);
+        }
+      },
+      ledState: () => {
+        const slot = getSlots().find((s) => s.id === slotId);
+        return slot?.buffer ? 127 : 0;
+      },
+    });
+    actions.push({
+      id: `sampler.bank${bank + 1}.pad${pad + 1}.stop`,
+      label: `Sampler · Bank ${bank + 1} Pad ${pad + 1} Stop`,
+      kind: "trigger",
+      group: "sampler",
+      apply: (v) => {
+        if (v <= 0) return;
+        const fn = samplerActiveLoops.get(slotId);
+        if (fn) { fn(); samplerActiveLoops.delete(slotId); }
+        stopSlot(slotId);
+      },
+    });
+  }
+}
 
 export const MIDI_ACTIONS = actions;
 
