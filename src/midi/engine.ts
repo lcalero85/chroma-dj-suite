@@ -7,10 +7,14 @@ import { toast } from "sonner";
 export type MidiSettings = {
   enabled: boolean;
   profileId: string;
-  /** id of selected MIDIInput; null = auto-match by profile.inputMatch */
+  /** Legacy single-input id (kept for back-compat). null = auto-match by profile.inputMatch */
   inputId: string | null;
-  /** id of selected MIDIOutput; null = auto-match by profile.outputMatch */
+  /** Legacy single-output id (kept for back-compat). null = auto-match by profile.outputMatch */
   outputId: string | null;
+  /** Multiple active input device ids (multi-controller). If empty → fall back to inputId / auto-match. */
+  enabledInputIds?: string[];
+  /** Multiple active output device ids for LED feedback. If empty → fall back to outputId / auto-match. */
+  enabledOutputIds?: string[];
   ledFeedback: boolean;
   /** Custom user bindings layered on top of profile bindings */
   customBindings: MidiBinding[];
@@ -21,6 +25,8 @@ export const defaultMidiSettings: MidiSettings = {
   profileId: "generic",
   inputId: null,
   outputId: null,
+  enabledInputIds: [],
+  enabledOutputIds: [],
   ledFeedback: true,
   customBindings: [],
 };
@@ -37,8 +43,10 @@ type MidiAccessLike = {
 interface DeviceInfo { id: string; name: string; }
 
 let access: MidiAccessLike | null = null;
-let currentInput: MidiInputLike | null = null;
-let currentOutput: MidiOutputLike | null = null;
+/** All currently active inputs (multi-controller). */
+let currentInputs: MidiInputLike[] = [];
+/** All currently active outputs for LED feedback. */
+let currentOutputs: MidiOutputLike[] = [];
 let learning: { resolve: (b: MidiBinding | null) => void } | null = null;
 let activityListeners: ((b: MidiBinding) => void)[] = [];
 let unsubLed: (() => void) | null = null;
