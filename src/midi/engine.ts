@@ -373,21 +373,24 @@ function onMessage(e: { data: Uint8Array }) {
 // ---------- LED feedback ----------
 const lastLedSent = new Map<string, number>();
 
-function sendLed(o: MidiOutputLike, ledKey: string, status: number, data1: number, value: number) {
-  const k = `${ledKey}`;
+function sendLed(outs: MidiOutputLike[], ledKey: string, status: number, data1: number, value: number) {
+  const k = ledKey;
   const last = lastLedSent.get(k);
   if (last === value) return;
   lastLedSent.set(k, value);
-  try {
-    o.send([status, data1, Math.max(0, Math.min(127, value | 0))]);
-    activityFlashCb?.("out");
-  } catch (e) {
-    console.warn("MIDI send failed", e);
+  const v = Math.max(0, Math.min(127, value | 0));
+  for (const o of outs) {
+    try {
+      o.send([status, data1, v]);
+      activityFlashCb?.("out");
+    } catch (e) {
+      console.warn("MIDI send failed", e);
+    }
   }
 }
 
 function pushLeds() {
-  if (!currentOutput) return;
+  if (currentOutputs.length === 0) return;
   const settings = getMidiSettings();
   if (!settings.ledFeedback) return;
   const profile = getProfile(settings.profileId);
@@ -398,13 +401,13 @@ function pushLeds() {
     const v = a.ledState();
     if (v === null) continue;
     const status = led.type === "note" ? (0x90 | (led.channel & 0x0F)) : (0xB0 | (led.channel & 0x0F));
-    sendLed(currentOutput, a.id, status, led.data1, v);
+    sendLed(currentOutputs, a.id, status, led.data1, v);
   }
 }
 
 function attachLedFeedback() {
   detachLedFeedback();
-  if (!currentOutput) return;
+  if (currentOutputs.length === 0) return;
   // Push initial state, then subscribe to store changes (light polling)
   pushLeds();
   const id = window.setInterval(pushLeds, 80);
