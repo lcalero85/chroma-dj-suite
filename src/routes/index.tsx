@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useApp } from "@/state/store";
-import { ensureRunning, getEngine } from "@/audio/engine";
+import { ensureRunning, getEngine, setWebMonitoring, setAudioOutputDevice } from "@/audio/engine";
 import { startPositionPolling, startSegmentScheduler, initStreamStatus } from "@/state/controller";
 import { installShortcuts } from "@/lib/shortcuts";
 import { bootMidi } from "@/midi/engine";
@@ -47,6 +47,12 @@ function Index() {
     const boot = async () => {
       getEngine();
       await ensureRunning();
+      // Apply persisted audio routing
+      const s = useApp.getState().settings;
+      try { setWebMonitoring(s.webMonitoring ?? true); } catch { /* noop */ }
+      if (s.audioOutputDeviceId) {
+        try { await setAudioOutputDevice(s.audioOutputDeviceId); } catch { /* noop */ }
+      }
       startPositionPolling();
       void bootMidi();
       window.removeEventListener("pointerdown", boot);
