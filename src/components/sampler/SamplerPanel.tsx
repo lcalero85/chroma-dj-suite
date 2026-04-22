@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getSlots, initSampler, loadSampleFromBlob, triggerSlot, setSlotVolume, setSlotColor, setSlotLoop, startSlotLoop } from "@/audio/sampler";
+import { getSlots, initSampler, loadSampleFromBlob, triggerSlot, setSlotVolume, setSlotColor, setSlotLoop, startSlotLoop, stopSlot } from "@/audio/sampler";
 import { ensureRunning } from "@/audio/engine";
 import { useT } from "@/lib/i18n";
 
@@ -145,6 +145,20 @@ export function SamplerPanel() {
                     title={t("samplerLoopTip")}
                   >
                     LOOP
+                  </button>
+                  <button
+                    className="vdj-btn"
+                    onClick={() => {
+                      const fn = stopFns.current.get(s.id);
+                      if (fn) { fn(); stopFns.current.delete(s.id); }
+                      stopSlot(s.id);
+                      force((x) => x + 1);
+                    }}
+                    style={{ padding: "1px 4px", fontSize: 8, flex: 1 }}
+                    title={t("samplerStopTip")}
+                    aria-label={t("samplerStopTip")}
+                  >
+                    STOP
                   </button>
                   {PAD_PALETTE.map((c) => (
                     <button

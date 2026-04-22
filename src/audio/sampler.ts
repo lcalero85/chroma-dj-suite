@@ -14,6 +14,9 @@ export interface SamplerSlot {
 
 const slots: SamplerSlot[] = [];
 
+/** Track active one-shot sources per slot so they can be stopped. */
+const activeSources = new Map<number, Set<{ src: AudioBufferSourceNode; gain: GainNode }>>();
+
 export function initSampler(banks = 4, padsPerBank = 16) {
   if (slots.length > 0) return slots;
   const palette = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
@@ -73,6 +76,11 @@ export function triggerSlot(slotId: number, gain = 1) {
   src.connect(g);
   g.connect(master);
   src.start();
+  let set = activeSources.get(slotId);
+  if (!set) { set = new Set(); activeSources.set(slotId, set); }
+  const entry = { src, gain: g };
+  set.add(entry);
+  src.onended = () => { set?.delete(entry); };
 }
 
 /** Start a looped playback. Returns a stop function. */
@@ -98,4 +106,21 @@ export function startSlotLoop(slotId: number, gain = 1): (() => void) | null {
       src.stop(t + 0.06);
     } catch { /* noop */ }
   };
+}
+
+/** Stop all currently-playing one-shot instances for a given slot. */
+export function stopSlot(slotId: number) {
+  const { ctx } = getEngine();
+  const set = activeSources.get(slotId);
+  if (!set) return;
+  const t = ctx.currentTime;
+  for (const { src, gain } of set) {
+    try {
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.05);
+      src.stop(t + 0.06);
+    } catch { /* noop */ }
+  }
+  set.clear();
 }
