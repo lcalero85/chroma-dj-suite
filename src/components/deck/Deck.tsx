@@ -243,7 +243,23 @@ export function Deck({ id, side }: DeckProps) {
       {/* hot cues + loops */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <div className="vdj-label" style={{ marginBottom: 6 }}>{t("hotCues")}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div className="vdj-label">{t("hotCues")}</div>
+            <button
+              className="vdj-btn"
+              data-tone="danger"
+              style={{ fontSize: 9, padding: "2px 6px" }}
+              onClick={() => {
+                if (ds.hotCues.length === 0) return;
+                clearHotCues(id);
+                toast(`${t("hotCuesCleared")} ${id}`);
+              }}
+              title={t("clearHotCuesTip")}
+              disabled={ds.hotCues.length === 0}
+            >
+              {t("clearHotCues")}
+            </button>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4 }}>
             {Array.from({ length: 8 }).map((_, i) => {
               const cue = ds.hotCues.find((c) => c.id === i);
