@@ -215,6 +215,7 @@ export interface SettingsState {
     presets?: boolean;
     synth?: boolean;
     livevocal?: boolean;
+    beatmaker?: boolean;
   };
 }
 
