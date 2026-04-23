@@ -32,6 +32,7 @@
   --font-display: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   --beat-glow: 0 0 18px var(--accent);
+  --jog-size: 180px;
 }
 
 /* 1. Pioneer Club */
