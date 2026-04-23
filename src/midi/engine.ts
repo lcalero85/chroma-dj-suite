@@ -51,6 +51,9 @@ let learning: { resolve: (b: MidiBinding | null) => void } | null = null;
 let activityListeners: ((b: MidiBinding) => void)[] = [];
 let unsubLed: (() => void) | null = null;
 let activityFlashCb: ((dir: "in" | "out") => void) | null = null;
+/** Track which device fired the most recent message so we can attach deviceId to bindings/learn. */
+let lastMessageDeviceId: string | null = null;
+let lastMessageDeviceName: string | null = null;
 
 export function onMidiActivity(cb: (dir: "in" | "out") => void) {
   activityFlashCb = cb;
