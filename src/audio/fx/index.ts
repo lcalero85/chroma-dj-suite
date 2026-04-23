@@ -10,7 +10,13 @@ export type FxKind =
   | "phaser"
   | "bitcrusher"
   | "echo"
-  | "gate";
+  | "gate"
+  | "tremolo"
+  | "autopan"
+  | "ringmod"
+  | "chorus"
+  | "wahwah"
+  | "lofi";
 
 export interface FxRackHandles {
   input: GainNode;
@@ -164,6 +170,99 @@ function buildGate(ctx: AudioContext): { node: AudioNode; p1: AudioParam; p2: Au
   return { node: wrapInOut(ctx, g, g), p1: lfo.frequency, p2: lfoGain.gain };
 }
 
+function buildTremolo(ctx: AudioContext): { node: AudioNode; p1: AudioParam; p2: AudioParam } {
+  // Sine LFO modulating gain — classic tremolo (volume wobble).
+  const g = ctx.createGain();
+  g.gain.value = 1;
+  const lfo = ctx.createOscillator();
+  lfo.type = "sine";
+  lfo.frequency.value = 6;
+  const depth = ctx.createGain();
+  depth.gain.value = 0.5;
+  lfo.connect(depth).connect(g.gain);
+  lfo.start();
+  return { node: wrapInOut(ctx, g, g), p1: lfo.frequency, p2: depth.gain };
+}
+
+function buildAutoPan(ctx: AudioContext): { node: AudioNode; p1: AudioParam; p2: AudioParam } {
+  // Stereo auto-pan via a StereoPanner driven by a sine LFO.
+  const pan = ctx.createStereoPanner();
+  const lfo = ctx.createOscillator();
+  lfo.type = "sine";
+  lfo.frequency.value = 1.5;
+  const depth = ctx.createGain();
+  depth.gain.value = 0.9;
+  lfo.connect(depth).connect(pan.pan);
+  lfo.start();
+  return { node: wrapInOut(ctx, pan, pan), p1: lfo.frequency, p2: depth.gain };
+}
+
+function buildRingMod(ctx: AudioContext): { node: AudioNode; p1: AudioParam; p2: AudioParam } {
+  // Multiply incoming signal by a sine carrier — metallic / bell-like sound.
+  const g = ctx.createGain();
+  g.gain.value = 0; // start silent; LFO sets it
+  const car = ctx.createOscillator();
+  car.type = "sine";
+  car.frequency.value = 220;
+  const depth = ctx.createGain();
+  depth.gain.value = 1;
+  car.connect(depth).connect(g.gain);
+  car.start();
+  return { node: wrapInOut(ctx, g, g), p1: car.frequency, p2: depth.gain };
+}
+
+function buildChorus(ctx: AudioContext): { node: AudioNode; p1: AudioParam; p2: AudioParam } {
+  // Two short delays modulated by a slow LFO — gentle stereo widening.
+  const splitter = ctx.createGain();
+  const left = ctx.createDelay(0.05);
+  left.delayTime.value = 0.022;
+  const right = ctx.createDelay(0.05);
+  right.delayTime.value = 0.027;
+  const lfo = ctx.createOscillator();
+  lfo.type = "sine";
+  lfo.frequency.value = 0.6;
+  const depth = ctx.createGain();
+  depth.gain.value = 0.004;
+  lfo.connect(depth);
+  depth.connect(left.delayTime);
+  depth.connect(right.delayTime);
+  lfo.start();
+  const merger = ctx.createGain();
+  splitter.connect(left).connect(merger);
+  splitter.connect(right).connect(merger);
+  return { node: wrapInOut(ctx, splitter, merger), p1: lfo.frequency, p2: depth.gain };
+}
+
+function buildWahWah(ctx: AudioContext): { node: AudioNode; p1: AudioParam; p2: AudioParam } {
+  // Bandpass filter swept by an LFO — auto-wah.
+  const f = ctx.createBiquadFilter();
+  f.type = "bandpass";
+  f.frequency.value = 800;
+  f.Q.value = 8;
+  const lfo = ctx.createOscillator();
+  lfo.type = "sine";
+  lfo.frequency.value = 1.2;
+  const depth = ctx.createGain();
+  depth.gain.value = 600;
+  lfo.connect(depth).connect(f.frequency);
+  lfo.start();
+  return { node: wrapInOut(ctx, f, f), p1: lfo.frequency, p2: depth.gain };
+}
+
+function buildLoFi(ctx: AudioContext): { node: AudioNode; p1: AudioParam; p2: AudioParam } {
+  // Gentle low-pass + high-pass to mimic a vintage radio / lo-fi tape.
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 4500;
+  lp.Q.value = 0.7;
+  const hp = ctx.createBiquadFilter();
+  hp.type = "highpass";
+  hp.frequency.value = 250;
+  hp.Q.value = 0.7;
+  lp.connect(hp);
+  return { node: wrapInOut(ctx, lp, hp), p1: lp.frequency, p2: hp.frequency };
+}
+
 export function createFxRack(): FxRackHandles {
   const { ctx } = getEngine();
   const input = ctx.createGain();
@@ -217,6 +316,12 @@ export function setFxKind(rack: FxRackHandles, kind: FxKind) {
     case "bitcrusher": built = buildBitcrusher(ctx); break;
     case "echo":    built = buildEcho(ctx); break;
     case "gate":    built = buildGate(ctx); break;
+    case "tremolo": built = buildTremolo(ctx); break;
+    case "autopan": built = buildAutoPan(ctx); break;
+    case "ringmod": built = buildRingMod(ctx); break;
+    case "chorus":  built = buildChorus(ctx); break;
+    case "wahwah":  built = buildWahWah(ctx); break;
+    case "lofi":    built = buildLoFi(ctx); break;
     default: built = buildDelay(ctx);
   }
   rack.fx = built.node;

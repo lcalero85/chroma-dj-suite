@@ -5,7 +5,10 @@ import { createFxRack, setFxKind, setFxMix, setFxParam, type FxKind, type FxRack
 import { getEngine } from "@/audio/engine";
 import { useT, type DictKey } from "@/lib/i18n";
 
-const KINDS: FxKind[] = ["off", "reverb", "delay", "filter", "flanger", "phaser", "bitcrusher", "echo", "gate"];
+const KINDS: FxKind[] = [
+  "off", "reverb", "delay", "echo", "filter", "flanger", "phaser",
+  "chorus", "tremolo", "autopan", "wahwah", "ringmod", "bitcrusher", "lofi", "gate",
+];
 const KIND_KEY: Record<FxKind, DictKey> = {
   off: "fxKindOff",
   reverb: "fxKindReverb",
@@ -16,6 +19,12 @@ const KIND_KEY: Record<FxKind, DictKey> = {
   bitcrusher: "fxKindBitcrusher",
   echo: "fxKindEcho",
   gate: "fxKindGate",
+  tremolo: "fxKindTremolo",
+  autopan: "fxKindAutoPan",
+  ringmod: "fxKindRingMod",
+  chorus: "fxKindChorus",
+  wahwah: "fxKindWahWah",
+  lofi: "fxKindLoFi",
 };
 
 export function FxPanel() {
@@ -127,6 +136,18 @@ function mapParam(kind: FxKind, which: 1 | 2, v: number): number {
       return which === 1 ? Math.max(2, Math.round(2 + v * 14)) : 0.5 + v * 4;
     case "gate":
       return which === 1 ? 1 + v * 16 : v;
+    case "tremolo":
+      return which === 1 ? 0.5 + v * 12 : v;          // p1 = rate Hz, p2 = depth 0..1
+    case "autopan":
+      return which === 1 ? 0.1 + v * 6 : v;           // p1 = rate Hz, p2 = depth 0..1
+    case "ringmod":
+      return which === 1 ? 30 + v * v * 1500 : v;     // p1 = carrier Hz, p2 = depth
+    case "chorus":
+      return which === 1 ? 0.1 + v * 3 : 0.001 + v * 0.012; // p1 = LFO Hz, p2 = depth s
+    case "wahwah":
+      return which === 1 ? 0.2 + v * 6 : 100 + v * 1500;    // p1 = sweep Hz, p2 = depth Hz
+    case "lofi":
+      return which === 1 ? 1500 + (1 - v) * 5500 : 80 + v * 600; // p1 = LP Hz (more = darker), p2 = HP Hz
     case "reverb":
     default:
       return v;
