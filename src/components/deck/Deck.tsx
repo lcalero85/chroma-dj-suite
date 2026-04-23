@@ -45,8 +45,9 @@ export function Deck({ id, side }: DeckProps) {
   const waveformStyle = useApp((s) => s.settings.waveformStyle ?? "classic");
   const skin = useApp((s) => s.skin);
   const masterId: DeckId = id === "A" ? "B" : "A";
-  // Big Jogs skin enlarges the platter without disturbing other layouts.
-  const jogSize = skin === "bigjogs" ? 260 : 180;
+  // Big Jogs skins enlarge the platter without disturbing other layouts.
+  // All "bigjogs*" variants share an oversized platter size.
+  const jogSize = skin.startsWith("bigjogs") ? (skin === "bigjogs" ? 260 : 280) : 180;
 
   const handle = getDeck(id);
   const [dragOver, setDragOver] = useState(false);
