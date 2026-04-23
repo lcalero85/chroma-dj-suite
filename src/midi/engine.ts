@@ -149,7 +149,15 @@ function attachDevices(settings: MidiSettings) {
     if (auto) currentOutputs.push(auto);
   }
 
-  for (const i of currentInputs) i.onmidimessage = onMessage;
+  // Wrap so we know which device the message came from.
+  for (const i of currentInputs) {
+    const dev = i;
+    i.onmidimessage = (e) => {
+      lastMessageDeviceId = dev.id;
+      lastMessageDeviceName = dev.name ?? null;
+      onMessage(e);
+    };
+  }
 }
 
 function detachDevices() {
