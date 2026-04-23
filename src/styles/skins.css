@@ -607,6 +607,12 @@ tr.vdj-row-focusable:focus-visible {
 }
 .vdj-spin { animation: vdj-spin 0.9s linear infinite; }
 
+@keyframes vdj-dj-shimmer {
+  0%   { background-position: 0% 50%; filter: brightness(1); }
+  50%  { background-position: 100% 50%; filter: brightness(1.18); }
+  100% { background-position: 0% 50%; filter: brightness(1); }
+}
+
 .vdj-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .vdj-scroll::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
 .vdj-scroll::-webkit-scrollbar-track { background: transparent; }
