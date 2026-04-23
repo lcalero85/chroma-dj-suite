@@ -102,7 +102,7 @@ export function MidiPanel() {
       <Row label={t("midiController")}>
         <select className="vdj-btn" value={midi.profileId}
           onChange={(e) => setMidiProfile(e.target.value)} style={{ padding: "6px 8px" }}>
-          {MIDI_PROFILES.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {MIDI_PROFILES.map((p: { id: string; name: string }) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </Row>
 

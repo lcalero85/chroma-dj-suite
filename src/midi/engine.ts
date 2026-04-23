@@ -382,7 +382,7 @@ function onMessage(e: { data: Uint8Array }) {
   const fromDevice = lastMessageDeviceId;
   // Custom bindings override profile bindings on the same source.
   const allBindings: MidiBinding[] = [
-    ...profile.bindings.filter((pb) => !settings.customBindings.some((cb) => bindingMatches(cb, pb))),
+    ...profile.bindings.filter((pb: MidiBinding) => !settings.customBindings.some((cb) => bindingMatches(cb, pb))),
     ...settings.customBindings,
   ];
 
