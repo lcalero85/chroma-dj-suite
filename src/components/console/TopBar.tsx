@@ -1,5 +1,5 @@
 import { useApp } from "@/state/store";
-import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info } from "lucide-react";
+import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
@@ -11,6 +11,9 @@ export function TopBar() {
   const setDrawer = useApp((s) => s.setDrawer);
   const skin = useApp((s) => s.skin);
   const appName = useApp((s) => s.settings.appName);
+  const djName = useApp((s) => s.settings.djName ?? "");
+  const showController = useApp((s) => s.settings.showControllerInTopbar !== false);
+  const midi = useApp((s) => s.midi);
   const stream = useApp((s) => s.stream);
   // Subscribe to segments so the next-segment chip refreshes on change.
   const segments = useApp((s) => s.segments);
@@ -78,6 +81,39 @@ export function TopBar() {
           {appName || "VDJ PRO"}
         </div>
         <span className="vdj-chip" style={{ marginLeft: 8 }}>{t("skinLabel")} · {skin}</span>
+        {djName.trim() && (
+          <span
+            className="vdj-loaded-badge"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              background: "linear-gradient(90deg, var(--accent), var(--accent-2, var(--accent)))",
+              color: "var(--bg-1, #000)",
+              backgroundSize: "200% 100%",
+              animation: "vdj-dj-shimmer 3.5s linear infinite",
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+            }}
+            title={t("djNameLabel")}
+          >
+            <Sparkles size={11} /> {djName}
+          </span>
+        )}
+        {showController && (
+          <span
+            className="vdj-chip"
+            style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+            title={t("controllerChipTitle")}
+          >
+            <Headphones size={11} />
+            {(() => {
+              const ins = midi.enabledInputIds ?? [];
+              if (midi.enabled && ins.length > 0) return `${ins.length} MIDI`;
+              return t("controllerNone");
+            })()}
+          </span>
+        )}
         {stream.status === "live" && (
           <span
             className="vdj-loaded-badge"

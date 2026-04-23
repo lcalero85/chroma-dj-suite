@@ -27,6 +27,11 @@ export const DICT = {
     numpadArrow: "NUMPAD →",
     numpadTip: "Choose which deck the numeric keypad controls (` to toggle)",
     numpadBacktickHint: "(`)",
+    djNameLabel: "DJ name",
+    djNamePlaceholder: "Your DJ name",
+    showControllerLabel: "Show controller in top bar",
+    controllerChipTitle: "Connected MIDI controller",
+    controllerNone: "Simulated",
 
     // ===== Tabs =====
     library: "Library",
@@ -766,6 +771,11 @@ export const DICT = {
     numpadArrow: "NUMPAD →",
     numpadTip: "Selecciona el deck que controla el teclado numérico (` para alternar)",
     numpadBacktickHint: "(`)",
+    djNameLabel: "Nombre del DJ",
+    djNamePlaceholder: "Tu nombre de DJ",
+    showControllerLabel: "Mostrar controlador en la barra superior",
+    controllerChipTitle: "Controlador MIDI conectado",
+    controllerNone: "Simulado",
 
     library: "Biblioteca",
     online: "Online",
