@@ -737,3 +737,83 @@ tr.vdj-row-focusable:focus-visible {
 html[data-skin="bigjogs"] {
   --jog-size: 260px;
 }
+
+/* 23. Big Jogs — Neon Miami: large platters with retrowave magenta/cyan accents. */
+html[data-skin="bigjogs-neon"] {
+  --accent: oklch(0.78 0.27 340);
+  --accent-2: oklch(0.82 0.2 195);
+  --surface-1: oklch(0.1 0.04 295);
+  --surface-2: oklch(0.15 0.06 295);
+  --surface-3: oklch(0.2 0.08 295);
+  --surface-4: oklch(0.27 0.1 295);
+  --text-1: oklch(0.98 0.02 320);
+  --text-2: oklch(0.78 0.08 320);
+  --line: oklch(0.78 0.27 340 / 0.25);
+  --line-strong: oklch(0.82 0.2 195 / 0.35);
+  --beat-glow: 0 0 24px oklch(0.78 0.27 340 / 0.85), 0 0 40px oklch(0.82 0.2 195 / 0.5);
+  --jog-size: 280px;
+}
+
+/* 24. Big Jogs — Gold Master: black + luxury gold, oversized platters. */
+html[data-skin="bigjogs-gold"] {
+  --accent: oklch(0.82 0.15 85);
+  --accent-2: oklch(0.7 0.16 70);
+  --surface-1: oklch(0.08 0.005 80);
+  --surface-2: oklch(0.13 0.008 80);
+  --surface-3: oklch(0.19 0.012 80);
+  --surface-4: oklch(0.26 0.018 80);
+  --text-1: oklch(0.95 0.05 85);
+  --text-2: oklch(0.78 0.08 80);
+  --line: oklch(0.82 0.15 85 / 0.2);
+  --line-strong: oklch(0.82 0.15 85 / 0.4);
+  --beat-glow: 0 0 18px oklch(0.82 0.15 85 / 0.7);
+  --jog-size: 280px;
+}
+
+/* 25. Big Jogs — Deep Ocean: turquoise vibes with massive jog wheels. */
+html[data-skin="bigjogs-ocean"] {
+  --accent: oklch(0.78 0.14 195);
+  --accent-2: oklch(0.7 0.16 175);
+  --surface-1: oklch(0.1 0.04 215);
+  --surface-2: oklch(0.15 0.05 210);
+  --surface-3: oklch(0.21 0.06 205);
+  --surface-4: oklch(0.28 0.07 200);
+  --text-1: oklch(0.96 0.03 195);
+  --text-2: oklch(0.74 0.07 195);
+  --line: oklch(0.78 0.14 195 / 0.22);
+  --line-strong: oklch(0.78 0.14 195 / 0.4);
+  --beat-glow: 0 0 16px oklch(0.78 0.14 195 / 0.7);
+  --jog-size: 280px;
+}
+
+/* 26. Big Jogs — Blood Moon: intense red on black, big platters. */
+html[data-skin="bigjogs-blood"] {
+  --accent: oklch(0.62 0.25 25);
+  --accent-2: oklch(0.5 0.2 15);
+  --surface-1: oklch(0.06 0.01 20);
+  --surface-2: oklch(0.11 0.02 20);
+  --surface-3: oklch(0.17 0.03 20);
+  --surface-4: oklch(0.24 0.04 20);
+  --text-1: oklch(0.95 0.04 30);
+  --text-2: oklch(0.7 0.08 25);
+  --line: oklch(0.62 0.25 25 / 0.22);
+  --line-strong: oklch(0.62 0.25 25 / 0.45);
+  --beat-glow: 0 0 18px oklch(0.62 0.25 25 / 0.85);
+  --jog-size: 280px;
+}
+
+/* 27. Big Jogs — Forest Deep: dark green with oversized platters. */
+html[data-skin="bigjogs-forest"] {
+  --accent: oklch(0.7 0.16 145);
+  --accent-2: oklch(0.62 0.14 160);
+  --surface-1: oklch(0.1 0.02 150);
+  --surface-2: oklch(0.15 0.03 150);
+  --surface-3: oklch(0.21 0.04 150);
+  --surface-4: oklch(0.28 0.05 150);
+  --text-1: oklch(0.95 0.04 130);
+  --text-2: oklch(0.72 0.06 140);
+  --line: oklch(0.7 0.16 145 / 0.2);
+  --line-strong: oklch(0.7 0.16 145 / 0.4);
+  --beat-glow: 0 0 16px oklch(0.7 0.16 145 / 0.7);
+  --jog-size: 280px;
+}
