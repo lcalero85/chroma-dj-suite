@@ -13,6 +13,14 @@ export type MidiBinding = {
   actionId: string;
   /** Optional value transform: "absolute" (default), "invert", "relative-2c" (jog) */
   transform?: "absolute" | "invert" | "relative-2c";
+  /**
+   * Optional MIDI input device id this binding is bound to.
+   * When set, the binding only fires for messages coming from that device.
+   * When undefined, any active input device may trigger it (used by built-in profiles).
+   */
+  deviceId?: string;
+  /** Optional human-readable device name, shown in the UI. */
+  deviceName?: string;
 };
 
 export interface MidiProfile {
