@@ -219,9 +219,13 @@ export function MidiPanel() {
 
 function formatBinding(b: MidiBinding): string {
   const ch = b.channel + 1;
-  if (b.type === "note") return `Note ch${ch} #${b.data1}`;
-  if (b.type === "cc") return `CC ch${ch} #${b.data1}`;
-  return `PB ch${ch}`;
+  let head: string;
+  if (b.type === "note") head = `Note ch${ch} #${b.data1}`;
+  else if (b.type === "cc") head = `CC ch${ch} #${b.data1}`;
+  else head = `PB ch${ch}`;
+  if (b.deviceName) return `${head} · ${b.deviceName}`;
+  if (b.deviceId) return `${head} · device`;
+  return head;
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
