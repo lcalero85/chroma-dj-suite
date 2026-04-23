@@ -556,6 +556,12 @@ export const DICT = {
     fxKindBitcrusher: "bitcrusher",
     fxKindEcho: "echo",
     fxKindGate: "gate",
+    fxKindTremolo: "tremolo",
+    fxKindAutoPan: "auto-pan",
+    fxKindRingMod: "ring mod",
+    fxKindChorus: "chorus",
+    fxKindWahWah: "auto-wah",
+    fxKindLoFi: "lo-fi",
 
     // ===== Sampler =====
     samplerBank: "SAMPLER · BANK",
@@ -1272,6 +1278,12 @@ export const DICT = {
     fxKindBitcrusher: "bitcrusher",
     fxKindEcho: "echo",
     fxKindGate: "gate",
+    fxKindTremolo: "trémolo",
+    fxKindAutoPan: "auto-pan",
+    fxKindRingMod: "ring mod",
+    fxKindChorus: "chorus",
+    fxKindWahWah: "auto-wah",
+    fxKindLoFi: "lo-fi",
 
     samplerBank: "SAMPLER · BANK",
     samplerLoad: "Cargar",
