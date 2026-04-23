@@ -520,3 +520,22 @@ const simulated: MidiProfile = {
   bindings: [],
   ledMap: {},
 };
+
+// ---------------- Registry ----------------
+export const MIDI_PROFILES: MidiProfile[] = [
+  simulated,
+  generic,
+  ddj400,
+  ddjFlx2,
+  mixtrack,
+  inpulse,
+  smcPad,
+  generic16Pads,
+  lpd8,
+  chocolate,
+  smk25ii,
+];
+
+export function getProfile(id: string): MidiProfile {
+  return MIDI_PROFILES.find((p) => p.id === id) ?? generic;
+}
