@@ -34,7 +34,12 @@ export type SkinId =
   | "candy"
   | "matrix"
   | "royal"
-  | "bigjogs";
+  | "bigjogs"
+  | "bigjogs-neon"
+  | "bigjogs-gold"
+  | "bigjogs-ocean"
+  | "bigjogs-blood"
+  | "bigjogs-forest";
 
 export interface DeckState {
   trackId: string | null;
@@ -105,6 +110,8 @@ export interface MixerState {
   micDuck: number;  // 0..0.9
   micPreset: string; // voice preset id
   numpadDeck: DeckId; // which deck the numpad targets (A or B)
+  /** When true, numpadDeck auto-follows the most recently used deck. User can still pick manually (auto pauses for ~6s after manual override). */
+  autoActiveDeck: boolean;
 }
 export interface RadioState {
   enabled: boolean;
@@ -218,6 +225,10 @@ export interface SettingsState {
     livevocal?: boolean;
     beatmaker?: boolean;
   };
+  /** DJ display name shown in the top bar with a subtle animation. Empty = hidden. */
+  djName?: string;
+  /** Show the connected MIDI controller name in the top bar. Default true. */
+  showControllerInTopbar?: boolean;
 }
 
 export interface SessionStats {
@@ -344,6 +355,8 @@ const defaultSettings: SettingsState = {
     livevocal: false,
     beatmaker: false,
   },
+  djName: "",
+  showControllerInTopbar: true,
 };
 
 export const useApp = create<AppState>()(
@@ -370,6 +383,7 @@ export const useApp = create<AppState>()(
         micDuck: 0.4,
         micPreset: "off",
         numpadDeck: "A",
+        autoActiveDeck: true,
       },
       fx: [
         { id: 1, kind: "off", wet: 0, param1: 0.5, param2: 0.5 },

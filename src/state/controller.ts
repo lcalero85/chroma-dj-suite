@@ -196,6 +196,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     hasVideo: isVideo,
   });
   toast(`${tI18n("loadedToast")} ${deckId}`, { description: t.title });
+  markActiveDeck(deckId);
 
   // Track stats + play count
   sessionStats.tracksPlayed += 1;
@@ -217,12 +218,14 @@ export async function togglePlay(id: DeckId) {
   if (d.isPlaying) pause(id);
   else play(id);
   useApp.getState().updateDeck(id, { isPlaying: d.isPlaying });
+  markActiveDeck(id);
 }
 
 export function cueDeck(id: DeckId) {
   const d = getDeck(id);
   const ds = useApp.getState().decks[id];
   if (!d.buffer) return;
+  markActiveDeck(id);
   if (d.isPlaying) {
     pause(id);
     seek(id, ds.cuePoint);
@@ -537,7 +540,20 @@ export function resetDefaultMixPresets() {
 }
 
 // ===== Numpad target deck =====
+let manualNumpadOverrideAt = 0;
+const MANUAL_OVERRIDE_MS = 6000;
+
+/** Mark deck as the "currently in use" target. Respects manual override window. */
+export function markActiveDeck(id: DeckId) {
+  const m = useApp.getState().mixer;
+  if (!m.autoActiveDeck) return;
+  if (Date.now() - manualNumpadOverrideAt < MANUAL_OVERRIDE_MS) return;
+  if (m.numpadDeck === id) return;
+  useApp.getState().updateMixer({ numpadDeck: id });
+}
+
 export function setNumpadDeck(id: DeckId) {
+  manualNumpadOverrideAt = Date.now();
   useApp.getState().updateMixer({ numpadDeck: id });
   toast(`Numpad → Deck ${id}`);
 }

@@ -178,11 +178,16 @@ export function installShortcuts() {
       }
     }
 
-    // Hot cues 1..8 (Digit keys) — fixed, not configurable per cue, but kept for parity.
+    // Hot cues 1..8 (Digit keys). Default deck = the currently active deck (numpadDeck,
+    // which auto-follows the deck in use when "auto active deck" is on).
+    // Shift+Digit targets the OTHER deck so the user can still drive both decks from
+    // the main keyboard without switching the numpad target.
     const m = e.code.match(/^Digit([1-8])$/);
     if (m) {
       const slot = parseInt(m[1]) - 1;
-      const deck: DeckId = e.shiftKey ? "B" : "A";
+      const active = useApp.getState().mixer.numpadDeck;
+      const other: DeckId = active === "A" ? "B" : "A";
+      const deck: DeckId = e.shiftKey ? other : active;
       const cue = useApp.getState().decks[deck].hotCues.find((c) => c.id === slot);
       if (cue) jumpHotCue(deck, slot); else addHotCue(deck, slot);
       return;

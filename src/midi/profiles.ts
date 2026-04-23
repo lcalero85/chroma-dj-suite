@@ -428,18 +428,95 @@ const smk25ii: MidiProfile = {
   },
 };
 
-export const MIDI_PROFILES: MidiProfile[] = [
-  generic,
-  smcPad,
-  smk25ii,
-  generic16Pads,
-  lpd8,
-  chocolate,
-  ddj400,
-  mixtrack,
-  inpulse,
-];
 
-export function getProfile(id: string): MidiProfile {
-  return MIDI_PROFILES.find((p) => p.id === id) ?? generic;
-}
+// ---------------- Pioneer DDJ-FLX2 (entry-level 2-deck controller) ----------------
+// 2 decks, 8 performance pads per deck, jog wheels, EQ + filter knobs, crossfader.
+// Mapping is based on the official MIDI spec for the FLX2 / FLX4 family. Notes use
+// channel 0 for Deck A controls, channel 1 for Deck B. Performance pads sit on
+// channels 7 (Deck A) / 9 (Deck B), matching the DDJ-400 layout.
+const ddjFlx2: MidiProfile = {
+  id: "pioneer-ddj-flx2",
+  name: "Pioneer DDJ-FLX2",
+  inputMatch: "DDJ-FLX2",
+  outputMatch: "DDJ-FLX2",
+  bindings: [
+    // Deck A transport
+    { type: "note", channel: 0, data1: 0x0B, actionId: "deck.A.play" },
+    { type: "note", channel: 0, data1: 0x0C, actionId: "deck.A.cue" },
+    { type: "note", channel: 0, data1: 0x58, actionId: "deck.A.sync" },
+    { type: "cc", channel: 0, data1: 0x00, actionId: "deck.A.pitch", transform: "invert" },
+    { type: "cc", channel: 0, data1: 0x33, actionId: "deck.A.fader" },
+    { type: "cc", channel: 0, data1: 0x16, actionId: "deck.A.gain" },
+    { type: "cc", channel: 0, data1: 0x07, actionId: "deck.A.eq.hi" },
+    { type: "cc", channel: 0, data1: 0x0B, actionId: "deck.A.eq.mid" },
+    { type: "cc", channel: 0, data1: 0x0F, actionId: "deck.A.eq.lo" },
+    { type: "cc", channel: 0, data1: 0x17, actionId: "deck.A.filter" },
+    { type: "note", channel: 0, data1: 0x54, actionId: "deck.A.pfl" },
+    { type: "cc", channel: 0, data1: 0x22, actionId: "deck.A.jog", transform: "relative-2c" },
+    // Deck A pads (Hot Cues, ch 7)
+    { type: "note", channel: 7, data1: 0x00, actionId: "deck.A.hotcue.0" },
+    { type: "note", channel: 7, data1: 0x01, actionId: "deck.A.hotcue.1" },
+    { type: "note", channel: 7, data1: 0x02, actionId: "deck.A.hotcue.2" },
+    { type: "note", channel: 7, data1: 0x03, actionId: "deck.A.hotcue.3" },
+    { type: "note", channel: 7, data1: 0x04, actionId: "deck.A.hotcue.4" },
+    { type: "note", channel: 7, data1: 0x05, actionId: "deck.A.hotcue.5" },
+    { type: "note", channel: 7, data1: 0x06, actionId: "deck.A.hotcue.6" },
+    { type: "note", channel: 7, data1: 0x07, actionId: "deck.A.hotcue.7" },
+    { type: "note", channel: 0, data1: 0x10, actionId: "deck.A.loop.in" },
+    { type: "note", channel: 0, data1: 0x11, actionId: "deck.A.loop.out" },
+    { type: "note", channel: 0, data1: 0x12, actionId: "deck.A.loop.halve" },
+    { type: "note", channel: 0, data1: 0x13, actionId: "deck.A.loop.double" },
+    { type: "note", channel: 0, data1: 0x14, actionId: "deck.A.loop.toggle" },
+    // Deck B
+    { type: "note", channel: 1, data1: 0x0B, actionId: "deck.B.play" },
+    { type: "note", channel: 1, data1: 0x0C, actionId: "deck.B.cue" },
+    { type: "note", channel: 1, data1: 0x58, actionId: "deck.B.sync" },
+    { type: "cc", channel: 1, data1: 0x00, actionId: "deck.B.pitch", transform: "invert" },
+    { type: "cc", channel: 1, data1: 0x33, actionId: "deck.B.fader" },
+    { type: "cc", channel: 1, data1: 0x16, actionId: "deck.B.gain" },
+    { type: "cc", channel: 1, data1: 0x07, actionId: "deck.B.eq.hi" },
+    { type: "cc", channel: 1, data1: 0x0B, actionId: "deck.B.eq.mid" },
+    { type: "cc", channel: 1, data1: 0x0F, actionId: "deck.B.eq.lo" },
+    { type: "cc", channel: 1, data1: 0x17, actionId: "deck.B.filter" },
+    { type: "note", channel: 1, data1: 0x54, actionId: "deck.B.pfl" },
+    { type: "cc", channel: 1, data1: 0x22, actionId: "deck.B.jog", transform: "relative-2c" },
+    { type: "note", channel: 9, data1: 0x00, actionId: "deck.B.hotcue.0" },
+    { type: "note", channel: 9, data1: 0x01, actionId: "deck.B.hotcue.1" },
+    { type: "note", channel: 9, data1: 0x02, actionId: "deck.B.hotcue.2" },
+    { type: "note", channel: 9, data1: 0x03, actionId: "deck.B.hotcue.3" },
+    { type: "note", channel: 9, data1: 0x04, actionId: "deck.B.hotcue.4" },
+    { type: "note", channel: 9, data1: 0x05, actionId: "deck.B.hotcue.5" },
+    { type: "note", channel: 9, data1: 0x06, actionId: "deck.B.hotcue.6" },
+    { type: "note", channel: 9, data1: 0x07, actionId: "deck.B.hotcue.7" },
+    { type: "note", channel: 1, data1: 0x10, actionId: "deck.B.loop.in" },
+    { type: "note", channel: 1, data1: 0x11, actionId: "deck.B.loop.out" },
+    { type: "note", channel: 1, data1: 0x12, actionId: "deck.B.loop.halve" },
+    { type: "note", channel: 1, data1: 0x13, actionId: "deck.B.loop.double" },
+    { type: "note", channel: 1, data1: 0x14, actionId: "deck.B.loop.toggle" },
+    // Mixer
+    { type: "cc", channel: 6, data1: 0x1F, actionId: "mixer.xfader" },
+    { type: "cc", channel: 6, data1: 0x08, actionId: "mixer.master" },
+  ],
+  ledMap: {
+    "deck.A.play": { type: "note", channel: 0, data1: 0x0B },
+    "deck.A.cue": { type: "note", channel: 0, data1: 0x0C },
+    "deck.A.pfl": { type: "note", channel: 0, data1: 0x54 },
+    "deck.A.loop.toggle": { type: "note", channel: 0, data1: 0x14 },
+    "deck.B.play": { type: "note", channel: 1, data1: 0x0B },
+    "deck.B.cue": { type: "note", channel: 1, data1: 0x0C },
+    "deck.B.pfl": { type: "note", channel: 1, data1: 0x54 },
+    "deck.B.loop.toggle": { type: "note", channel: 1, data1: 0x14 },
+  },
+};
+
+// ---------------- Simulated controller (no hardware required) ----------------
+// Default fallback so the app always reports a "controller" in the UI even when
+// no MIDI device is plugged in. Bindings are empty — keyboard/mouse drive the app.
+const simulated: MidiProfile = {
+  id: "simulated",
+  name: "Simulated controller (keyboard + mouse)",
+  inputMatch: null,
+  outputMatch: null,
+  bindings: [],
+  ledMap: {},
+};
