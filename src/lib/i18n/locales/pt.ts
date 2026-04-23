@@ -147,6 +147,8 @@ export const pt: Partial<Record<DictKey, string>> = {
   skin_candy_desc: "Rosa e menta doce",
   skin_matrix_desc: "Verde digital sobre preto",
   skin_royal_desc: "Roxo real elegante",
+  skin_bigjogs_name: "Jogs Grandes",
+  skin_bigjogs_desc: "Tema padrão, jogs maiores",
 
   // Library hints
   libDropHere: "Solte arquivos de áudio ou vídeo para importar",

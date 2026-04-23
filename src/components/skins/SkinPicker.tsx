@@ -7,7 +7,7 @@ import { useT, type DictKey } from "@/lib/i18n";
 const SKIN_IDS: SkinId[] = [
   "pioneer", "serato", "neon", "glass", "minimal", "retro", "studio", "cyber",
   "vinyl", "hacker", "midnight", "sunset", "arctic", "blood", "gold", "ocean",
-  "lava", "forest", "candy", "matrix", "royal",
+  "lava", "forest", "candy", "matrix", "royal", "bigjogs",
 ];
 
 export function SkinPicker() {

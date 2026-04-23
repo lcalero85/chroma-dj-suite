@@ -33,7 +33,8 @@ export type SkinId =
   | "forest"
   | "candy"
   | "matrix"
-  | "royal";
+  | "royal"
+  | "bigjogs";
 
 export interface DeckState {
   trackId: string | null;

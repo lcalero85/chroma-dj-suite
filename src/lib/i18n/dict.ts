@@ -713,6 +713,8 @@ export const DICT = {
     skin_matrix_desc: "Digital green on black",
     skin_royal_name: "Royal Purple",
     skin_royal_desc: "Elegant royal purple",
+    skin_bigjogs_name: "Big Jogs",
+    skin_bigjogs_desc: "Default theme, larger jog wheels",
 
     // ===== Video =====
     videoMixLabel: "● VIDEO MIX",
@@ -1450,6 +1452,8 @@ export const DICT = {
     skin_matrix_desc: "Verde digital sobre negro",
     skin_royal_name: "Royal Purple",
     skin_royal_desc: "Púrpura real elegante",
+    skin_bigjogs_name: "Jogs Grandes",
+    skin_bigjogs_desc: "Tema por defecto, jogs más grandes",
   },
 } as const;
 
