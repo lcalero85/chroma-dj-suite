@@ -22,6 +22,24 @@ export function SettingsPanel() {
           onChange={(e) => update({ appName: e.target.value })}
         />
       </Row>
+      <Row label={t("djNameLabel")}>
+        <input
+          type="text"
+          className="vdj-btn"
+          style={{ width: 180, textAlign: "left", padding: "6px 8px" }}
+          value={settings.djName ?? ""}
+          maxLength={32}
+          placeholder={t("djNamePlaceholder")}
+          onChange={(e) => update({ djName: e.target.value })}
+        />
+      </Row>
+      <Row label={t("showControllerLabel")}>
+        <input
+          type="checkbox"
+          checked={settings.showControllerInTopbar !== false}
+          onChange={(e) => update({ showControllerInTopbar: e.target.checked })}
+        />
+      </Row>
       <Row label={t("language")}>
         <select
           className="vdj-btn"
