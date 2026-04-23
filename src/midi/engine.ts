@@ -51,6 +51,9 @@ let learning: { resolve: (b: MidiBinding | null) => void } | null = null;
 let activityListeners: ((b: MidiBinding) => void)[] = [];
 let unsubLed: (() => void) | null = null;
 let activityFlashCb: ((dir: "in" | "out") => void) | null = null;
+/** Track which device fired the most recent message so we can attach deviceId to bindings/learn. */
+let lastMessageDeviceId: string | null = null;
+let lastMessageDeviceName: string | null = null;
 
 export function onMidiActivity(cb: (dir: "in" | "out") => void) {
   activityFlashCb = cb;
@@ -146,7 +149,15 @@ function attachDevices(settings: MidiSettings) {
     if (auto) currentOutputs.push(auto);
   }
 
-  for (const i of currentInputs) i.onmidimessage = onMessage;
+  // Wrap so we know which device the message came from.
+  for (const i of currentInputs) {
+    const dev = i;
+    i.onmidimessage = (e) => {
+      lastMessageDeviceId = dev.id;
+      lastMessageDeviceName = dev.name ?? null;
+      onMessage(e);
+    };
+  }
 }
 
 function detachDevices() {
@@ -227,11 +238,19 @@ export function setLedFeedback(on: boolean) {
 }
 
 export function addCustomBinding(b: MidiBinding) {
-  // Replace existing binding for the same MIDI source
+  // Enforce per-action uniqueness AND per-control uniqueness across all devices.
+  // 1. Drop any existing binding for the same actionId (one control per action, even on different devices).
+  // 2. Drop any existing binding that shares the same physical control (same deviceId + type + channel + data1).
+  //    When deviceId is undefined (legacy), match on type/channel/data1 only.
   useApp.setState((s) => {
-    const filtered = s.midi.customBindings.filter(
-      (x) => !(x.type === b.type && x.channel === b.channel && x.data1 === b.data1),
-    );
+    const filtered = s.midi.customBindings.filter((x) => {
+      if (x.actionId === b.actionId) return false;
+      const sameSource =
+        x.type === b.type && x.channel === b.channel && x.data1 === b.data1;
+      const sameDevice = (x.deviceId ?? null) === (b.deviceId ?? null);
+      if (sameSource && sameDevice) return false;
+      return true;
+    });
     return { midi: { ...s.midi, customBindings: [...filtered, b] } };
   });
 }
@@ -241,7 +260,14 @@ export function removeCustomBinding(b: MidiBinding) {
     midi: {
       ...s.midi,
       customBindings: s.midi.customBindings.filter(
-        (x) => !(x.type === b.type && x.channel === b.channel && x.data1 === b.data1 && x.actionId === b.actionId),
+        (x) =>
+          !(
+            x.type === b.type &&
+            x.channel === b.channel &&
+            x.data1 === b.data1 &&
+            x.actionId === b.actionId &&
+            (x.deviceId ?? null) === (b.deviceId ?? null)
+          ),
       ),
     },
   }));
@@ -285,7 +311,13 @@ export function startLearn(actionId: string): Promise<MidiBinding | null> {
         clearTimeout(timeout);
         learning = null;
         if (b) {
-          const bound: MidiBinding = { ...b, actionId };
+          // Stamp the device that produced the message so the binding is tied to that controller.
+          const bound: MidiBinding = {
+            ...b,
+            actionId,
+            deviceId: lastMessageDeviceId ?? undefined,
+            deviceName: lastMessageDeviceName ?? undefined,
+          };
           addCustomBinding(bound);
           resolve(bound);
         } else resolve(null);
@@ -347,26 +379,35 @@ function onMessage(e: { data: Uint8Array }) {
 
   const settings = getMidiSettings();
   const profile = getProfile(settings.profileId);
-  // Custom bindings override profile bindings on the same source
+  const fromDevice = lastMessageDeviceId;
+  // Custom bindings override profile bindings on the same source.
   const allBindings: MidiBinding[] = [
     ...profile.bindings.filter((pb) => !settings.customBindings.some((cb) => bindingMatches(cb, pb))),
     ...settings.customBindings,
   ];
 
+  // Dedupe per action: even if multiple bindings (e.g. on different devices) match
+  // the incoming control, only fire the first one. Combined with addCustomBinding's
+  // per-action uniqueness, this guarantees one trigger = one sound.
+  const firedActions = new Set<string>();
+
   for (const b of allBindings) {
-    if (bindingMatches(b, detected)) {
-      const action = getAction(b.actionId);
-      if (!action) continue;
-      let v = value01;
-      if (b.transform === "invert") v = 1 - v;
-      if (b.transform === "relative-2c") {
-        // 64 = no change; 0..63 = neg; 65..127 = pos
-        const signed = data2Raw < 64 ? data2Raw / 127 : (data2Raw - 128) / 127;
-        v = 0.5 + signed; // map to 0..1 around 0.5
-      }
-      activityListeners.forEach((cb) => cb(b));
-      try { action.apply(v); } catch (err) { console.warn("MIDI action error", b.actionId, err); }
+    if (!bindingMatches(b, detected)) continue;
+    // If the binding is locked to a device, skip messages from other devices.
+    if (b.deviceId && fromDevice && b.deviceId !== fromDevice) continue;
+    if (firedActions.has(b.actionId)) continue;
+    const action = getAction(b.actionId);
+    if (!action) continue;
+    let v = value01;
+    if (b.transform === "invert") v = 1 - v;
+    if (b.transform === "relative-2c") {
+      // 64 = no change; 0..63 = neg; 65..127 = pos
+      const signed = data2Raw < 64 ? data2Raw / 127 : (data2Raw - 128) / 127;
+      v = 0.5 + signed; // map to 0..1 around 0.5
     }
+    firedActions.add(b.actionId);
+    activityListeners.forEach((cb) => cb(b));
+    try { action.apply(v); } catch (err) { console.warn("MIDI action error", b.actionId, err); }
   }
 }
 
