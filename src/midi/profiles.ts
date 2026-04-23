@@ -436,8 +436,10 @@ export const MIDI_PROFILES: MidiProfile[] = [
   lpd8,
   chocolate,
   ddj400,
+  ddjFlx2,
   mixtrack,
   inpulse,
+  simulated,
 ];
 
 export function getProfile(id: string): MidiProfile {
