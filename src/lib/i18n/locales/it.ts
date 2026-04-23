@@ -138,6 +138,8 @@ export const it: Partial<Record<DictKey, string>> = {
   skin_candy_desc: "Rosa e menta dolci",
   skin_matrix_desc: "Verde digitale su nero",
   skin_royal_desc: "Viola reale elegante",
+  skin_bigjogs_name: "Jog Grandi",
+  skin_bigjogs_desc: "Tema predefinito, jog più grandi",
 
   libDropHere: "Trascina file audio o video per importare",
   libEmptyHintTitle: "La tua libreria è vuota",
