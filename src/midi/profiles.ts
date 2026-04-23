@@ -428,24 +428,6 @@ const smk25ii: MidiProfile = {
   },
 };
 
-export const MIDI_PROFILES: MidiProfile[] = [
-  generic,
-  smcPad,
-  smk25ii,
-  generic16Pads,
-  lpd8,
-  chocolate,
-  ddj400,
-  mixtrack,
-  inpulse,
-];
-
-export function getProfile(id: string): MidiProfile {
-  return MIDI_PROFILES.find((p) => p.id === id) ?? generic;
-}
-
-// Append late-declared profiles to the registry (declared below this line).
-MIDI_PROFILES.push(ddjFlx2, simulated);
 
 // ---------------- Pioneer DDJ-FLX2 (entry-level 2-deck controller) ----------------
 // 2 decks, 8 performance pads per deck, jog wheels, EQ + filter knobs, crossfader.
