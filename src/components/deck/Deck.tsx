@@ -43,7 +43,10 @@ interface DeckProps {
 export function Deck({ id, side }: DeckProps) {
   const ds = useApp((s) => s.decks[id]);
   const waveformStyle = useApp((s) => s.settings.waveformStyle ?? "classic");
+  const skin = useApp((s) => s.skin);
   const masterId: DeckId = id === "A" ? "B" : "A";
+  // Big Jogs skin enlarges the platter without disturbing other layouts.
+  const jogSize = skin === "bigjogs" ? 260 : 180;
 
   const handle = getDeck(id);
   const [dragOver, setDragOver] = useState(false);
@@ -224,7 +227,7 @@ export function Deck({ id, side }: DeckProps) {
         <JogWheel
           spinning={ds.isPlaying}
           bpm={ds.bpm}
-          size={180}
+          size={jogSize}
           onScratchStart={() => void beginScratchDeck(id)}
           onScratch={(s) => scratchDeck(id, s)}
           onScratchEnd={() => endScratchDeck(id)}

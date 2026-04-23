@@ -729,3 +729,11 @@ tr.vdj-row-focusable:focus-visible {
 .vdj-toast-cancel:hover {
   background: var(--surface-4) !important;
 }
+
+/* 22. Big Jogs — keeps the default theme but enlarges the jog wheels.
+   Only --jog-size changes; all other tokens (colors, radii, fonts,
+   shadows) remain inherited from :root, so this skin is visually
+   identical to the default look apart from the larger platters. */
+html[data-skin="bigjogs"] {
+  --jog-size: 260px;
+}
