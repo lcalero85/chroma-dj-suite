@@ -1452,6 +1452,8 @@ export const DICT = {
     skin_matrix_desc: "Verde digital sobre negro",
     skin_royal_name: "Royal Purple",
     skin_royal_desc: "Púrpura real elegante",
+    skin_bigjogs_name: "Jogs Grandes",
+    skin_bigjogs_desc: "Tema por defecto, jogs más grandes",
   },
 } as const;
 

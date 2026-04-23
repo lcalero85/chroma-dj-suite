@@ -138,6 +138,8 @@ export const fr: Partial<Record<DictKey, string>> = {
   skin_candy_desc: "Rose et menthe sucrés",
   skin_matrix_desc: "Vert numérique sur noir",
   skin_royal_desc: "Violet royal élégant",
+  skin_bigjogs_name: "Grandes Platines",
+  skin_bigjogs_desc: "Thème par défaut, platines plus grandes",
 
   libDropHere: "Déposez des fichiers audio ou vidéo pour importer",
   libEmptyHintTitle: "Votre bibliothèque est vide",
