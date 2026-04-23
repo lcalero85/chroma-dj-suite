@@ -379,26 +379,35 @@ function onMessage(e: { data: Uint8Array }) {
 
   const settings = getMidiSettings();
   const profile = getProfile(settings.profileId);
-  // Custom bindings override profile bindings on the same source
+  const fromDevice = lastMessageDeviceId;
+  // Custom bindings override profile bindings on the same source.
   const allBindings: MidiBinding[] = [
     ...profile.bindings.filter((pb) => !settings.customBindings.some((cb) => bindingMatches(cb, pb))),
     ...settings.customBindings,
   ];
 
+  // Dedupe per action: even if multiple bindings (e.g. on different devices) match
+  // the incoming control, only fire the first one. Combined with addCustomBinding's
+  // per-action uniqueness, this guarantees one trigger = one sound.
+  const firedActions = new Set<string>();
+
   for (const b of allBindings) {
-    if (bindingMatches(b, detected)) {
-      const action = getAction(b.actionId);
-      if (!action) continue;
-      let v = value01;
-      if (b.transform === "invert") v = 1 - v;
-      if (b.transform === "relative-2c") {
-        // 64 = no change; 0..63 = neg; 65..127 = pos
-        const signed = data2Raw < 64 ? data2Raw / 127 : (data2Raw - 128) / 127;
-        v = 0.5 + signed; // map to 0..1 around 0.5
-      }
-      activityListeners.forEach((cb) => cb(b));
-      try { action.apply(v); } catch (err) { console.warn("MIDI action error", b.actionId, err); }
+    if (!bindingMatches(b, detected)) continue;
+    // If the binding is locked to a device, skip messages from other devices.
+    if (b.deviceId && fromDevice && b.deviceId !== fromDevice) continue;
+    if (firedActions.has(b.actionId)) continue;
+    const action = getAction(b.actionId);
+    if (!action) continue;
+    let v = value01;
+    if (b.transform === "invert") v = 1 - v;
+    if (b.transform === "relative-2c") {
+      // 64 = no change; 0..63 = neg; 65..127 = pos
+      const signed = data2Raw < 64 ? data2Raw / 127 : (data2Raw - 128) / 127;
+      v = 0.5 + signed; // map to 0..1 around 0.5
     }
+    firedActions.add(b.actionId);
+    activityListeners.forEach((cb) => cb(b));
+    try { action.apply(v); } catch (err) { console.warn("MIDI action error", b.actionId, err); }
   }
 }
 
