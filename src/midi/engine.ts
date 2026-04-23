@@ -238,11 +238,19 @@ export function setLedFeedback(on: boolean) {
 }
 
 export function addCustomBinding(b: MidiBinding) {
-  // Replace existing binding for the same MIDI source
+  // Enforce per-action uniqueness AND per-control uniqueness across all devices.
+  // 1. Drop any existing binding for the same actionId (one control per action, even on different devices).
+  // 2. Drop any existing binding that shares the same physical control (same deviceId + type + channel + data1).
+  //    When deviceId is undefined (legacy), match on type/channel/data1 only.
   useApp.setState((s) => {
-    const filtered = s.midi.customBindings.filter(
-      (x) => !(x.type === b.type && x.channel === b.channel && x.data1 === b.data1),
-    );
+    const filtered = s.midi.customBindings.filter((x) => {
+      if (x.actionId === b.actionId) return false;
+      const sameSource =
+        x.type === b.type && x.channel === b.channel && x.data1 === b.data1;
+      const sameDevice = (x.deviceId ?? null) === (b.deviceId ?? null);
+      if (sameSource && sameDevice) return false;
+      return true;
+    });
     return { midi: { ...s.midi, customBindings: [...filtered, b] } };
   });
 }
@@ -252,7 +260,14 @@ export function removeCustomBinding(b: MidiBinding) {
     midi: {
       ...s.midi,
       customBindings: s.midi.customBindings.filter(
-        (x) => !(x.type === b.type && x.channel === b.channel && x.data1 === b.data1 && x.actionId === b.actionId),
+        (x) =>
+          !(
+            x.type === b.type &&
+            x.channel === b.channel &&
+            x.data1 === b.data1 &&
+            x.actionId === b.actionId &&
+            (x.deviceId ?? null) === (b.deviceId ?? null)
+          ),
       ),
     },
   }));
