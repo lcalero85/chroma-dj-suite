@@ -311,7 +311,13 @@ export function startLearn(actionId: string): Promise<MidiBinding | null> {
         clearTimeout(timeout);
         learning = null;
         if (b) {
-          const bound: MidiBinding = { ...b, actionId };
+          // Stamp the device that produced the message so the binding is tied to that controller.
+          const bound: MidiBinding = {
+            ...b,
+            actionId,
+            deviceId: lastMessageDeviceId ?? undefined,
+            deviceName: lastMessageDeviceName ?? undefined,
+          };
           addCustomBinding(bound);
           resolve(bound);
         } else resolve(null);
