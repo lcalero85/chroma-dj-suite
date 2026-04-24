@@ -25,6 +25,8 @@ export interface TrackRecord {
   gainOffsetDb?: number;
   /** Times this track has been loaded onto a deck. */
   playCount?: number;
+  /** User-marked favorite for quick access in the library. */
+  favorite?: boolean;
 }
 
 export interface PlaylistRecord {
