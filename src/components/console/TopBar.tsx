@@ -1,10 +1,15 @@
 import { useApp } from "@/state/store";
-import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles } from "lucide-react";
+import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
 import { resolveShortcuts } from "@/lib/shortcutDefs";
+import { isRecording, recordingElapsed, startRecording, stopRecording } from "@/audio/recorder";
+import { ensureRunning } from "@/audio/engine";
+import { listRecordings, putRecording, uid } from "@/lib/db";
+import { formatTime } from "@/lib/format";
+import { toast } from "sonner";
 
 const APP_VERSION = "1.5.1";
 
@@ -27,6 +32,12 @@ export function TopBar() {
   const shortcutsCfg = useApp((s) => s.settings.shortcuts);
   const t = useT();
 
+  // Live-ticking recording state (for the always-visible REC button)
+  const [recOn, setRecOn] = useState<boolean>(() => isRecording());
+  const [recSec, setRecSec] = useState<number>(0);
+  const [recBusy, setRecBusy] = useState(false);
+  const setRecordings = useApp((s) => s.setRecordings);
+
   useEffect(() => {
     if (appName) document.title = appName;
   }, [appName]);
@@ -36,6 +47,49 @@ export function TopBar() {
     const i = setInterval(() => tick((x) => x + 1), 60_000);
     return () => clearInterval(i);
   }, []);
+
+  // Refresh REC indicator at 2 Hz so the elapsed time stays accurate even if
+  // the user starts/stops recording from another panel (e.g. RecorderPanel).
+  useEffect(() => {
+    const i = setInterval(() => {
+      const on = isRecording();
+      setRecOn(on);
+      setRecSec(on ? recordingElapsed() : 0);
+    }, 500);
+    return () => clearInterval(i);
+  }, []);
+
+  async function toggleRecord() {
+    if (recBusy) return;
+    setRecBusy(true);
+    try {
+      await ensureRunning();
+      if (isRecording()) {
+        const r = await stopRecording();
+        if (r) {
+          await putRecording({
+            id: uid(),
+            name: `Set ${new Date().toLocaleString()}`,
+            blob: r.blob,
+            mime: r.mime,
+            duration: r.duration,
+            createdAt: Date.now(),
+          });
+          setRecordings(await listRecordings());
+          toast.success(t("recStopped" as never) || "Grabación detenida");
+        }
+        setRecOn(false);
+      } else {
+        await startRecording();
+        setRecOn(true);
+        toast(t("recStarted" as never) || "Grabando…");
+      }
+    } catch (err) {
+      toast.error((err as Error)?.message ?? "Error");
+    } finally {
+      setRecBusy(false);
+    }
+  }
 
   // Configurable "show shortcuts" hotkey (default Shift+/ = "?").
   useEffect(() => {
@@ -178,6 +232,28 @@ export function TopBar() {
         <span className="vdj-label" style={{ opacity: 0.7 }}>{t("numpadBacktickHint")}</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
+        <button
+          className="vdj-btn"
+          onClick={toggleRecord}
+          disabled={recBusy}
+          data-active={recOn}
+          title={recOn ? "Detener grabación de sesión" : "Grabar sesión de mezcla"}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            fontWeight: 700,
+            color: recOn ? "#fff" : undefined,
+            background: recOn
+              ? "linear-gradient(90deg, #e11d48, #b91c1c)"
+              : undefined,
+            borderColor: recOn ? "#b91c1c" : undefined,
+            animation: recOn ? "vdj-pulse 1.2s infinite" : undefined,
+          }}
+        >
+          {recOn ? <Square size={12} /> : <Circle size={12} fill="currentColor" />}
+          {recOn ? `REC ${formatTime(recSec)}` : "REC"}
+        </button>
         <button className="vdj-btn" onClick={() => setShowShortcuts(true)} title={t("shortcutsBtnTitle")}>
           <Keyboard size={12} /> ?
         </button>
