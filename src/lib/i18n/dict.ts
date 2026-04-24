@@ -921,6 +921,7 @@ export const DICT = {
     liveVocalMicLabel: "MIC LIVE",
     liveVocalMicOn: "Voz en vivo activada",
     liveVocalMicOff: "Micrófono apagado",
+    micBusyOther: "El micrófono ya está en uso en otro panel. Apágalo allí primero.",
     liveVocalLevel: "Nivel",
     liveVocalDuck: "Duck",
     liveVocalDetected: "Nota",
