@@ -180,6 +180,7 @@ export const DICT = {
     liveVocalMicLabel: "Mic LIVE",
     liveVocalMicOn: "Live vocals enabled",
     liveVocalMicOff: "Mic off",
+    micBusyOther: "Mic is already in use in another panel. Turn it off there first.",
     liveVocalLevel: "Level",
     liveVocalDuck: "Duck",
     liveVocalDetected: "Note",
