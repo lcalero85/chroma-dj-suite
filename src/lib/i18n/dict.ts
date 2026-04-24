@@ -810,6 +810,13 @@ export const DICT = {
     // ===== Common =====
     common_ok: "OK",
     common_cancel: "Cancel",
+
+    // ===== Session recording (TopBar REC button) =====
+    recStarted: "Recording…",
+    recStopped: "Recording stopped",
+    recBtnStartSession: "Record mix session",
+    recBtnStopSession: "Stop session recording",
+    recSessionName: "Set {date}",
   },
 
   es: {
@@ -1586,6 +1593,13 @@ export const DICT = {
     skin_royal_desc: "Púrpura real elegante",
     skin_bigjogs_name: "Jogs Grandes",
     skin_bigjogs_desc: "Tema por defecto, jogs más grandes",
+
+    // ===== Session recording (TopBar REC button) =====
+    recStarted: "Grabando…",
+    recStopped: "Grabación detenida",
+    recBtnStartSession: "Grabar sesión de mezcla",
+    recBtnStopSession: "Detener grabación de sesión",
+    recSessionName: "Sesión {date}",
   },
 } as const;
 
