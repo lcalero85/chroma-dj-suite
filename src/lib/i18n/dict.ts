@@ -597,6 +597,46 @@ export const DICT = {
     samplerColorTip: "Change color",
     samplerLoopBadge: "● LOOP",
     samplerStopTip: "Stop sample playback",
+    samplerProTip: "M=Mute · S=Solo · CG=Choke group (cuts pads in same group)",
+    samplerMuteTip: "Mute this pad",
+    samplerSoloTip: "Solo this pad in the bank",
+    samplerChokeTip: "Choke group: pads in the same group cut each other off",
+
+    // ===== Stems =====
+    stemsLabel: "STEMS",
+    stemsHint: "Live band-control: cut bass / mid / treble per deck.",
+    stemsBass: "Bass",
+    stemsMids: "Mids",
+    stemsHigh: "High",
+    stemsMute: "Mute",
+    stemsSolo: "Solo",
+    stemsReset: "Reset",
+    stemsDeck: "Deck",
+
+    // ===== Cloud sync =====
+    cloudSync: "Cloud sync",
+    cloudSyncHint: "Backup or restore your settings, mix presets and FX presets as a JSON file. Useful to sync between machines.",
+    cloudExport: "Export backup",
+    cloudImport: "Import backup",
+    cloudExportOk: "Backup downloaded",
+    cloudImportOk: "Backup restored — reload to apply",
+    cloudImportFail: "Could not import — invalid file",
+
+    // ===== View mode =====
+    viewMode: "View mode",
+    viewModeStudio: "Studio (extended)",
+    viewModeBooth: "Booth (compact)",
+    viewModeTip: "Booth mode enlarges controls and hides non-essential panels for live performance.",
+
+    // ===== Session metrics =====
+    sessionMetrics: "Session metrics",
+    sessionMetricsTime: "Mix time",
+    sessionMetricsTracks: "Tracks loaded",
+    sessionMetricsRecordings: "Recordings",
+    sessionMetricsAvgBpm: "Average BPM",
+    sessionMetricsTopTracks: "Most played",
+    sessionMetricsReset: "Reset stats",
+    sessionMetricsResetOk: "Session stats reset",
 
     // ===== Presets panel =====
     presetsApplyTo: "Apply to Deck",
