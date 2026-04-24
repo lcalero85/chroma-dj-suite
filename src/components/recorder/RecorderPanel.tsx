@@ -72,6 +72,7 @@ export function RecorderPanel() {
     numpadDeck: mixerRaw.numpadDeck ?? "A",
   };
   const micOwner = mixerRaw.micOwner ?? null;
+  const micActive = mixer.micOn && micOwner === "recorder";
   const micBusy = mixer.micOn && micOwner !== null && micOwner !== "recorder";
   const [, force] = useState(0);
 
@@ -211,15 +212,15 @@ export function RecorderPanel() {
       >
         <button
           className="vdj-btn"
-          data-active={mixer.micOn && !micBusy}
-          data-tone={mixer.micOn && !micBusy ? "live" : undefined}
+          data-active={micActive}
+          data-tone={micActive ? "live" : undefined}
           disabled={micBusy}
           title={micBusy ? t("micBusyOther") : t("recVoiceOverTitle")}
           onClick={async () => {
             if (micBusy) { toast(t("micBusyOther")); return; }
-            const ok = await setMicOn(!mixer.micOn, "recorder");
-            if (ok && !mixer.micOn) toast.success(t("recVoiceOverActive"), { description: t("recVoiceOverActiveDesc") });
-            else if (mixer.micOn) toast(t("recVoiceOverOff"));
+            const ok = await setMicOn(!micActive, "recorder");
+            if (ok && !micActive) toast.success(t("recVoiceOverActive"), { description: t("recVoiceOverActiveDesc") });
+            else if (micActive) toast(t("recVoiceOverOff"));
           }}
           style={{
             display: "flex",
