@@ -323,8 +323,21 @@ export function setMasterVolume(v: number) {
   useApp.getState().updateMixer({ master: v });
 }
 
-export async function setMicOn(on: boolean): Promise<boolean> {
+export type MicOwner = "recorder" | "livevocal";
+
+export async function setMicOn(on: boolean, owner: MicOwner = "recorder"): Promise<boolean> {
   await ensureRunning();
+  const cur = useApp.getState().mixer;
+  // If another panel already owns the mic, refuse so we don't stack two
+  // voice paths on the same input (which would double the vocals).
+  if (on && cur.micOn && cur.micOwner && cur.micOwner !== owner) {
+    toast(tI18n("micBusyOther"));
+    return false;
+  }
+  // Only the owning panel can turn the mic off.
+  if (!on && cur.micOn && cur.micOwner && cur.micOwner !== owner) {
+    return false;
+  }
   if (on) {
     const s = useApp.getState().settings;
     const ok = await engEnableMic({
@@ -338,16 +351,16 @@ export async function setMicOn(on: boolean): Promise<boolean> {
       return false;
     }
     const lvl = useApp.getState().mixer.micLevel;
-    engSetMicLevel(lvl);
     const duck = useApp.getState().mixer.micDuck;
     if (useAppMasterRef.current === null) useAppMasterRef.current = useApp.getState().mixer.master;
+    engSetMicLevel(lvl);
     engSetMicDuck(duck);
-    useApp.getState().updateMixer({ micOn: true });
+    useApp.getState().updateMixer({ micOn: true, micOwner: owner });
     return true;
   } else {
     engDisableMic();
     engSetMicDuck(0);
-    useApp.getState().updateMixer({ micOn: false });
+    useApp.getState().updateMixer({ micOn: false, micOwner: null });
     return true;
   }
 }

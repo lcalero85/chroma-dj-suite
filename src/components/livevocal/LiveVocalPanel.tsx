@@ -43,6 +43,8 @@ export function LiveVocalPanel() {
     level: mixerRaw.micLevel ?? 1,
     duck: mixerRaw.micDuck ?? 0.4,
   };
+  const micOwner = mixerRaw.micOwner ?? null;
+  const micBusy = mic.on && micOwner !== null && micOwner !== "livevocal";
 
   const [params, setParams] = useState<VocalFxParams>({ ...DEFAULT_VOCAL_FX });
   const [presetId, setPresetId] = useState<string>("off");
@@ -151,7 +153,7 @@ export function LiveVocalPanel() {
     } else {
       // Auto-enable mic if needed
       if (!mic.on) {
-        const ok = await setMicOn(true);
+        const ok = await setMicOn(true, "livevocal");
         if (!ok) { toast.error(t("liveVocalRecFailed")); return; }
       }
       const ok = await startMicRecording();
@@ -178,14 +180,17 @@ export function LiveVocalPanel() {
           className="vdj-btn"
           data-active={mic.on}
           data-tone={mic.on ? "live" : undefined}
+          disabled={micBusy}
+          title={micBusy ? t("micBusyOther") : undefined}
           onClick={async () => {
-            const ok = await setMicOn(!mic.on);
+            if (micBusy) { toast(t("micBusyOther")); return; }
+            const ok = await setMicOn(!mic.on, "livevocal");
             if (ok && !mic.on) toast.success(t("liveVocalMicOn"));
             else if (mic.on) toast(t("liveVocalMicOff"));
           }}
           style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 40, fontWeight: 800, letterSpacing: "0.05em" }}
         >
-          {mic.on ? <Mic size={16} /> : <MicOff size={16} />}
+          {mic.on && !micBusy ? <Mic size={16} /> : <MicOff size={16} />}
           {t("liveVocalMicLabel")}
         </button>
 

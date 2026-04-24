@@ -109,6 +109,9 @@ export interface MixerState {
   micLevel: number; // 0..2
   micDuck: number;  // 0..0.9
   micPreset: string; // voice preset id
+  /** Which UI panel owns the mic. Prevents both Recorder + LiveVocal from
+   * activating the mic at once and stacking voices. null = no owner. */
+  micOwner: null | "recorder" | "livevocal";
   numpadDeck: DeckId; // which deck the numpad targets (A or B)
   /** When true, numpadDeck auto-follows the most recently used deck. User can still pick manually (auto pauses for ~6s after manual override). */
   autoActiveDeck: boolean;
@@ -382,6 +385,7 @@ export const useApp = create<AppState>()(
         micLevel: 1,
         micDuck: 0.4,
         micPreset: "off",
+        micOwner: null,
         numpadDeck: "A",
         autoActiveDeck: true,
       },
