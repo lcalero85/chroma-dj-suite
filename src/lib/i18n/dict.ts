@@ -814,8 +814,8 @@ export const DICT = {
     // ===== Session recording (TopBar REC button) =====
     recStarted: "Recording…",
     recStopped: "Recording stopped",
-    recBtnStart: "Record mix session",
-    recBtnStop: "Stop session recording",
+    recBtnStartSession: "Record mix session",
+    recBtnStopSession: "Stop session recording",
     recSessionName: "Set {date}",
   },
 
@@ -1597,8 +1597,8 @@ export const DICT = {
     // ===== Session recording (TopBar REC button) =====
     recStarted: "Grabando…",
     recStopped: "Grabación detenida",
-    recBtnStart: "Grabar sesión de mezcla",
-    recBtnStop: "Detener grabación de sesión",
+    recBtnStartSession: "Grabar sesión de mezcla",
+    recBtnStopSession: "Detener grabación de sesión",
     recSessionName: "Sesión {date}",
   },
 } as const;
