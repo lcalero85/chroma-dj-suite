@@ -19,9 +19,10 @@
  * IMPORTANT: This module is ADDITIVE. It does not replace the existing
  * `autoMixTo()` — both can coexist. The legacy "AutoMix" button still works.
  */
-import type { DeckId, TrackRecord } from "@/state/store";
+import type { DeckId } from "@/state/store";
+import type { TrackRecord } from "@/lib/db";
 import { useApp } from "@/state/store";
-import { getDeck, currentTime, play, setPlaybackRate, setEQ, setAutoGainDb, seek } from "./deck";
+import { getDeck, play, setPlaybackRate, setEQ, setAutoGainDb, seek } from "./deck";
 import { setXfaderPosition, setDeckPitch } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
 import { dbToGain, analyzeLoudness } from "@/audio/analysis/loudness";
