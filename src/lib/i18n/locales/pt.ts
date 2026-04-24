@@ -175,4 +175,10 @@ export const pt: Partial<Record<DictKey, string>> = {
   fxParam2: "PARAM 2",
   fxMix: "MIX",
   fxOnOff: "ON / OFF",
+  // Session recording (TopBar REC button)
+  recStarted: "Gravando…",
+  recStopped: "Gravação interrompida",
+  recBtnStartSession: "Gravar sessão de mixagem",
+  recBtnStopSession: "Parar gravação da sessão",
+  recSessionName: "Sessão {date}",
 };
