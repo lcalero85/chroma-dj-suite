@@ -235,6 +235,11 @@ export interface SettingsState {
   djName?: string;
   /** Show the connected MIDI controller name in the top bar. Default true. */
   showControllerInTopbar?: boolean;
+  /** Enable the AutoMix Pro engine + visual panel. Default false. */
+  automixProEnabled?: boolean;
+  /** Enable Smart Fader — auto-rides the crossfader as the master deck nears its
+   * smart-exit point. Triggers a `smartCrossfade()` once. Default false. */
+  smartFaderEnabled?: boolean;
 }
 
 export interface SessionStats {
