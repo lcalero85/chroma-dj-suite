@@ -12,17 +12,18 @@ import {
   type AutoMixMode,
 } from "@/audio/automix";
 import { useApp } from "@/state/store";
-import { Sparkles, Activity, History, Mic2, Lock, RotateCcw, Play, X } from "lucide-react";
+import { Sparkles, Activity, History, Mic2, Lock, RotateCcw, Play, X, Zap } from "lucide-react";
 
 /**
  * Visual control + status panel for AutoMix Pro.
  * Designed to live inside the Mixer column (compact) or the bottom drawer.
  * Self-contained — no global side-effects beyond calls into audio/automix.ts.
  */
-export function AutoMixPanel({ compact = false }: { compact?: boolean }) {
+export function AutoMixPanel({ compact = false, smartFaderActive = false }: { compact?: boolean; smartFaderActive?: boolean }) {
   const [, force] = useState(0);
   const [cfg, setCfg] = useState<AutoMixConfig>(getAutoMixConfig());
   const tracks = useApp((s) => s.tracks);
+  const updateSettings = useApp((s) => s.updateSettings);
 
   useEffect(() => {
     const unsub = subscribeAutoMix(() => {
@@ -56,6 +57,16 @@ export function AutoMixPanel({ compact = false }: { compact?: boolean }) {
       <header style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <Sparkles size={14} style={{ color: "var(--accent)" }} />
         <span className="vdj-label">AutoMix Pro</span>
+        {smartFaderActive && (
+          <span
+            className="vdj-chip"
+            data-active
+            title="Smart Fader is auto-riding the crossfader"
+            style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9 }}
+          >
+            <Zap size={9} /> SMART
+          </span>
+        )}
         <span className="vdj-chip" data-active={status.isRunning} style={{ marginLeft: "auto" }}>
           {status.isRunning ? "MIXING" : status.pendingSwap ? "WAIT-VOX" : "IDLE"}
         </span>
@@ -134,6 +145,17 @@ export function AutoMixPanel({ compact = false }: { compact?: boolean }) {
         <Toggle on={cfg.eqBlend}     onClick={() => update({ eqBlend: !cfg.eqBlend })}     icon={<Activity size={11} />} label="EQ blend" />
         <Toggle on={cfg.vocalProtect} onClick={() => update({ vocalProtect: !cfg.vocalProtect })} icon={<Mic2 size={11} />} label="Vox guard" />
       </div>
+
+      {/* Smart Fader toggle (mirrors the global setting) */}
+      <button
+        className="vdj-btn"
+        data-active={smartFaderActive}
+        onClick={() => updateSettings({ smartFaderEnabled: !smartFaderActive })}
+        style={{ fontSize: 10, padding: "5px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+        title="When on, the crossfader auto-rides as the master deck nears its smart-exit"
+      >
+        <Zap size={11} /> Smart Fader · {smartFaderActive ? "ON" : "OFF"}
+      </button>
 
       {/* Trigger row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
