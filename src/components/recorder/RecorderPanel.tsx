@@ -72,6 +72,7 @@ export function RecorderPanel() {
     numpadDeck: mixerRaw.numpadDeck ?? "A",
   };
   const micOwner = mixerRaw.micOwner ?? null;
+  const micActive = mixer.micOn && micOwner === "recorder";
   const micBusy = mixer.micOn && micOwner !== null && micOwner !== "recorder";
   const [, force] = useState(0);
 
@@ -204,22 +205,22 @@ export function RecorderPanel() {
           padding: 10,
           flexWrap: "wrap",
           minHeight: 64,
-          border: mixer.micOn ? "1px solid var(--bad)" : undefined,
-          boxShadow: mixer.micOn ? "var(--beat-glow)" : "none",
-          background: mixer.micOn ? "color-mix(in oklab, var(--bad) 8%, var(--surface-2))" : undefined,
+          border: micActive ? "1px solid var(--bad)" : undefined,
+          boxShadow: micActive ? "var(--beat-glow)" : "none",
+          background: micActive ? "color-mix(in oklab, var(--bad) 8%, var(--surface-2))" : undefined,
         }}
       >
         <button
           className="vdj-btn"
-          data-active={mixer.micOn && !micBusy}
-          data-tone={mixer.micOn && !micBusy ? "live" : undefined}
+          data-active={micActive}
+          data-tone={micActive ? "live" : undefined}
           disabled={micBusy}
           title={micBusy ? t("micBusyOther") : t("recVoiceOverTitle")}
           onClick={async () => {
             if (micBusy) { toast(t("micBusyOther")); return; }
-            const ok = await setMicOn(!mixer.micOn, "recorder");
-            if (ok && !mixer.micOn) toast.success(t("recVoiceOverActive"), { description: t("recVoiceOverActiveDesc") });
-            else if (mixer.micOn) toast(t("recVoiceOverOff"));
+            const ok = await setMicOn(!micActive, "recorder");
+            if (ok && !micActive) toast.success(t("recVoiceOverActive"), { description: t("recVoiceOverActiveDesc") });
+            else if (micActive) toast(t("recVoiceOverOff"));
           }}
           style={{
             display: "flex",
@@ -232,11 +233,11 @@ export function RecorderPanel() {
             letterSpacing: "0.08em",
           }}
         >
-          {mixer.micOn ? <Mic size={16} /> : <MicOff size={16} />}
+          {micActive ? <Mic size={16} /> : <MicOff size={16} />}
           {t("recVoiceOverLabel")}
         </button>
 
-        {mixer.micOn && (
+        {micActive && (
           <span
             className="vdj-loaded-badge"
             data-tone="live"
