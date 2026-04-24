@@ -7,10 +7,14 @@ import { MasterPro } from "./MasterPro";
 import { getEngine } from "@/audio/engine";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { AutoMixPanel } from "@/components/automix/AutoMixPanel";
+import { startSmartFader, stopSmartFader } from "@/audio/smartFader";
 
 export function Mixer() {
   const mixer = useApp((s) => s.mixer);
   const enabledDecks = useApp((s) => s.settings.enabledDecks ?? 2);
+  const automixProEnabled = useApp((s) => s.settings.automixProEnabled === true);
+  const smartFaderEnabled = useApp((s) => s.settings.smartFaderEnabled === true);
   const t = useT();
   const [ana, setAna] = useState<AnalyserNode | null>(null);
   const [cueAna, setCueAna] = useState<AnalyserNode | null>(null);
@@ -19,6 +23,13 @@ export function Mixer() {
     setAna(e.masterAnalyser);
     setCueAna(e.cueAnalyser);
   }, []);
+
+  // Smart Fader lifecycle — start/stop the auto-rider when its setting changes.
+  useEffect(() => {
+    if (smartFaderEnabled) startSmartFader();
+    else stopSmartFader();
+    return () => stopSmartFader();
+  }, [smartFaderEnabled]);
 
   return (
     <div
@@ -57,6 +68,12 @@ export function Mixer() {
        <CrossfaderSection />
 
       <MasterPro />
+
+      {automixProEnabled && (
+        <div style={{ marginTop: 4 }}>
+          <AutoMixPanel compact smartFaderActive={smartFaderEnabled} />
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
