@@ -4,7 +4,7 @@ import { listTracks, putTrack, deleteTrack, uid, type TrackRecord, type FolderRe
 import { loadTrackToDeck, refreshFolders, createFolder, renameFolder, removeFolder, moveTrackToFolder } from "@/state/controller";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film, Tag, SlidersHorizontal, FolderSearch } from "lucide-react";
+import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film, Tag, SlidersHorizontal, FolderSearch, Star, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { radioAdd, addTrackToSegment } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
@@ -132,6 +132,17 @@ export function LibraryPanel() {
   const [bpmMax, setBpmMax] = useState<number>(220);
   const [compatibleWith, setCompatibleWith] = useState<CamelotKey | "">("");
   const [tagFilter, setTagFilter] = useState<string>("");
+  // Sort + favorites
+  type SortKey = "added" | "title" | "artist" | "bpm" | "key" | "duration";
+  const [sortBy, setSortBy] = useState<SortKey>("added");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [showFavOnly, setShowFavOnly] = useState(false);
+
+  const toggleFavorite = async (track: TrackRecord) => {
+    const next = { ...track, favorite: !track.favorite };
+    await putTrack(next);
+    setTracks(await listTracks());
+  };
 
   useEffect(() => {
     listTracks().then(setTracks);
@@ -295,9 +306,26 @@ export function LibraryPanel() {
       const matchesBpm = !showFilters || (bpm === 0 ? bpmMin === 0 : bpm >= bpmMin && bpm <= bpmMax);
       const matchesKey = !showFilters || !compatibleWith || (t.key && isCompatible(t.key as CamelotKey, compatibleWith as CamelotKey));
       const matchesTag = !tagFilter || (t.tags ?? []).includes(tagFilter);
-      return matchesText && matchesFolder && matchesBpm && matchesKey && matchesTag;
+      const matchesFav = !showFavOnly || !!t.favorite;
+      return matchesText && matchesFolder && matchesBpm && matchesKey && matchesTag && matchesFav;
     })
-    .sort((a, b) => b.addedAt - a.addedAt);
+    .sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      const get = (x: TrackRecord): number | string => {
+        switch (sortBy) {
+          case "title": return x.title.toLowerCase();
+          case "artist": return (x.artist || "").toLowerCase();
+          case "bpm": return x.bpm ?? -1;
+          case "key": return x.key ?? "";
+          case "duration": return x.duration ?? 0;
+          case "added":
+          default: return x.addedAt;
+        }
+      };
+      const va = get(a); const vb = get(b);
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      return String(va).localeCompare(String(vb)) * dir;
+    });
 
   const rootFolders = folders.filter((f) => f.parentId === null);
   const onDropToFolder = async (trackId: string, folderId: string | null) => {
@@ -422,6 +450,36 @@ export function LibraryPanel() {
           />
         </div>
         <span className="vdj-chip">{filtered.length} {tr("libTracksCount")}</span>
+        <button
+          className="vdj-btn"
+          data-active={showFavOnly}
+          onClick={() => setShowFavOnly((v) => !v)}
+          title="Mostrar solo favoritos"
+        >
+          <Star size={12} fill={showFavOnly ? "currentColor" : "none"} />
+        </button>
+        <select
+          className="vdj-btn"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortKey)}
+          title="Ordenar por"
+          style={{ padding: "4px 6px", fontSize: 11 }}
+        >
+          <option value="added">Recientes</option>
+          <option value="title">Título</option>
+          <option value="artist">Artista</option>
+          <option value="bpm">BPM</option>
+          <option value="key">Key</option>
+          <option value="duration">Duración</option>
+        </select>
+        <button
+          className="vdj-btn"
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          title={sortDir === "asc" ? "Ascendente" : "Descendente"}
+          style={{ padding: "4px 6px" }}
+        >
+          <ArrowUpDown size={12} />{sortDir === "asc" ? "↑" : "↓"}
+        </button>
         <button
           className="vdj-btn"
           data-active={showFilters}
@@ -642,6 +700,19 @@ export function LibraryPanel() {
                 <td style={{ padding: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 4, height: 16, background: t.color, borderRadius: 2 }} />
+                    <button
+                      className="vdj-btn"
+                      onClick={(e) => { e.stopPropagation(); void toggleFavorite(t); }}
+                      title={t.favorite ? "Quitar de favoritos" : "Marcar favorito"}
+                      style={{
+                        padding: "2px 4px",
+                        background: "transparent",
+                        border: 0,
+                        color: t.favorite ? "var(--accent)" : "var(--text-3)",
+                      }}
+                    >
+                      <Star size={11} fill={t.favorite ? "currentColor" : "none"} />
+                    </button>
                     {t.title}
                   </div>
                 </td>

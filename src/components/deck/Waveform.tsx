@@ -149,21 +149,32 @@ export function Waveform({
         if (bpm && bpm > 0) {
           const beatSec = 60 / bpm;
           const firstBeat = Math.ceil(startSec / beatSec) * beatSec;
-          for (let t = firstBeat; t < endSec; t += beatSec) {
+          // Use beat number to emphasize downbeats (every 4th = bar line).
+          // Beats are counted from t=0 of the track so the grid stays anchored.
+          const firstBeatIdx = Math.ceil(startSec / beatSec);
+          let beatIdx = firstBeatIdx;
+          for (let t = firstBeat; t < endSec; t += beatSec, beatIdx++) {
             const x = ((t - startSec) / (endSec - startSec)) * w;
-            ctx.fillStyle = "rgba(255,255,255,0.18)";
-            ctx.fillRect(x, 0, 1, h);
+            const isDownbeat = beatIdx % 4 === 0;
+            ctx.fillStyle = isDownbeat
+              ? "rgba(255,255,255,0.42)"
+              : "rgba(255,255,255,0.16)";
+            ctx.fillRect(x, 0, isDownbeat ? 1.6 : 1, h);
           }
         }
-        // loop region
+        // loop region with clearer borders
         if (loopStart !== null && loopStart !== undefined && loopEnd !== null && loopEnd !== undefined) {
           const ls = (loopStart - startSec) / (endSec - startSec);
           const le = (loopEnd - startSec) / (endSec - startSec);
           if (le > 0 && ls < 1) {
             const x1 = Math.max(0, ls * w);
             const x2 = Math.min(w, le * w);
-            ctx.fillStyle = "rgba(120,200,255,0.18)";
+            ctx.fillStyle = "rgba(120,200,255,0.22)";
             ctx.fillRect(x1, 0, x2 - x1, h);
+            // border edges
+            ctx.fillStyle = "rgba(120,200,255,0.85)";
+            ctx.fillRect(x1, 0, 2, h);
+            ctx.fillRect(x2 - 2, 0, 2, h);
           }
         }
         // playhead with pulsing glow
@@ -178,8 +189,15 @@ export function Waveform({
         hotCues?.forEach((c) => {
           const x = ((c.pos - startSec) / (endSec - startSec)) * w;
           if (x < 0 || x > w) return;
+          // Bar + small triangle marker for visibility
           ctx.fillStyle = c.color;
           ctx.fillRect(x, 0, 2, h);
+          ctx.beginPath();
+          ctx.moveTo(x - 4, 0);
+          ctx.lineTo(x + 4, 0);
+          ctx.lineTo(x, 6);
+          ctx.closePath();
+          ctx.fill();
         });
       } else {
         // mini overview

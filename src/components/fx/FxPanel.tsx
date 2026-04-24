@@ -4,6 +4,15 @@ import { Knob } from "../console/Knob";
 import { createFxRack, setFxKind, setFxMix, setFxParam, type FxKind, type FxRackHandles } from "@/audio/fx";
 import { getEngine } from "@/audio/engine";
 import { useT, type DictKey } from "@/lib/i18n";
+import { useState } from "react";
+import { Save, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  loadFxChainPresets,
+  saveUserFxChainPresets,
+  fxPresetUid,
+  type FxChainPreset,
+} from "@/lib/fxPresets";
 
 const KINDS: FxKind[] = [
   "off", "reverb", "delay", "echo", "filter", "flanger", "phaser",
@@ -31,6 +40,8 @@ export function FxPanel() {
   const t = useT();
   const fxs = useApp((s) => s.fx);
   const racks = useRef<Record<number, FxRackHandles>>({});
+  const [presets, setPresets] = useState<FxChainPreset[]>(() => loadFxChainPresets());
+  const [filter, setFilter] = useState<FxChainPreset["category"] | "all">("all");
 
   useEffect(() => {
     const { masterDuck, limiter } = getEngine();
@@ -52,8 +63,108 @@ export function FxPanel() {
     };
   }, []);
 
+  const applyPreset = (p: FxChainPreset) => {
+    [0, 1, 2].forEach((i) => {
+      const slot = p.slots[i];
+      const fxId = (i + 1) as 1 | 2 | 3;
+      useApp.getState().updateFx(fxId, { kind: slot.kind, wet: slot.wet, param1: slot.param1, param2: slot.param2 });
+      const rack = racks.current[fxId];
+      if (rack) {
+        setFxKind(rack, slot.kind);
+        setFxMix(rack, slot.wet);
+        setFxParam(rack, 1, mapParam(slot.kind, 1, slot.param1));
+        setFxParam(rack, 2, mapParam(slot.kind, 2, slot.param2));
+      }
+    });
+    toast.success(`FX preset: ${p.name}`);
+  };
+
+  const saveCurrentAsPreset = () => {
+    const name = window.prompt("Nombre del preset FX:");
+    if (!name?.trim()) return;
+    const slots = [0, 1, 2].map((i) => ({
+      kind: fxs[i].kind,
+      wet: fxs[i].wet,
+      param1: fxs[i].param1,
+      param2: fxs[i].param2,
+    })) as FxChainPreset["slots"];
+    const next: FxChainPreset = {
+      id: fxPresetUid(),
+      name: name.trim(),
+      description: "Preset personalizado",
+      emoji: "⭐",
+      category: "general",
+      slots,
+    };
+    const all = [...presets, next];
+    setPresets(all);
+    saveUserFxChainPresets(all);
+    toast.success(`Preset "${name}" guardado`);
+  };
+
+  const deletePreset = (id: string) => {
+    if (!confirm("¿Borrar este preset FX?")) return;
+    const all = presets.filter((p) => p.id !== id);
+    setPresets(all);
+    saveUserFxChainPresets(all);
+  };
+
+  const visiblePresets = presets.filter((p) => filter === "all" || p.category === filter);
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
+      {/* FX Chain Presets toolbar */}
+      <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span className="vdj-label" style={{ fontSize: 11 }}>FX PRESETS</span>
+        <select
+          className="vdj-btn"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as typeof filter)}
+          style={{ padding: "3px 6px", fontSize: 11 }}
+        >
+          <option value="all">Todos</option>
+          <option value="general">General</option>
+          <option value="voice">Voz</option>
+          <option value="deck">Deck</option>
+          <option value="electronica">Electrónica</option>
+          <option value="rap">Rap</option>
+          <option value="rock">Rock</option>
+          <option value="pop">Pop</option>
+        </select>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
+          {visiblePresets.map((p) => (
+            <div key={p.id} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+              <button
+                className="vdj-btn"
+                style={{ padding: "3px 8px", fontSize: 10 }}
+                onClick={() => applyPreset(p)}
+                title={p.description}
+              >
+                <span style={{ marginRight: 4 }}>{p.emoji}</span>{p.name}
+              </button>
+              {!p.builtin && (
+                <button
+                  className="vdj-btn"
+                  style={{ padding: "3px 4px", fontSize: 9 }}
+                  onClick={() => deletePreset(p.id)}
+                  title="Borrar preset"
+                >
+                  <Trash2 size={9} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button
+          className="vdj-btn"
+          style={{ padding: "3px 8px", fontSize: 10 }}
+          onClick={saveCurrentAsPreset}
+          title="Guardar configuración actual como preset"
+        >
+          <Save size={11} /> Guardar
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, flex: 1, minHeight: 0 }}>
       {fxs.map((fx) => (
         <div key={fx.id} className="vdj-panel-inset" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -117,6 +228,7 @@ export function FxPanel() {
           </button>
         </div>
       ))}
+      </div>
     </div>
   );
 }
