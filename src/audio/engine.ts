@@ -249,7 +249,10 @@ export function setLimiter(enabled: boolean) {
     masterDuck.disconnect();
     limiter.disconnect();
     masterAnalyser.disconnect();
-    recordTap.disconnect();
+    // Do NOT disconnect recordTap entirely — it would also detach any active
+    // recorder ScriptProcessor (downstream consumer), silently truncating the
+    // recording. Only the master/limiter branch feeding recordTap needs to be
+    // re-routed below; micDuck->recordTap and recordTap->recorderDest stay.
   } catch { /* noop */ }
   if (enabled) {
     masterDuck.connect(limiter);
@@ -261,9 +264,10 @@ export function setLimiter(enabled: boolean) {
   }
   if (_webMonitoring) masterAnalyser.connect(ctx.destination);
   if (_sinkStreamDest) masterAnalyser.connect(_sinkStreamDest);
-  // Reconnect mic into recordTap (was lost on micDuck.disconnect? not called here, but be safe)
-  try { micDuck.connect(recordTap); } catch { /* already connected */ }
-  recordTap.connect(recorderDest);
+  // micDuck->recordTap and recordTap->recorderDest were never disconnected,
+  // so no reconnection needed. (Web Audio dedupes duplicate connections on
+  // some engines but throws on others — safer to leave them alone.)
+  void micDuck; void recorderDest;
 }
 
 // ===== Output device routing =====
