@@ -22,11 +22,16 @@ let booted = false;
 function Index() {
   const skin = useApp((s) => s.skin);
   const enabledDecks = useApp((s) => s.settings.enabledDecks ?? 2);
+  const viewMode = useApp((s) => s.settings.viewMode ?? "studio");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-skin", skin);
   }, [skin]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-view-mode", viewMode);
+  }, [viewMode]);
 
   // Keep activeDecks in sync with the user's enabledDecks preference, so
   // position polling, presets, etc. cover Deck C/D when enabled.
