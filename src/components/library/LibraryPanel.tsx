@@ -311,9 +311,26 @@ export function LibraryPanel() {
       const matchesBpm = !showFilters || (bpm === 0 ? bpmMin === 0 : bpm >= bpmMin && bpm <= bpmMax);
       const matchesKey = !showFilters || !compatibleWith || (t.key && isCompatible(t.key as CamelotKey, compatibleWith as CamelotKey));
       const matchesTag = !tagFilter || (t.tags ?? []).includes(tagFilter);
-      return matchesText && matchesFolder && matchesBpm && matchesKey && matchesTag;
+      const matchesFav = !showFavOnly || !!t.favorite;
+      return matchesText && matchesFolder && matchesBpm && matchesKey && matchesTag && matchesFav;
     })
-    .sort((a, b) => b.addedAt - a.addedAt);
+    .sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      const get = (x: TrackRecord): number | string => {
+        switch (sortBy) {
+          case "title": return x.title.toLowerCase();
+          case "artist": return (x.artist || "").toLowerCase();
+          case "bpm": return x.bpm ?? -1;
+          case "key": return x.key ?? "";
+          case "duration": return x.duration ?? 0;
+          case "added":
+          default: return x.addedAt;
+        }
+      };
+      const va = get(a); const vb = get(b);
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      return String(va).localeCompare(String(vb)) * dir;
+    });
 
   const rootFolders = folders.filter((f) => f.parentId === null);
   const onDropToFolder = async (trackId: string, folderId: string | null) => {
