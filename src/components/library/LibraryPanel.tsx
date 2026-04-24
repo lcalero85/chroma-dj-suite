@@ -132,6 +132,22 @@ export function LibraryPanel() {
   const [bpmMax, setBpmMax] = useState<number>(220);
   const [compatibleWith, setCompatibleWith] = useState<CamelotKey | "">("");
   const [tagFilter, setTagFilter] = useState<string>("");
+  // Sort + favorites
+  type SortKey = "added" | "title" | "artist" | "bpm" | "key" | "duration";
+  const [sortBy, setSortBy] = useState<SortKey>("added");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [showFavOnly, setShowFavOnly] = useState(false);
+
+  const toggleSort = (k: SortKey) => {
+    if (sortBy === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortBy(k); setSortDir(k === "title" || k === "artist" || k === "key" ? "asc" : "desc"); }
+  };
+
+  const toggleFavorite = async (track: TrackRecord) => {
+    const next = { ...track, favorite: !track.favorite };
+    await putTrack(next);
+    setTracks(await listTracks());
+  };
 
   useEffect(() => {
     listTracks().then(setTracks);
