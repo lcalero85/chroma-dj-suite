@@ -30,7 +30,7 @@ export const Route = createFileRoute("/api/stream/ingest")({
   server: {
     handlers: {
       // Open an upstream Icecast connection
-      POST: async ({ request }) => {
+      POST: async ({ request }: { request: Request }) => {
         let body: {
           action: string;
           serverUrl: string;
@@ -120,7 +120,7 @@ export const Route = createFileRoute("/api/stream/ingest")({
       },
 
       // Push a chunk of audio
-      PUT: async ({ request }) => {
+      PUT: async ({ request }: { request: Request }) => {
         const url = new URL(request.url);
         const sessionId = url.searchParams.get("sessionId");
         if (!sessionId) return jsonResponse({ error: "missing sessionId" }, 400);
@@ -137,7 +137,7 @@ export const Route = createFileRoute("/api/stream/ingest")({
       },
 
       // Stop the session
-      DELETE: async ({ request }) => {
+      DELETE: async ({ request }: { request: Request }) => {
         const url = new URL(request.url);
         const sessionId = url.searchParams.get("sessionId");
         if (!sessionId) return jsonResponse({ error: "missing sessionId" }, 400);
@@ -150,7 +150,7 @@ export const Route = createFileRoute("/api/stream/ingest")({
       },
 
       // Update Icecast stream metadata (now-playing title/artist).
-      PATCH: async ({ request }) => {
+      PATCH: async ({ request }: { request: Request }) => {
         const url = new URL(request.url);
         const sessionId = url.searchParams.get("sessionId");
         if (!sessionId) return jsonResponse({ error: "missing sessionId" }, 400);
@@ -175,4 +175,4 @@ export const Route = createFileRoute("/api/stream/ingest")({
       },
     },
   },
-});
+} as unknown as Parameters<typeof createFileRoute<"/api/stream/ingest">>[0]);
