@@ -6,7 +6,7 @@ import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
 import { resolveShortcuts } from "@/lib/shortcutDefs";
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);
@@ -86,7 +86,13 @@ export function TopBar() {
         <span
           className="vdj-chip"
           title={t("aboutVersion") + " " + APP_VERSION}
-          style={{ fontVariantNumeric: "tabular-nums", opacity: 0.85 }}
+          style={{
+            fontVariantNumeric: "tabular-nums",
+            background: "linear-gradient(90deg, var(--accent), var(--accent-2, var(--accent)))",
+            color: "#0b0b0b",
+            fontWeight: 800,
+            letterSpacing: "0.06em",
+          }}
         >
           v{APP_VERSION}
         </span>
