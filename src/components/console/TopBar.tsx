@@ -69,20 +69,20 @@ export function TopBar() {
         if (r) {
           await putRecording({
             id: uid(),
-            name: `Set ${new Date().toLocaleString()}`,
+            name: t("recSessionName", { date: new Date().toLocaleString() }),
             blob: r.blob,
             mime: r.mime,
             duration: r.duration,
             createdAt: Date.now(),
           });
           setRecordings(await listRecordings());
-          toast.success(t("recStopped" as never) || "Grabación detenida");
+          toast.success(t("recStopped"));
         }
         setRecOn(false);
       } else {
         await startRecording();
         setRecOn(true);
-        toast(t("recStarted" as never) || "Grabando…");
+        toast(t("recStarted"));
       }
     } catch (err) {
       toast.error((err as Error)?.message ?? "Error");
@@ -237,7 +237,7 @@ export function TopBar() {
           onClick={toggleRecord}
           disabled={recBusy}
           data-active={recOn}
-          title={recOn ? "Detener grabación de sesión" : "Grabar sesión de mezcla"}
+          title={recOn ? t("recBtnStopSession") : t("recBtnStartSession")}
           style={{
             display: "inline-flex",
             alignItems: "center",
