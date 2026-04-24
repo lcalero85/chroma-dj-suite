@@ -9,11 +9,12 @@ import { MixPresetsPanel } from "../presets/MixPresetsPanel";
 import { SynthPanel } from "@/components/synth/SynthPanel";
 import { LiveVocalPanel } from "@/components/livevocal/LiveVocalPanel";
 import { BeatMakerPanel } from "@/components/beatmaker/BeatMakerPanel";
+import { StemsPanel } from "@/components/stems/StemsPanel";
 import { useApp as useAppStore } from "@/state/store";
 import { useT, type DictKey } from "@/lib/i18n";
 import { useEffect } from "react";
 
-type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets" | "synth" | "livevocal" | "beatmaker";
+type TabId = "library" | "online" | "radio" | "fx" | "sampler" | "recorder" | "presets" | "synth" | "livevocal" | "beatmaker" | "stems";
 
 const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "library",  key: "library",  advanced: false },
@@ -22,6 +23,7 @@ const ALL_TABS: { id: TabId; key: DictKey; advanced: boolean }[] = [
   { id: "radio",    key: "radio",    advanced: true },
   { id: "fx",       key: "fx",       advanced: true },
   { id: "sampler",  key: "sampler",  advanced: true },
+  { id: "stems",    key: "stemsLabel", advanced: true },
   { id: "presets",  key: "mixPresets", advanced: false },
   { id: "synth",    key: "synth",      advanced: false },
   { id: "livevocal", key: "liveVocal",  advanced: false },
@@ -50,6 +52,7 @@ export function BottomTabs() {
       synth: panelVis?.synth,
       livevocal: panelVis?.livevocal,
       beatmaker: panelVis?.beatmaker,
+      stems: panelVis?.stems,
     };
     if (visMap[tb.id] === false) return false;
     if (tb.id === "synth" && !synthEnabled) return false;
@@ -81,6 +84,7 @@ export function BottomTabs() {
         {mode === "advanced" && tab === "sampler" && <SamplerPanel />}
         {tab === "recorder" && <RecorderPanel />}
         {tab === "presets" && <MixPresetsPanel />}
+        {mode === "advanced" && tab === "stems" && <StemsPanel />}
         {synthEnabled && tab === "synth" && <SynthPanel />}
         {liveVocalEnabled && tab === "livevocal" && <LiveVocalPanel />}
         {panelVis?.beatmaker === true && tab === "beatmaker" && <BeatMakerPanel />}
