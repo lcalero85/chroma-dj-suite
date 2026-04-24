@@ -3,6 +3,7 @@ import { autoMixTo, setSleepTimer, tap } from "@/audio/transport";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
+import { AutoMixPanel } from "@/components/automix/AutoMixPanel";
 
 export function MasterPro() {
   const t = useT();
@@ -63,6 +64,7 @@ export function MasterPro() {
           ))}
         </div>
       </div>
+      <AutoMixPanel compact />
     </div>
   );
 }
