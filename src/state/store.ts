@@ -360,6 +360,7 @@ const defaultSettings: SettingsState = {
     synth: false,
     livevocal: false,
     beatmaker: false,
+    stems: true,
   },
   djName: "",
   showControllerInTopbar: true,
