@@ -414,7 +414,6 @@ html[data-skin="royal"] {
   min-width: 0;
   min-height: 0;
   max-width: 100%;
-  overflow: hidden;
 }
 .vdj-btn {
   background: var(--surface-3);
