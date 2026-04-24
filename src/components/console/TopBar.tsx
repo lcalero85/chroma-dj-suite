@@ -6,6 +6,8 @@ import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
 import { resolveShortcuts } from "@/lib/shortcutDefs";
 
+const APP_VERSION = "1.0.0";
+
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);
   const setDrawer = useApp((s) => s.setDrawer);
@@ -81,6 +83,13 @@ export function TopBar() {
           {appName || "VDJ PRO"}
         </div>
         <span className="vdj-chip" style={{ marginLeft: 8 }}>{t("skinLabel")} · {skin}</span>
+        <span
+          className="vdj-chip"
+          title={t("aboutVersion") + " " + APP_VERSION}
+          style={{ fontVariantNumeric: "tabular-nums", opacity: 0.85 }}
+        >
+          v{APP_VERSION}
+        </span>
         {djName.trim() && (
           <span
             className="vdj-loaded-badge"
