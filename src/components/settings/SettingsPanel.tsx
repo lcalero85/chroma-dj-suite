@@ -142,6 +142,22 @@ export function SettingsPanel() {
           <option value="booth">{t("viewModeBooth")}</option>
         </select>
       </Row>
+      <Row label="AutoMix Pro panel">
+        <input
+          type="checkbox"
+          checked={settings.automixProEnabled === true}
+          onChange={(e) => update({ automixProEnabled: e.target.checked })}
+          title="Show the AutoMix Pro engine + visual panel inside the Mixer"
+        />
+      </Row>
+      <Row label="Smart Fader">
+        <input
+          type="checkbox"
+          checked={settings.smartFaderEnabled === true}
+          onChange={(e) => update({ smartFaderEnabled: e.target.checked })}
+          title="Auto-rides the crossfader as the master deck nears its smart-exit point"
+        />
+      </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <PanelVisibilityRows />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
