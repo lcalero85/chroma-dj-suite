@@ -29,6 +29,7 @@ import { getDeck } from "@/audio/deck";
 import { formatTime } from "@/lib/format";
 import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown } from "lucide-react";
 import { keyName } from "@/lib/camelot";
+import { isCompatible } from "@/lib/camelot";
 import { VideoFxPanel } from "../video/VideoFxPanel";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +43,8 @@ interface DeckProps {
 
 export function Deck({ id, side }: DeckProps) {
   const ds = useApp((s) => s.decks[id]);
+  const otherId: DeckId = id === "A" ? "B" : "A";
+  const other = useApp((s) => s.decks[otherId]);
   const waveformStyle = useApp((s) => s.settings.waveformStyle ?? "classic");
   const skin = useApp((s) => s.skin);
   const masterId: DeckId = id === "A" ? "B" : "A";
@@ -171,6 +174,38 @@ export function Deck({ id, side }: DeckProps) {
           <span className="vdj-chip" title={ds.key ? keyName(ds.key) : ""}>
             {ds.key ?? "—"}
           </span>
+          {ds.bpm && other.bpm && other.duration > 0 && (() => {
+            const diff = Math.abs(ds.bpm - other.bpm);
+            const pct = (diff / ds.bpm) * 100;
+            const ok = pct <= 6;
+            const close = pct <= 12;
+            const color = ok ? "#3ddc84" : close ? "#ffb33a" : "#ff5b6a";
+            return (
+              <span
+                className="vdj-chip"
+                title={`Diferencia con Deck ${otherId}: ${diff.toFixed(1)} BPM (${pct.toFixed(1)}%). ${ok ? "Mezcla fácil" : close ? "Sync recomendado" : "Demasiada diferencia"}`}
+                style={{ color, borderColor: color, fontSize: 10 }}
+              >
+                Δ{diff.toFixed(1)}
+              </span>
+            );
+          })()}
+          {ds.key && other.key && other.duration > 0 && (() => {
+            const ok = isCompatible(ds.key, other.key);
+            return (
+              <span
+                className="vdj-chip"
+                title={ok ? `Key compatible con Deck ${otherId}` : `Key NO compatible con Deck ${otherId}`}
+                style={{
+                  color: ok ? "#3ddc84" : "#ff5b6a",
+                  borderColor: ok ? "#3ddc84" : "#ff5b6a",
+                  fontSize: 10,
+                }}
+              >
+                {ok ? "♪✓" : "♪✗"}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
