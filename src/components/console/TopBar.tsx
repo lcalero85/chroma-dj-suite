@@ -6,7 +6,7 @@ import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
 import { resolveShortcuts } from "@/lib/shortcutDefs";
 
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.5.0";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);

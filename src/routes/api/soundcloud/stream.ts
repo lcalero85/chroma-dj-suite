@@ -17,7 +17,7 @@ async function resolveStream(t: string, clientId: string) {
 export const Route = createFileRoute("/api/soundcloud/stream")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
+      GET: async ({ request }: { request: Request }) => {
         const url = new URL(request.url);
         const t = url.searchParams.get("t"); // transcoding url (already encoded)
         if (!t) return Response.json({ error: "missing t" }, { status: 400 });
@@ -58,4 +58,4 @@ export const Route = createFileRoute("/api/soundcloud/stream")({
       },
     },
   },
-});
+} as unknown as Parameters<typeof createFileRoute<"/api/soundcloud/stream">>[0]);
