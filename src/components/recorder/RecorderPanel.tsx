@@ -205,9 +205,9 @@ export function RecorderPanel() {
           padding: 10,
           flexWrap: "wrap",
           minHeight: 64,
-          border: mixer.micOn ? "1px solid var(--bad)" : undefined,
-          boxShadow: mixer.micOn ? "var(--beat-glow)" : "none",
-          background: mixer.micOn ? "color-mix(in oklab, var(--bad) 8%, var(--surface-2))" : undefined,
+          border: micActive ? "1px solid var(--bad)" : undefined,
+          boxShadow: micActive ? "var(--beat-glow)" : "none",
+          background: micActive ? "color-mix(in oklab, var(--bad) 8%, var(--surface-2))" : undefined,
         }}
       >
         <button
@@ -233,11 +233,11 @@ export function RecorderPanel() {
             letterSpacing: "0.08em",
           }}
         >
-          {mixer.micOn ? <Mic size={16} /> : <MicOff size={16} />}
+          {micActive ? <Mic size={16} /> : <MicOff size={16} />}
           {t("recVoiceOverLabel")}
         </button>
 
-        {mixer.micOn && (
+        {micActive && (
           <span
             className="vdj-loaded-badge"
             data-tone="live"
