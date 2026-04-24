@@ -138,11 +138,6 @@ export function LibraryPanel() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showFavOnly, setShowFavOnly] = useState(false);
 
-  const toggleSort = (k: SortKey) => {
-    if (sortBy === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortBy(k); setSortDir(k === "title" || k === "artist" || k === "key" ? "asc" : "desc"); }
-  };
-
   const toggleFavorite = async (track: TrackRecord) => {
     const next = { ...track, favorite: !track.favorite };
     await putTrack(next);
@@ -705,6 +700,19 @@ export function LibraryPanel() {
                 <td style={{ padding: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 4, height: 16, background: t.color, borderRadius: 2 }} />
+                    <button
+                      className="vdj-btn"
+                      onClick={(e) => { e.stopPropagation(); void toggleFavorite(t); }}
+                      title={t.favorite ? "Quitar de favoritos" : "Marcar favorito"}
+                      style={{
+                        padding: "2px 4px",
+                        background: "transparent",
+                        border: 0,
+                        color: t.favorite ? "var(--accent)" : "var(--text-3)",
+                      }}
+                    >
+                      <Star size={11} fill={t.favorite ? "currentColor" : "none"} />
+                    </button>
                     {t.title}
                   </div>
                 </td>
