@@ -25,7 +25,7 @@ async function callSearch(q: string, limit: string, clientId: string) {
 export const Route = createFileRoute("/api/soundcloud/search")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
+      GET: async ({ request }: { request: Request }) => {
         const url = new URL(request.url);
         const q = url.searchParams.get("q")?.trim();
         const limit = url.searchParams.get("limit") || "20";
@@ -85,4 +85,4 @@ export const Route = createFileRoute("/api/soundcloud/search")({
       },
     },
   },
-});
+} as unknown as Parameters<typeof createFileRoute<"/api/soundcloud/search">>[0]);
