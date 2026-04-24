@@ -143,3 +143,9 @@
     color: var(--color-foreground);
   }
 }
+
+/* ===== v1.4.0 — Booth (compact) view mode ===== */
+html[data-view-mode="booth"] .vdj-btn { padding: 6px 10px; font-size: 12px; }
+html[data-view-mode="booth"] .vdj-pad { min-height: 64px; }
+html[data-view-mode="booth"] .vdj-label { font-size: 11px; letter-spacing: 0.08em; }
+html[data-view-mode="booth"] .vdj-chip { font-size: 11px; padding: 3px 8px; }

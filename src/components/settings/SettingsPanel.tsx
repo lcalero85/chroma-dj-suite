@@ -4,6 +4,7 @@ import { MidiPanel } from "./MidiPanel";
 import { StreamSettings } from "./StreamSettings";
 import { ShortcutsSettings } from "./ShortcutsSettings";
 import { AudioDevicesPanel } from "./AudioDevicesPanel";
+import { CloudSyncPanel } from "./CloudSyncPanel";
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
@@ -129,8 +130,22 @@ export function SettingsPanel() {
           title={t("liveVocalEnableTip")}
         />
       </Row>
+      <Row label={t("viewMode")}>
+        <select
+          className="vdj-btn"
+          value={settings.viewMode ?? "studio"}
+          onChange={(e) => update({ viewMode: e.target.value as "studio" | "booth" })}
+          style={{ padding: "6px 8px" }}
+          title={t("viewModeTip")}
+        >
+          <option value="studio">{t("viewModeStudio")}</option>
+          <option value="booth">{t("viewModeBooth")}</option>
+        </select>
+      </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <PanelVisibilityRows />
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
+      <CloudSyncPanel />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <ShortcutsSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
@@ -164,6 +179,7 @@ function PanelVisibilityRows() {
     { key: "radio",     label: t("panelRadio") },
     { key: "fx",        label: t("panelFx") },
     { key: "sampler",   label: t("panelSampler") },
+    { key: "stems",     label: t("stemsLabel") },
     { key: "recorder",  label: t("panelRecorder") },
     { key: "presets",   label: t("panelPresets") },
     { key: "synth",     label: t("panelSynth") },

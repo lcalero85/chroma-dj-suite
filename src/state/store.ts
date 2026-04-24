@@ -227,7 +227,10 @@ export interface SettingsState {
     synth?: boolean;
     livevocal?: boolean;
     beatmaker?: boolean;
+    stems?: boolean;
   };
+  /** UI view mode: 'studio' = full layout, 'booth' = compact for live performance. */
+  viewMode?: "studio" | "booth";
   /** DJ display name shown in the top bar with a subtle animation. Empty = hidden. */
   djName?: string;
   /** Show the connected MIDI controller name in the top bar. Default true. */
@@ -286,7 +289,7 @@ interface AppState {
   playlists: PlaylistRecord[];
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
-  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets" | "synth" | "livevocal" | "beatmaker";
+  activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets" | "synth" | "livevocal" | "beatmaker" | "stems";
   drawer: null | "settings" | "skins" | "help" | "about";
   search: string;
   selectedPlaylistId: string | null;
@@ -357,6 +360,7 @@ const defaultSettings: SettingsState = {
     synth: false,
     livevocal: false,
     beatmaker: false,
+    stems: true,
   },
   djName: "",
   showControllerInTopbar: true,
