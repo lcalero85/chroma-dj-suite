@@ -4,7 +4,7 @@ import { listTracks, putTrack, deleteTrack, uid, type TrackRecord, type FolderRe
 import { loadTrackToDeck, refreshFolders, createFolder, renameFolder, removeFolder, moveTrackToFolder } from "@/state/controller";
 import { ensureRunning } from "@/audio/engine";
 import { formatTime } from "@/lib/format";
-import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film, Tag, SlidersHorizontal, FolderSearch } from "lucide-react";
+import { Upload, Trash2, Search, Radio, Folder, FolderPlus, ChevronRight, ChevronDown, Pencil, Film, Tag, SlidersHorizontal, FolderSearch, Star, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { radioAdd, addTrackToSegment } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
