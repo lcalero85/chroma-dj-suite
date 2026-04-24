@@ -1,5 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { getSlots, initSampler, loadSampleFromBlob, triggerSlot, setSlotVolume, setSlotColor, setSlotLoop, startSlotLoop, stopSlot } from "@/audio/sampler";
+import {
+  getSlots,
+  initSampler,
+  loadSampleFromBlob,
+  triggerSlot,
+  setSlotVolume,
+  setSlotColor,
+  setSlotLoop,
+  startSlotLoop,
+  stopSlot,
+  setSlotChokeGroup,
+  setSlotMute,
+  setSlotSolo,
+} from "@/audio/sampler";
 import { ensureRunning } from "@/audio/engine";
 import { useT } from "@/lib/i18n";
 
@@ -42,12 +55,15 @@ export function SamplerPanel() {
           }}
         />
       </div>
+      <div style={{ fontSize: 9, opacity: 0.6, marginTop: -4 }}>
+        {t("samplerProTip")}
+      </div>
       <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gridAutoRows: "1fr", gap: 8 }}>
         {slots.map((s) => (
           <div
             key={s.id}
             className="vdj-pad"
-            data-armed={!!s.buffer}
+            data-armed={!!s.buffer && !s.mute}
             style={{ color: s.color, height: "auto", flexDirection: "column", padding: 6, gap: 4, justifyContent: "space-between" }}
             role="group"
             aria-label={s.buffer ? `Sampler pad ${s.id - bank * 16 + 1}: ${s.name}` : `Empty sampler pad ${s.id - bank * 16 + 1}`}
@@ -120,6 +136,11 @@ export function SamplerPanel() {
                 {s.buffer ? s.name : t("samplerLoad")}
               </div>
               {s.loop && stopFns.current.has(s.id) && <div style={{ fontSize: 8, opacity: 0.85 }}>{t("samplerLoopBadge")}</div>}
+                {(s.chokeGroup ?? 0) > 0 && (
+                  <div style={{ fontSize: 8, opacity: 0.75, fontFamily: "var(--font-mono)" }}>
+                    CG{s.chokeGroup}
+                  </div>
+                )}
             </div>
             {s.buffer && (
               <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%", paddingTop: 2, borderTop: "1px solid color-mix(in oklab, currentColor 18%, transparent)" }}>
@@ -129,12 +150,41 @@ export function SamplerPanel() {
                     type="range"
                     min={0}
                     max={1.5}
-                    step={0.01}
+                    step={0.005}
                     defaultValue={s.volume}
                     onChange={(e) => { setSlotVolume(s.id, parseFloat(e.target.value)); force((x) => x + 1); }}
                     style={{ flex: 1, height: 12, accentColor: "currentColor" }}
                   />
                   <span style={{ fontSize: 8, opacity: 0.7, fontFamily: "var(--font-mono)", minWidth: 22, textAlign: "right" }}>{Math.round(s.volume * 100)}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <button
+                    className="vdj-btn"
+                    data-active={!!s.mute}
+                    onClick={() => { setSlotMute(s.id, !s.mute); force((x) => x + 1); }}
+                    style={{ padding: "1px 4px", fontSize: 8, flex: 1 }}
+                    title={t("samplerMuteTip")}
+                  >
+                    M
+                  </button>
+                  <button
+                    className="vdj-btn"
+                    data-active={!!s.solo}
+                    onClick={() => { setSlotSolo(s.id, !s.solo); force((x) => x + 1); }}
+                    style={{ padding: "1px 4px", fontSize: 8, flex: 1 }}
+                    title={t("samplerSoloTip")}
+                  >
+                    S
+                  </button>
+                  <select
+                    value={s.chokeGroup ?? 0}
+                    onChange={(e) => { setSlotChokeGroup(s.id, parseInt(e.target.value, 10)); force((x) => x + 1); }}
+                    title={t("samplerChokeTip")}
+                    style={{ flex: 1, fontSize: 8, padding: "1px 2px", background: "var(--panel-2)", color: "currentColor", border: "1px solid color-mix(in oklab, currentColor 25%, transparent)", borderRadius: 2 }}
+                  >
+                    <option value={0}>CG-</option>
+                    {[1,2,3,4,5,6,7,8].map((n) => <option key={n} value={n}>CG{n}</option>)}
+                  </select>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                   <button
