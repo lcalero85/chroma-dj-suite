@@ -6,7 +6,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       className="toaster group"
+      position="top-right"
+      offset={72}
+      expand={false}
+      richColors
       toastOptions={{
+        style: {
+          maxWidth: 360,
+        },
         classNames: {
           toast: "group toast vdj-toast",
           title: "vdj-toast-title",
