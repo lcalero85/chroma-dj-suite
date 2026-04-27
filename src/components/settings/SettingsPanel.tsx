@@ -6,6 +6,16 @@ import { ShortcutsSettings } from "./ShortcutsSettings";
 import { AudioDevicesPanel } from "./AudioDevicesPanel";
 import { CloudSyncPanel } from "./CloudSyncPanel";
 import { VDJ_GENRES } from "@/audio/virtualDj";
+import { useVt } from "@/lib/i18n/vdj";
+import type { SkinId } from "@/state/store";
+
+const VDJ_SKIN_OPTIONS: SkinId[] = [
+  "pioneer", "serato", "neon", "glass", "minimal", "retro", "studio", "cyber",
+  "vinyl", "hacker", "midnight", "sunset", "arctic", "blood", "gold", "ocean",
+  "lava", "forest", "candy", "matrix", "royal", "bigjogs",
+  "bigjogs-neon", "bigjogs-gold", "bigjogs-ocean", "bigjogs-blood", "bigjogs-forest",
+  "xl-bubblegum", "xl-vaporwave", "xl-tropical", "xl-skater", "xl-icecream", "xl-galaxy",
+];
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
