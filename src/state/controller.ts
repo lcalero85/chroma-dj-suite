@@ -81,6 +81,31 @@ export function startPositionPolling() {
     const now = Date.now();
     const dt = (now - sessionStats.lastTickAt) / 1000;
     sessionStats.lastTickAt = now;
+    // ===== Master Tempo Lock =====
+    // Continuously match every non-master deck's effective BPM to the master's
+    // effective BPM, like Rekordbox / Serato BEAT SYNC MASTER. Only acts when
+    // both decks have a known BPM and the delta exceeds a small threshold to
+    // avoid pitch jitter every animation frame.
+    if (state.mixer.tempoLock) {
+      const masterId = state.mixer.masterDeck;
+      const m = state.decks[masterId];
+      if (m && m.bpm) {
+        const masterRange = m.pitchRange / 100;
+        const masterEff = m.bpm * (1 + m.pitch * masterRange);
+        state.activeDecks.forEach((id) => {
+          if (id === masterId) return;
+          const s = state.decks[id];
+          if (!s.bpm) return;
+          const sRange = s.pitchRange / 100;
+          const targetPitch = (masterEff / s.bpm - 1) / sRange;
+          const clamped = Math.max(-1, Math.min(1, targetPitch));
+          // Only update when meaningfully different (≈0.05% pitch ≈ 0.06 BPM @ 120).
+          if (Math.abs(clamped - s.pitch) > 0.0005) {
+            setDeckPitch(id, clamped);
+          }
+        });
+      }
+    }
     state.activeDecks.forEach((id) => {
       const d = getDeck(id);
       if (!d.buffer) return;
