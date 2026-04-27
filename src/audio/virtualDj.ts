@@ -1376,11 +1376,35 @@ export async function startVirtualDj(): Promise<void> {
           });
           useApp.getState().setRecordings(await listRecordings());
           toast.success(`Sesión guardada: ${recName}`);
+          // (v1.7.5 #9) Export .cue sheet alongside the recording.
+          if (settings.vdjExportCue !== false && cuePoints.length > 0) {
+            try {
+              const audioFile = `${recName}.wav`;
+              const cueText = buildCueSheet(audioFile, recName, settings.djName || "Virtual DJ");
+              const blob = new Blob([cueText], { type: "application/x-cue" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${recName}.cue`;
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch { /* noop */ } }, 1500);
+              toast.success(`📋 Cue sheet exportado (${cuePoints.length} pistas)`);
+            } catch (e) { console.warn("[vdj] cue export error", e); }
+          }
         }
       } catch (err) {
         console.warn("[vdj] error guardando grabación", err);
       }
     }
+    // (v1.7.5 #6) Stop mic shoutout monitor.
+    try { stopMicShoutoutMonitor(); } catch { /* noop */ }
+    // (v1.7.5 #10) Stop live stream if WE started it for this set.
+    if (settings.vdjAutoStream === true && isStreaming()) {
+      try { await stopStream(); } catch { /* noop */ }
+    }
+    cuePoints = [];
+    recordingStartMs = 0;
     recordingActive = false;
     running = false;
     cancelRequested = false;
