@@ -35,6 +35,7 @@ import { listRecordings, putRecording, uid, type TrackRecord } from "@/lib/db";
 import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
 import { getEngine } from "@/audio/engine";
+import { isCompatible, type CamelotKey } from "@/lib/camelot";
 
 export type VdjGenre =
   | "auto"
