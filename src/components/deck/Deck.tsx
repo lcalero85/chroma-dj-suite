@@ -21,6 +21,10 @@ import {
   saveLoopSlot,
   recallLoopSlot,
   clearLoopSlot,
+  addPhraseAtPlayhead,
+  jumpPhrase,
+  removePhrase,
+  clearPhrases,
 } from "@/state/controller";
 import { Waveform } from "./Waveform";
 import { JogWheel } from "./JogWheel";
@@ -30,7 +34,7 @@ import { ProControls } from "./ProControls";
 import { BpmControls } from "./BpmControls";
 import { getDeck } from "@/audio/deck";
 import { formatTime } from "@/lib/format";
-import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown } from "lucide-react";
+import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown, Bookmark } from "lucide-react";
 import { keyName } from "@/lib/camelot";
 import { isCompatible } from "@/lib/camelot";
 import { VideoFxPanel } from "../video/VideoFxPanel";
@@ -220,6 +224,7 @@ export function Deck({ id, side }: DeckProps) {
         bpm={ds.bpm}
         duration={ds.duration}
         hotCues={ds.hotCues}
+        phrases={ds.phrases}
         height={32}
         variant="mini"
         isPlaying={ds.isPlaying}
@@ -235,6 +240,7 @@ export function Deck({ id, side }: DeckProps) {
         loopStart={ds.loopStart}
         loopEnd={ds.loopEnd}
         hotCues={ds.hotCues}
+        phrases={ds.phrases}
         height={96}
         variant="main"
         isPlaying={ds.isPlaying}
@@ -361,6 +367,8 @@ export function Deck({ id, side }: DeckProps) {
       </div>
 
       <SavedLoops id={id} />
+
+      <PhraseStrip id={id} />
 
       <AdvancedDeckExtras id={id} />
 
@@ -587,6 +595,80 @@ function VocalCutBar({ id }: { id: DeckId }) {
         {t("vocalKaraoke")}
       </button>
       <span className="vdj-readout" style={{ fontSize: 10, minWidth: 32, textAlign: "right" }}>{Math.round(v * 100)}%</span>
+    </div>
+  );
+}
+
+function PhraseStrip({ id }: { id: DeckId }) {
+  const ds = useApp((s) => s.decks[id]);
+  const t = useT();
+  const phrases = ds.phrases ?? [];
+  return (
+    <div className="vdj-panel-inset" style={{ padding: 6, display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+        <span className="vdj-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Bookmark size={10} /> {t("phrases")}
+          <span style={{ fontSize: 9, opacity: 0.55, marginLeft: 4 }}>{phrases.length}</span>
+        </span>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button
+            className="vdj-btn"
+            data-tone="accent"
+            style={{ fontSize: 9, padding: "2px 8px" }}
+            onClick={() => {
+              if (!ds.duration) return;
+              addPhraseAtPlayhead(id);
+            }}
+            disabled={!ds.duration}
+            title={t("phraseAddTip")}
+          >
+            + {t("phraseAdd")}
+          </button>
+          <button
+            className="vdj-btn"
+            data-tone="danger"
+            style={{ fontSize: 9, padding: "2px 6px" }}
+            onClick={() => clearPhrases(id)}
+            disabled={phrases.length === 0}
+            title={t("phraseClearTip")}
+          >
+            {t("phraseClear")}
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, minHeight: 22 }}>
+        {phrases.length === 0 && (
+          <span className="vdj-label" style={{ fontSize: 9, opacity: 0.55 }}>{t("phraseEmpty")}</span>
+        )}
+        {phrases.map((p) => {
+          const time = `${Math.floor(p.pos / 60)}:${String(Math.floor(p.pos % 60)).padStart(2, "0")}`;
+          return (
+            <button
+              key={p.id}
+              onClick={() => jumpPhrase(id, p.id)}
+              onContextMenu={(e) => { e.preventDefault(); removePhrase(id, p.id); }}
+              title={t("phraseJumpTip", { type: p.type, time })}
+              style={{
+                background: p.color,
+                color: "#0a0a0a",
+                border: "none",
+                borderRadius: 4,
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: 0.4,
+                padding: "2px 6px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              {p.type.toUpperCase()}
+              <span style={{ opacity: 0.7, fontWeight: 500 }}>{time}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

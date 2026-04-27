@@ -34,7 +34,7 @@ import { applyCrossfader } from "@/audio/crossfader";
 import { detectBPM, extractPeaks, extractBandPeaks } from "@/audio/analysis/bpm";
 import { analyzeLoudness, dbToGain } from "@/audio/analysis/loudness";
 import { detectFirstTransient } from "@/audio/analysis/autoCue";
-import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord } from "@/lib/db";
+import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord, type PhraseMarker, type PhraseType } from "@/lib/db";
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
 import { t as tI18n } from "@/lib/i18n";
@@ -235,6 +235,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     loopActive: false,
     savedLoops: t.savedLoops ?? [],
     gridOffsetSec: t.gridOffsetSec ?? 0,
+    phrases: t.phrases ?? [],
     hasVideo: isVideo,
   });
   // Position the playhead at the auto-cue so first PLAY drops on the beat.
@@ -360,6 +361,84 @@ export function setTrackBpm(id: DeckId, bpm: number) {
   const clamped = Math.max(40, Math.min(300, bpm));
   useApp.getState().updateDeck(id, { bpm: clamped });
   persistGrid(id, { bpm: clamped });
+}
+
+/** ===== Phrase markers (intro / verse / break / buildup / drop / outro) ===== */
+
+export const PHRASE_TYPES: PhraseType[] = ["intro", "verse", "break", "buildup", "drop", "outro"];
+export const PHRASE_COLORS: Record<PhraseType, string> = {
+  intro:   "#7dd3fc",
+  verse:   "#a78bfa",
+  break:   "#fbbf24",
+  buildup: "#f97316",
+  drop:    "#ef4444",
+  outro:   "#94a3b8",
+};
+
+function persistPhrases(id: DeckId, phrases: PhraseMarker[]) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.trackId) return;
+  void getTrack(ds.trackId).then((tr) => {
+    if (!tr) return;
+    putTrack({ ...tr, phrases });
+  });
+}
+
+function nextPhraseType(after?: PhraseType): PhraseType {
+  if (!after) return "intro";
+  const idx = PHRASE_TYPES.indexOf(after);
+  return PHRASE_TYPES[(idx + 1) % PHRASE_TYPES.length];
+}
+
+/** Add a phrase marker at the current playhead, cycling type if one already exists at the same position. */
+export function addPhraseAtPlayhead(id: DeckId, type?: PhraseType) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.duration) return;
+  const pos = currentTime(id);
+  const existingNearby = ds.phrases.find((p) => Math.abs(p.pos - pos) < 0.5);
+  const nextType: PhraseType = type ?? nextPhraseType(existingNearby?.type);
+  let phrases: PhraseMarker[];
+  if (existingNearby) {
+    phrases = ds.phrases.map((p) =>
+      p.id === existingNearby.id
+        ? { ...p, type: nextType, color: PHRASE_COLORS[nextType] }
+        : p,
+    );
+  } else {
+    const marker: PhraseMarker = {
+      id: `ph_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      type: nextType,
+      pos,
+      color: PHRASE_COLORS[nextType],
+    };
+    phrases = [...ds.phrases, marker].sort((a, b) => a.pos - b.pos);
+  }
+  useApp.getState().updateDeck(id, { phrases });
+  persistPhrases(id, phrases);
+  toast.success(`${tI18n("phraseAdded")}: ${nextType.toUpperCase()}`);
+}
+
+/** Jump the playhead to a phrase marker. */
+export function jumpPhrase(id: DeckId, phraseId: string) {
+  const ds = useApp.getState().decks[id];
+  const ph = ds.phrases.find((p) => p.id === phraseId);
+  if (!ph || !ds.duration) return;
+  seek(id, ph.pos);
+  useApp.getState().updateDeck(id, { position: ph.pos / ds.duration });
+}
+
+/** Remove a single phrase marker. */
+export function removePhrase(id: DeckId, phraseId: string) {
+  const ds = useApp.getState().decks[id];
+  const phrases = ds.phrases.filter((p) => p.id !== phraseId);
+  useApp.getState().updateDeck(id, { phrases });
+  persistPhrases(id, phrases);
+}
+
+/** Clear all phrase markers from this deck's track. */
+export function clearPhrases(id: DeckId) {
+  useApp.getState().updateDeck(id, { phrases: [] });
+  persistPhrases(id, []);
 }
 
 export function setDeckEQ(id: DeckId, band: "hi" | "mid" | "lo", v: number) {

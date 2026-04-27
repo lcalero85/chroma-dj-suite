@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { t as tGlobal } from "@/lib/i18n";
+import type { PhraseMarker } from "@/lib/db";
 
 interface WaveformProps {
   peaks: number[];
@@ -10,6 +11,7 @@ interface WaveformProps {
   loopStart?: number | null;
   loopEnd?: number | null;
   hotCues?: { id: number; pos: number; color: string }[];
+  phrases?: PhraseMarker[];
   height?: number;
   variant?: "main" | "mini";
   onSeek?: (pos: number) => void;
@@ -29,6 +31,7 @@ export function Waveform({
   loopStart,
   loopEnd,
   hotCues,
+  phrases,
   height = 90,
   variant = "main",
   onSeek,
@@ -202,6 +205,31 @@ export function Waveform({
           ctx.closePath();
           ctx.fill();
         });
+
+        // phrase markers (intro / verse / break / buildup / drop / outro)
+        phrases?.forEach((p) => {
+          const x = ((p.pos - startSec) / (endSec - startSec)) * w;
+          if (x < -40 || x > w + 40) return;
+          // Vertical line
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = 0.85;
+          ctx.fillRect(x, 0, 2, h);
+          ctx.globalAlpha = 1;
+          // Label tag at the bottom
+          const label = p.type.toUpperCase();
+          ctx.font = "bold 9px system-ui";
+          const tw = ctx.measureText(label).width;
+          const padX = 4;
+          const tagW = tw + padX * 2;
+          const tagH = 12;
+          const tagY = h - tagH - 2;
+          let tagX = x + 2;
+          if (tagX + tagW > w) tagX = x - tagW - 2;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(tagX, tagY, tagW, tagH);
+          ctx.fillStyle = "#0a0a0a";
+          ctx.fillText(label, tagX + padX, tagY + tagH - 3);
+        });
       } else {
         // mini overview
         const barW = w / peaks.length;
@@ -232,6 +260,13 @@ export function Waveform({
           ctx.fillStyle = c.color;
           ctx.fillRect(x, 0, 1, h);
         });
+        // phrase markers on mini: small colored ticks at the top edge
+        phrases?.forEach((p) => {
+          if (!duration) return;
+          const x = (p.pos / duration) * w;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(x, 0, 2, Math.min(6, h));
+        });
       }
     };
 
@@ -260,7 +295,7 @@ export function Waveform({
       rafRef.current = null;
       ro.disconnect();
     };
-  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, height, variant, isPlaying, gridOffsetSec, styleVariant]);
+  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, phrases, height, variant, isPlaying, gridOffsetSec, styleVariant]);
 
   const handleClick = (e: React.MouseEvent) => {
     if (!onSeek || variant !== "mini") return;
