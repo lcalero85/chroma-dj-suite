@@ -42,6 +42,8 @@ import { startStream, stopStream, updateStreamMetadata, isStreaming } from "@/au
 import { detectCamelotKey } from "@/audio/analysis/keyDetect";
 import { generateMixReport, trackToReportEntry, type MixReportEntry } from "@/audio/mixReport";
 import { setReverse } from "@/audio/transport";
+import { vt } from "@/lib/i18n/vdj";
+import type { SkinId } from "@/state/store";
 
 export type VdjGenre =
   | "auto"
