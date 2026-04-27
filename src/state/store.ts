@@ -115,6 +115,9 @@ export interface MixerState {
   masterDeck: DeckId;
   quantize: boolean;
   autoMix: boolean;
+  /** Master Tempo Lock — continuously matches every non-master deck's
+   *  effective BPM to the master deck's effective BPM. */
+  tempoLock: boolean;
   sleepMinutes: number; // 0 = off
   micOn: boolean;
   micLevel: number; // 0..2
