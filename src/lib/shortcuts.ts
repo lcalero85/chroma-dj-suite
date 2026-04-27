@@ -83,6 +83,29 @@ async function runAction(id: string, e: KeyboardEvent) {
       setReverse(id2, !cur);
       return true;
     }
+    // ===== Decks C & D =====
+    case "playC": e.preventDefault(); await togglePlay("C"); return true;
+    case "playD": e.preventDefault(); await togglePlay("D"); return true;
+    case "cueC": cueDeck("C"); return true;
+    case "cueD": cueDeck("D"); return true;
+    case "syncC": syncDeck("C", "A"); return true;
+    case "syncD": syncDeck("D", "A"); return true;
+    case "brakeC": brake("C", 1.4); return true;
+    case "brakeD": brake("D", 1.4); return true;
+    case "reverseC": {
+      const cur = useApp.getState().decks.C.reverse;
+      setReverse("C", !cur);
+      return true;
+    }
+    case "reverseD": {
+      const cur = useApp.getState().decks.D.reverse;
+      setReverse("D", !cur);
+      return true;
+    }
+    case "jumpCback": beatJump("C", -4); return true;
+    case "jumpCfwd":  beatJump("C",  4); return true;
+    case "jumpDback": beatJump("D", -4); return true;
+    case "jumpDfwd":  beatJump("D",  4); return true;
     case "automix": {
       e.preventDefault();
       const x = useApp.getState().mixer.xfader;
@@ -154,6 +177,35 @@ async function runAction(id: string, e: KeyboardEvent) {
       return true;
     }
     case "npRecord": e.preventDefault(); await fireRecord(); return true;
+    // ===== Smart Fader / AutoMix Pro toggles (Shift required) =====
+    case "smartFaderToggle": {
+      if (!e.shiftKey) return false;
+      e.preventDefault();
+      const cur = useApp.getState().settings.smartFaderEnabled ?? false;
+      useApp.getState().updateSettings({ smartFaderEnabled: !cur });
+      toast(`Smart Fader: ${!cur ? "ON" : "OFF"}`);
+      return true;
+    }
+    case "automixProToggle": {
+      if (!e.shiftKey) return false;
+      e.preventDefault();
+      const cur = useApp.getState().settings.automixProEnabled ?? false;
+      useApp.getState().updateSettings({ automixProEnabled: !cur });
+      toast(`AutoMix Pro: ${!cur ? "ON" : "OFF"}`);
+      return true;
+    }
+    // ===== Open panels (F-keys) =====
+    case "panelLibrary":   e.preventDefault(); useApp.getState().setActiveBottomTab("library");   return true;
+    case "panelRecorder":  e.preventDefault(); useApp.getState().setActiveBottomTab("recorder");  return true;
+    case "panelFx":        e.preventDefault(); useApp.getState().setActiveBottomTab("fx");        return true;
+    case "panelSampler":   e.preventDefault(); useApp.getState().setActiveBottomTab("sampler");   return true;
+    case "panelStems":     e.preventDefault(); useApp.getState().setActiveBottomTab("stems");     return true;
+    case "panelPresets":   e.preventDefault(); useApp.getState().setActiveBottomTab("presets");   return true;
+    case "panelRadio":     e.preventDefault(); useApp.getState().setActiveBottomTab("radio");     return true;
+    case "panelOnline":    e.preventDefault(); useApp.getState().setActiveBottomTab("online");    return true;
+    case "panelSynth":     e.preventDefault(); useApp.getState().setActiveBottomTab("synth");     return true;
+    case "panelLiveVocal": e.preventDefault(); useApp.getState().setActiveBottomTab("livevocal"); return true;
+    case "panelBeatMaker": e.preventDefault(); useApp.getState().setActiveBottomTab("beatmaker"); return true;
     // showShortcuts is handled in TopBar (it owns the overlay state)
   }
   return false;
