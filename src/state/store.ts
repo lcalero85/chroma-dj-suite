@@ -39,7 +39,13 @@ export type SkinId =
   | "bigjogs-gold"
   | "bigjogs-ocean"
   | "bigjogs-blood"
-  | "bigjogs-forest";
+  | "bigjogs-forest"
+  | "xl-bubblegum"
+  | "xl-vaporwave"
+  | "xl-tropical"
+  | "xl-skater"
+  | "xl-icecream"
+  | "xl-galaxy";
 
 export interface DeckState {
   trackId: string | null;

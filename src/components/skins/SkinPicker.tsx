@@ -9,6 +9,7 @@ const SKIN_IDS: SkinId[] = [
   "vinyl", "hacker", "midnight", "sunset", "arctic", "blood", "gold", "ocean",
   "lava", "forest", "candy", "matrix", "royal", "bigjogs",
   "bigjogs-neon", "bigjogs-gold", "bigjogs-ocean", "bigjogs-blood", "bigjogs-forest",
+  "xl-bubblegum", "xl-vaporwave", "xl-tropical", "xl-skater", "xl-icecream", "xl-galaxy",
 ];
 
 export function SkinPicker() {
