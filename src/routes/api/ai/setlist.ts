@@ -80,7 +80,7 @@ export const Route = createFileRoute("/api/ai/setlist")({
           const args = tc?.function?.arguments ? JSON.parse(tc.function.arguments) : null;
           const ordered: string[] = Array.isArray(args?.orderedIds) ? args.orderedIds : [];
           // Validate: must be a permutation. If not, repair.
-          const inputIds = new Set(compact.map((t) => t.id));
+          const inputIds = new Set(compact.map((t: { id: string }) => t.id));
           const seen = new Set<string>();
           const valid: string[] = [];
           for (const id of ordered) {
@@ -90,11 +90,11 @@ export const Route = createFileRoute("/api/ai/setlist")({
             }
           }
           // Append any missing ids in original order to keep the queue intact.
-          for (const t of compact) if (!seen.has(t.id)) valid.push(t.id);
+          for (const t of compact as { id: string }[]) if (!seen.has(t.id)) valid.push(t.id);
           return Response.json({ orderedIds: valid, reasoning: args?.reasoning ?? null });
         } catch (e) {
           console.error("[ai/setlist] parse error", e);
-          return Response.json({ orderedIds: compact.map((t) => t.id) });
+          return Response.json({ orderedIds: compact.map((t: { id: string }) => t.id) });
         }
       },
     },
