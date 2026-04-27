@@ -1749,7 +1749,7 @@ export async function startVirtualDj(): Promise<void> {
     }
   } catch (err) {
     console.error("[vdj] error", err);
-    toast.error("Virtual DJ: error " + ((err as Error)?.message ?? ""));
+    toast.error(vt("toastVdjError", { msg: (err as Error)?.message ?? "" }));
   } finally {
     // Stop recording and save
     if (recordingActive && isRecording()) {
@@ -1758,9 +1758,10 @@ export async function startVirtualDj(): Promise<void> {
         if (r) {
           const sname = safeName(settings.vdjSessionName ?? "");
           const stamp = new Date().toLocaleString();
+          const prefix = vt("sessionPrefix");
           const recName = sname
-            ? `Mezcla Virtual ${sname}`
-            : `Mezcla Virtual ${stamp}`;
+            ? `${prefix} ${sname}`
+            : `${prefix} ${stamp}`;
           await putRecording({
             id: uid(),
             name: recName,
@@ -1770,7 +1771,7 @@ export async function startVirtualDj(): Promise<void> {
             createdAt: Date.now(),
           });
           useApp.getState().setRecordings(await listRecordings());
-          toast.success(`Sesión guardada: ${recName}`);
+          toast.success(vt("toastSessionSaved", { name: recName }));
           // (v1.7.5 #9) Export .cue sheet alongside the recording.
           if (settings.vdjExportCue !== false && cuePoints.length > 0) {
             try {
@@ -1784,7 +1785,7 @@ export async function startVirtualDj(): Promise<void> {
               document.body.appendChild(a);
               a.click();
               setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch { /* noop */ } }, 1500);
-              toast.success(`📋 Cue sheet exportado (${cuePoints.length} pistas)`);
+              toast.success(vt("toastCueExported", { n: cuePoints.length }));
             } catch (e) { console.warn("[vdj] cue export error", e); }
           }
         }
@@ -1812,7 +1813,7 @@ export async function startVirtualDj(): Promise<void> {
           energyCurve: energyHistory.slice(),
           fxUsed: { ...reportFx },
         });
-        toast.success("📄 Mix Report PDF generado");
+        toast.success(vt("toastReportPdf"));
       } catch (e) { console.warn("[vdj] mix report error", e); }
     }
     reportEntries = [];
@@ -1828,7 +1829,14 @@ export async function startVirtualDj(): Promise<void> {
     running = false;
     cancelRequested = false;
     currentTrackId = null;
-    setMessage("Idle");
+    // (v1.7.7) Restore skin + intensity tweaks made by smart autopilot.
+    if (originalSkin) {
+      try { useApp.getState().setSkin(originalSkin); } catch { /* noop */ }
+    }
+    if (originalIntensity) {
+      try { useApp.getState().updateSettings({ vdjIntensity: originalIntensity }); } catch { /* noop */ }
+    }
+    setMessage(vt("vdjIdle"));
     notify();
   }
 }
@@ -1836,7 +1844,7 @@ export async function startVirtualDj(): Promise<void> {
 export function stopVirtualDj() {
   if (!running) return;
   cancelRequested = true;
-  setMessage("Deteniendo Virtual DJ…");
+  setMessage(vt("vdjStopping"));
 }
 
 export function isVirtualDjRunning(): boolean { return running; }
