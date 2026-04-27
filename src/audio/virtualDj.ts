@@ -670,11 +670,14 @@ export async function startVirtualDj(): Promise<void> {
       const next = queue[i];
 
       const fxCfgBase = GENRE_FX[genre] ?? GENRE_FX.auto;
+      const lvl = getIntensity();
       // Allow user override of crossfade duration
       const xfadeOverride = settings.vdjXfadeSec;
-      const xfadeSec = (xfadeOverride && xfadeOverride > 0)
+      const baseXfade = (xfadeOverride && xfadeOverride > 0)
         ? xfadeOverride
         : fxCfgBase.xfadeSec;
+      // Intensity scales the crossfade — hard = shorter/aggressive, soft = longer/smooth.
+      const xfadeSec = Math.max(2, Math.min(30, baseXfade * lvl.xfadeMul));
       const fxCfg = { ...fxCfgBase, xfadeSec };
 
       // Mid-track flair: spice up the playing deck around ~50% through.
@@ -698,9 +701,11 @@ export async function startVirtualDj(): Promise<void> {
 
       // Cut early — user-configurable; defaults to 72% (long) or 78% (short).
       const userCut = settings.vdjCutAtPct;
-      const cutPct = (userCut && userCut >= 0.5 && userCut <= 0.95)
+      const baseCut = (userCut && userCut >= 0.5 && userCut <= 0.95)
         ? userCut
         : (durCur > 240 ? 0.72 : 0.78);
+      // Hard mode cuts earlier (more aggressive); soft slightly later.
+      const cutPct = Math.max(0.5, Math.min(0.95, baseCut - lvl.cutPctBoost));
       while (!cancelRequested) {
         const ds2 = useApp.getState().decks[fromId];
         const pos = (ds2.position ?? 0) * (ds2.duration || 0);
@@ -730,11 +735,15 @@ export async function startVirtualDj(): Promise<void> {
       // Per-transition DJ-name shoutout (only in 'every' mode)
       if (annMode === "every") announceDjName();
       // Pre-transition: scratch flourish on outgoing as a "DJ mark"
-      if (settings.vdjUseScratch !== false) void performScratch(fromId, 2);
+      if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+      // Hard mode: extra scratch burst on the incoming deck right after start
+      if (lvl.scratchExtra && settings.vdjUseScratch !== false) {
+        setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
+      }
       // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
-      void filterSweep(fromId, 0, -0.7, Math.min(3.5, fxCfg.xfadeSec / 2));
+      void filterSweep(fromId, 0, -lvl.filterDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
       // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
-      void ramp((v) => setDeckGain(fromId, v), 1, 0.55, fxCfg.xfadeSec * 0.6);
+      void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
       // Apply genre FX during transition with a wet ramp
       if (settings.vdjUseFx !== false) applyGenreFx(genre);
       setMessage(`Mezclando → ${next.title}`);
@@ -746,12 +755,12 @@ export async function startVirtualDj(): Promise<void> {
       pause(fromId);
       // Ramp down FX
       if (settings.vdjUseFx !== false) {
-        await fxWetRamp(1, fxCfg.wet, 0, 1.5);
+        await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
         clearGenreFx();
       }
       // Light boost on the new track's lows for a fresh-energy feel
       setEQ(toId, "lo", 0);
-      void ramp((v) => setEQ(toId, "lo", v), 0, 0.3, 0.8);
+      void ramp((v) => setEQ(toId, "lo", v), 0, lvl.acidEdge ? 0.45 : 0.3, 0.8);
       setTimeout(() => { try { setEQ(toId, "lo", 0); } catch { /* noop */ } }, 4000);
 
       currentDeck = toId;
