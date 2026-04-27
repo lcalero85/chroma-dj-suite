@@ -574,17 +574,20 @@ export async function startVirtualDj(): Promise<void> {
     await loadTrackToDeck("A", queue[0].id);
     currentTrackId = queue[0].id;
     applyAutoGain("A");
-    addHotCue("A", 0); // mark intro for reference
-    // Drop a second hot-cue mid-track for later use
-    {
+    if (settings.vdjUseHotCues !== false) {
+      addHotCue("A", 0); // mark intro for reference
+      // Drop a second hot-cue mid-track for later use
       const dA = useApp.getState().decks["A"];
       if (dA.duration > 30) addHotCue("A", dA.duration * 0.45);
     }
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
-    // Opening DJ-name shoutout (delayed so the track has a moment to breathe)
-    setTimeout(() => { if (running && !cancelRequested) announceDjName(); }, 1500);
+    // Opening DJ-name shoutout (any mode except 'mid'-only mode)
+    const annMode = settings.vdjAnnounceMode ?? "mid";
+    if (annMode !== "mid") {
+      setTimeout(() => { if (running && !cancelRequested) announceDjName(); }, 1500);
+    }
 
     for (let i = 1; i < queue.length; i++) {
       if (cancelRequested) break;
@@ -592,7 +595,13 @@ export async function startVirtualDj(): Promise<void> {
       const toId = otherDeck(fromId);
       const next = queue[i];
 
-      const fxCfg = GENRE_FX[genre] ?? GENRE_FX.auto;
+      const fxCfgBase = GENRE_FX[genre] ?? GENRE_FX.auto;
+      // Allow user override of crossfade duration
+      const xfadeOverride = settings.vdjXfadeSec;
+      const xfadeSec = (xfadeOverride && xfadeOverride > 0)
+        ? xfadeOverride
+        : fxCfgBase.xfadeSec;
+      const fxCfg = { ...fxCfgBase, xfadeSec };
 
       // Mid-track flair: spice up the playing deck around ~50% through.
       // We DO NOT wait for the track to finish — we cut into the next song
@@ -613,9 +622,11 @@ export async function startVirtualDj(): Promise<void> {
         }
       }
 
-      // Cut early — wait until ~72% of the track (or 75% for short tracks),
-      // never letting it run out completely.
-      const cutPct = durCur > 240 ? 0.72 : 0.78;
+      // Cut early — user-configurable; defaults to 72% (long) or 78% (short).
+      const userCut = settings.vdjCutAtPct;
+      const cutPct = (userCut && userCut >= 0.5 && userCut <= 0.95)
+        ? userCut
+        : (durCur > 240 ? 0.72 : 0.78);
       while (!cancelRequested) {
         const ds2 = useApp.getState().decks[fromId];
         const pos = (ds2.position ?? 0) * (ds2.duration || 0);
@@ -630,9 +641,9 @@ export async function startVirtualDj(): Promise<void> {
       await loadTrackToDeck(toId, next.id);
       currentTrackId = next.id;
       applyAutoGain(toId);
-      syncBpm(fromId, toId);
-      addHotCue(toId, 0);
-      {
+      if (settings.vdjSyncBpm !== false) syncBpm(fromId, toId);
+      if (settings.vdjUseHotCues !== false) {
+        addHotCue(toId, 0);
         const dT = useApp.getState().decks[toId];
         if (dT.duration > 30) addHotCue(toId, dT.duration * 0.45);
       }
@@ -642,14 +653,16 @@ export async function startVirtualDj(): Promise<void> {
       else seek(toId, 0);
       play(toId, useApp.getState().decks[toId].cuePoint || 0);
 
+      // Per-transition DJ-name shoutout (only in 'every' mode)
+      if (annMode === "every") announceDjName();
       // Pre-transition: scratch flourish on outgoing as a "DJ mark"
-      void performScratch(fromId, 2);
-      // Filter sweep down on outgoing for smoother handoff
-      void filterSweep(fromId, 0, -0.6, Math.min(3, fxCfg.xfadeSec / 2));
-      // Gain pump down on outgoing during the crossfade
-      void ramp((v) => setDeckGain(fromId, v), 1, 0.7, fxCfg.xfadeSec * 0.5);
+      if (settings.vdjUseScratch !== false) void performScratch(fromId, 2);
+      // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
+      void filterSweep(fromId, 0, -0.7, Math.min(3.5, fxCfg.xfadeSec / 2));
+      // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
+      void ramp((v) => setDeckGain(fromId, v), 1, 0.55, fxCfg.xfadeSec * 0.6);
       // Apply genre FX during transition with a wet ramp
-      applyGenreFx(genre);
+      if (settings.vdjUseFx !== false) applyGenreFx(genre);
       setMessage(`Mezclando → ${next.title}`);
       await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
       // Reset outgoing filter + gain
@@ -658,8 +671,10 @@ export async function startVirtualDj(): Promise<void> {
       // Stop the outgoing deck cleanly
       pause(fromId);
       // Ramp down FX
-      await fxWetRamp(1, fxCfg.wet, 0, 1.5);
-      clearGenreFx();
+      if (settings.vdjUseFx !== false) {
+        await fxWetRamp(1, fxCfg.wet, 0, 1.5);
+        clearGenreFx();
+      }
       // Light boost on the new track's lows for a fresh-energy feel
       setEQ(toId, "lo", 0);
       void ramp((v) => setEQ(toId, "lo", v), 0, 0.3, 0.8);
@@ -696,12 +711,26 @@ export async function startVirtualDj(): Promise<void> {
         if (!ds.isPlaying) break;
         await sleep(400);
       }
-      // Pro outro: filter sweep down + echo tail + brake stop
-      if (!cancelRequested) {
+      // Pro outro: filter sweep down + echo tail + sustained brake + reverb tail
+      if (!cancelRequested && settings.vdjUseOutro !== false) {
         setMessage(`Outro profesional…`);
-        void filterSweep(currentDeck, 0, -0.85, 3);
-        void echoOut(3.5);
-        await brakeStop(currentDeck, 2.2);
+        const brakeSec = Math.max(1, Math.min(8, settings.vdjBrakeSec ?? 3.5));
+        // Final goodbye announce
+        if (annMode === "every" || annMode === "start") announceDjName();
+        // Sweep + echo simultaneously
+        void filterSweep(currentDeck, 0, -0.9, brakeSec * 0.8);
+        void echoOut(brakeSec * 1.2);
+        // Sustained brake (longer = more dramatic spin-down)
+        await brakeStop(currentDeck, brakeSec);
+        // Final reverb tail wash on master after the brake
+        useApp.getState().updateFx(3, {
+          kind: "reverb",
+          wet: 0.85,
+          param1: 0.9,
+          param2: 0.8,
+        });
+        await fxWetRamp(3, 0.85, 0, 3.5);
+        useApp.getState().updateFx(3, { kind: "off", wet: 0 });
         setDeckFilter(currentDeck, 0);
       } else {
         pause(currentDeck);
