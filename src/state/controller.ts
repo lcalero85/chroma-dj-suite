@@ -686,8 +686,10 @@ export function beginSlice(id: DeckId, index: number, beatsPerSlice = 1) {
   const sliceLen = beat * beatsPerSlice;
   const barLen = sliceLen * 8;
   const now = currentTime(id);
-  // Anchor the bar to the start of the bar containing the current playhead.
-  const anchor = Math.max(0, Math.floor(now / barLen) * barLen);
+  // Anchor the bar to the start of the bar containing the current playhead,
+  // respecting the track's beat-grid offset (downbeat) when set.
+  const off = ds.gridOffsetSec ?? 0;
+  const anchor = Math.max(0, Math.floor((now - off) / barLen) * barLen + off);
   const start = Math.min(d.buffer.duration - 0.05, anchor + index * sliceLen);
   const end = Math.min(d.buffer.duration - 0.01, start + sliceLen);
   sliceState.set(id, {
