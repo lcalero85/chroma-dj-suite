@@ -995,11 +995,41 @@ export async function startVirtualDj(): Promise<void> {
       const useFreeze =
         settings.vdjEchoFreeze === true &&
         Math.random() < Math.max(0, Math.min(1, settings.vdjEchoFreezeProb ?? 0.35));
+      // (v1.7.4) Optional Battle Mode and Mash-up — checked in priority order.
+      const useBattle =
+        !useFreeze &&
+        settings.vdjBattleMode === true &&
+        Math.random() < Math.max(0, Math.min(1, settings.vdjBattleProb ?? 0.2));
+      const useMashup =
+        !useFreeze && !useBattle &&
+        settings.vdjMashup === true &&
+        Math.random() < Math.max(0, Math.min(1, settings.vdjMashupProb ?? 0.25));
+
+      // (v1.7.4) Stem-aware vocal duck on outgoing — applies to ALL transition
+      // styles to avoid vocal clashes.
+      const stemAware = settings.vdjStemAware === true;
+      const stemAmt = Math.max(0, Math.min(1, settings.vdjStemVocalCutAmt ?? 0.85));
+      if (stemAware) void applyStemAwareDuck(fromId, stemAmt, 1.5);
 
       if (useFreeze) {
         setMessage(`❄ Echo-Freeze → ${next.title}`);
         if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
         await echoFreezeTransition(fromId, toId);
+      } else if (useBattle) {
+        setMessage(`⚔ Battle Mode → ${next.title}`);
+        if (settings.vdjUseFx !== false) applyGenreFx(genre);
+        const bbars = (settings.vdjBattleBars ?? 4) as 4 | 8 | 16;
+        const brounds = settings.vdjBattleRounds ?? 4;
+        await battleMode(fromId, toId, bbars, brounds);
+        if (settings.vdjUseFx !== false) {
+          await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.2);
+          clearGenreFx();
+        }
+      } else if (useMashup) {
+        setMessage(`💥 Double Drop → ${next.title}`);
+        if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+        const mbars = settings.vdjMashupBars ?? 8;
+        await mashupDoubleDrop(fromId, toId, mbars);
       } else {
         // Pre-transition: scratch flourish on outgoing as a "DJ mark"
         if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
@@ -1026,6 +1056,9 @@ export async function startVirtualDj(): Promise<void> {
           clearGenreFx();
         }
       }
+
+      // (v1.7.4) Release stem-aware duck on outgoing (now silent/paused).
+      if (stemAware) releaseStemAwareDuck(fromId);
 
       // Light boost on the new track's lows for a fresh-energy feel
       setEQ(toId, "lo", 0);
