@@ -39,6 +39,9 @@ import { getEngine } from "@/audio/engine";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
 import { enableMic } from "@/audio/engine";
 import { startStream, stopStream, updateStreamMetadata, isStreaming } from "@/audio/iceStreamer";
+import { detectCamelotKey } from "@/audio/analysis/keyDetect";
+import { generateMixReport, trackToReportEntry, type MixReportEntry } from "@/audio/mixReport";
+import { setReverse } from "@/audio/transport";
 
 export type VdjGenre =
   | "auto"
@@ -147,6 +150,303 @@ function pushCue(idx: number, t: TrackRecord) {
   if (recordingStartMs === 0) return;
   const elapsed = (Date.now() - recordingStartMs) / 1000;
   cuePoints.push({ trackIndex: idx, timeSec: elapsed, title: t.title || "Track", artist: t.artist || "" });
+}
+
+/** ============ (v1.7.6 #4) Crowd Energy history ============ */
+const ENERGY_HISTORY_MAX = 240; // ~4 min @ 1 Hz
+let energyHistory: number[] = [];
+let energyMonRaf: number | null = null;
+let energyMonInterval: number | null = null;
+let lastInstantEnergy = 0;
+
+/** Returns the rolling crowd-energy curve (0..1 samples). */
+export function getEnergyHistory(): number[] { return energyHistory.slice(); }
+export function getInstantEnergy(): number { return lastInstantEnergy; }
+
+function startEnergyMonitor() {
+  stopEnergyMonitor();
+  let buf: Uint8Array<ArrayBuffer> | null = null;
+  const sampleTick = () => {
+    try {
+      const { masterAnalyser } = getEngine();
+      if (!buf || buf.length !== masterAnalyser.fftSize) {
+        buf = new Uint8Array(new ArrayBuffer(masterAnalyser.fftSize));
+      }
+      masterAnalyser.getByteTimeDomainData(buf);
+      let s = 0;
+      for (let i = 0; i < buf.length; i++) {
+        const v = (buf[i] - 128) / 128;
+        s += v * v;
+      }
+      const rms = Math.sqrt(s / buf.length);
+      lastInstantEnergy = Math.min(1, rms * 2.4);
+    } catch { /* engine not ready */ }
+    energyMonRaf = requestAnimationFrame(sampleTick);
+  };
+  energyMonRaf = requestAnimationFrame(sampleTick);
+  energyMonInterval = window.setInterval(() => {
+    energyHistory.push(lastInstantEnergy);
+    if (energyHistory.length > ENERGY_HISTORY_MAX) energyHistory.shift();
+  }, 1000);
+}
+function stopEnergyMonitor() {
+  if (energyMonRaf !== null) cancelAnimationFrame(energyMonRaf);
+  if (energyMonInterval !== null) clearInterval(energyMonInterval);
+  energyMonRaf = null;
+  energyMonInterval = null;
+}
+
+/** ============ (v1.7.6 #10) Mix report state ============ */
+let reportEntries: MixReportEntry[] = [];
+let reportFx: Record<string, number> = {};
+function logFx(name: string) { reportFx[name] = (reportFx[name] ?? 0) + 1; }
+function pushReportEntry(idx: number, t: TrackRecord, transitionInto?: string) {
+  if (recordingStartMs === 0) return;
+  const elapsed = (Date.now() - recordingStartMs) / 1000;
+  reportEntries.push(trackToReportEntry(t, idx, elapsed, transitionInto, lastInstantEnergy));
+}
+
+/** ============ (v1.7.6 #1) Harmonic Mixing AI ============
+ *  Reordena la cola de modo que cada salto sea Camelot-compatible.
+ *  Pre-llena `t.key` para tracks que no la tengan, usando detectCamelotKey
+ *  contra `getEngine().ctx.decodeAudioData(blob)` cuando sea posible. Si la
+ *  pista no tiene blob accesible, usa el pseudoDetect (determinístico). */
+async function ensureKeysForTracks(tracks: TrackRecord[]): Promise<void> {
+  // Lazy import to avoid a hard dep cycle.
+  const { getTrack } = await import("@/lib/db");
+  const { ctx } = getEngine();
+  for (const t of tracks) {
+    if (t.key) continue;
+    try {
+      const full = await getTrack(t.id);
+      if (!full || !full.blob) continue;
+      const arr = await full.blob.arrayBuffer();
+      const buf = await ctx.decodeAudioData(arr.slice(0));
+      const key = await detectCamelotKey(buf, t.id);
+      // Mutate the in-memory track object only (not persisted DB write — too heavy here).
+      (t as TrackRecord & { key?: CamelotKey }).key = key;
+    } catch { /* keep null */ }
+  }
+}
+
+function planHarmonic(tracks: TrackRecord[]): TrackRecord[] {
+  if (tracks.length < 3) return tracks;
+  const remaining = [...tracks];
+  const out: TrackRecord[] = [];
+  // Start with the lowest-BPM compatible seed.
+  remaining.sort((a, b) => (a.bpm ?? 200) - (b.bpm ?? 200));
+  out.push(remaining.shift()!);
+  while (remaining.length > 0) {
+    const last = out[out.length - 1];
+    const lastKey = last.key as CamelotKey | undefined;
+    let bestIdx = 0;
+    let bestScore = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const cand = remaining[i];
+      let score = 0;
+      const candKey = cand.key as CamelotKey | undefined;
+      if (lastKey && candKey) {
+        score += isCompatible(lastKey, candKey) ? 0 : 50;
+      }
+      // BPM jump penalty
+      if (typeof last.bpm === "number" && typeof cand.bpm === "number") {
+        const jump = Math.abs(cand.bpm - last.bpm) / last.bpm;
+        score += jump * 80;
+      }
+      if (score < bestScore) { bestScore = score; bestIdx = i; }
+    }
+    out.push(remaining.splice(bestIdx, 1)[0]);
+  }
+  return out;
+}
+
+/** ============ (v1.7.6 #3) Loop Roll automático ============ */
+async function loopRollBuildup(id: DeckId): Promise<void> {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm || ds.bpm < 60) return;
+  const beatSec = 60 / ds.bpm;
+  const beatsSeq: number[] = [2, 1, 0.5, 0.25];
+  for (const beats of beatsSeq) {
+    if (cancelRequested) break;
+    try { setLoop(id, Math.max(0.25, beats)); } catch { /* noop */ }
+    await sleep(beatSec * Math.max(0.5, beats) * 1000);
+    try { clearLoop(id); } catch { /* noop */ }
+  }
+  logFx("Loop Roll");
+}
+
+/** ============ (v1.7.6 #6) Reverse + Brake FX ============ */
+async function reverseCensor(id: DeckId, bars: number): Promise<void> {
+  const ds = useApp.getState().decks[id];
+  const beatSec = ds.bpm && ds.bpm > 40 ? 60 / ds.bpm : 0.5;
+  const dur = beatSec * 4 * Math.max(0.5, Math.min(4, bars));
+  try {
+    setReverse(id, true);
+    await sleep(dur * 1000);
+  } finally {
+    try { setReverse(id, false); } catch { /* noop */ }
+  }
+  logFx("Reverse FX");
+}
+
+/** ============ (v1.7.6 #7) Auto Drop Builder ============
+ *  Riser sintético + snare roll antes del drop. Routed to master so the
+ *  recorder captures it. */
+async function autoDropBuilder(seconds: number): Promise<void> {
+  try {
+    const { ctx, master } = getEngine();
+    const t0 = ctx.currentTime;
+    const dur = Math.max(2, Math.min(8, seconds));
+
+    // Riser: sawtooth sweeping 200 → 4000 Hz with a lowpass closing.
+    const out = ctx.createGain();
+    out.gain.value = 0;
+    out.connect(master);
+    out.gain.setValueAtTime(0, t0);
+    out.gain.linearRampToValueAtTime(0.22, t0 + dur * 0.85);
+    out.gain.linearRampToValueAtTime(0, t0 + dur);
+
+    const osc = ctx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(180, t0);
+    osc.frequency.exponentialRampToValueAtTime(4000, t0 + dur);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(700, t0);
+    lp.frequency.exponentialRampToValueAtTime(8000, t0 + dur);
+    osc.connect(lp); lp.connect(out);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+
+    // Snare roll: noise bursts, 1/4 → 1/16 acceleration.
+    const noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const totalHits = Math.max(8, Math.round(dur * 8));
+    let acc = 0;
+    for (let i = 0; i < totalHits; i++) {
+      const k = i / totalHits;
+      const stepSec = (1 - k) * 0.25 + k * 0.06; // 1/4 → 1/16
+      acc += stepSec;
+      if (acc > dur) break;
+      const src = ctx.createBufferSource();
+      src.buffer = noiseBuf;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t0 + acc);
+      g.gain.linearRampToValueAtTime(0.18 * (0.4 + k * 0.6), t0 + acc + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + acc + 0.05);
+      const hp = ctx.createBiquadFilter();
+      hp.type = "highpass"; hp.frequency.value = 1200;
+      src.connect(hp); hp.connect(g); g.connect(master);
+      src.start(t0 + acc); src.stop(t0 + acc + 0.06);
+    }
+
+    setTimeout(() => { try { out.disconnect(); } catch { /* noop */ } }, (dur + 0.4) * 1000);
+    await sleep(dur * 1000);
+    logFx("Drop Builder");
+  } catch (e) { console.warn("[vdj] dropBuilder error", e); }
+}
+
+/** ============ (v1.7.6 #2) Acapella & Instrumental Layering ============
+ *  Aplica vocalCut a la pista entrante (deja instrumental) y reduce el
+ *  vocalCut del outgoing (deja la voz) para crear un "mashup vocal". */
+async function acapellaLayer(fromId: DeckId, toId: DeckId, bars: number): Promise<void> {
+  const ds = useApp.getState().decks[fromId];
+  const beatSec = ds.bpm && ds.bpm > 40 ? 60 / ds.bpm : 0.5;
+  const dur = beatSec * 4 * Math.max(1, Math.min(8, bars));
+  // outgoing → keep vocals (vocalCut = 0); incoming → instrumental (vocalCut = 1).
+  const startTo = useApp.getState().decks[toId].vocalCut ?? 0;
+  await ramp((v) => setDeckVocalCut(toId, v), startTo, 0.95, 1.2);
+  setXfaderPosition(0); // both audible
+  await sleep(dur * 1000);
+  await ramp((v) => setDeckVocalCut(toId, v), 0.95, 0, 1.0);
+  logFx("Acapella Layer");
+}
+
+/** ============ (v1.7.6 #8) Voice Command Mode ============ */
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start(): void;
+  stop(): void;
+  onresult: ((ev: { results: { 0: { transcript: string } }[] & { length: number } }) => void) | null;
+  onerror: ((ev: unknown) => void) | null;
+  onend: (() => void) | null;
+}
+let voiceRec: SpeechRecognitionLike | null = null;
+function startVoiceCommands() {
+  try {
+    const SR = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition
+      ?? (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
+    if (!SR) { toast("Comando por voz no soportado en este navegador"); return; }
+    const settings = useApp.getState().settings;
+    const rec = new SR();
+    rec.lang = settings.vdjVoiceLang || (
+      settings.lang === "es" ? "es-ES" : settings.lang === "pt" ? "pt-BR" :
+      settings.lang === "fr" ? "fr-FR" : settings.lang === "it" ? "it-IT" : "en-US"
+    );
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.onresult = (ev) => {
+      try {
+        const last = ev.results.length - 1;
+        const txt = (ev.results[last][0].transcript || "").toLowerCase().trim();
+        handleVoiceCommand(txt);
+      } catch { /* noop */ }
+    };
+    rec.onerror = () => { /* ignore */ };
+    rec.onend = () => {
+      // Auto-restart while VDJ is running.
+      if (running && useApp.getState().settings.vdjVoiceCommands === true) {
+        try { rec.start(); } catch { /* noop */ }
+      }
+    };
+    rec.start();
+    voiceRec = rec;
+    toast.success("🎤 Comandos por voz activos");
+  } catch (e) { console.warn("[vdj] voice cmd error", e); }
+}
+function stopVoiceCommands() {
+  if (voiceRec) {
+    try { voiceRec.stop(); } catch { /* noop */ }
+    voiceRec = null;
+  }
+}
+function handleVoiceCommand(txt: string) {
+  if (!txt) return;
+  // Spanish + English keywords
+  if (/(siguiente|next|skip)/.test(txt)) {
+    setMessage("🎤 Comando: siguiente"); cancelRequested = false;
+    // Force-cut by jumping outgoing position to 99% to trigger transition.
+    const ds = useApp.getState().decks[currentDeck];
+    if (ds.duration > 0) seek(currentDeck, ds.duration * 0.99);
+    toast("⏭ Siguiente pista");
+  } else if (/(pausa|pause|stop|para)/.test(txt)) {
+    pause(currentDeck); toast("⏸ Pausado");
+  } else if (/(play|reanuda|resume|continua)/.test(txt)) {
+    play(currentDeck, useApp.getState().decks[currentDeck].position * (useApp.getState().decks[currentDeck].duration || 0));
+    toast("▶ Continúa");
+  } else if (/(reverse|reversa|atras|reverso)/.test(txt)) {
+    void reverseCensor(currentDeck, 1);
+  } else if (/(drop|builder)/.test(txt)) {
+    void autoDropBuilder(4);
+  } else if (/(scratch|raya)/.test(txt)) {
+    void performScratch(currentDeck, 4);
+  } else if (/(reporte|report|pdf)/.test(txt)) {
+    toast("📄 El reporte se generará al finalizar");
+  }
+}
+
+/** ============ (v1.7.6 #9) Auto Mashup Generator ============
+ *  Reproduce 2 pistas simultáneamente con stems split + acapella layering
+ *  durante un período largo (16 compases). Llama a mashupDoubleDrop como
+ *  base, pero precedido por acapellaLayer y suceedido por loopRoll. */
+async function autoMashupSequence(fromId: DeckId, toId: DeckId): Promise<void> {
+  await acapellaLayer(fromId, toId, 4);
+  await mashupDoubleDrop(fromId, toId, 8);
+  await loopRollBuildup(toId);
+  logFx("Auto Mashup");
 }
 
 /** Build a CDJ-style .cue sheet referencing the given audio file. */
