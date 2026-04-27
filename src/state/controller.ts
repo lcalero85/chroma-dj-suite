@@ -729,6 +729,50 @@ export function endSlice(id: DeckId) {
   if (st.wasPlaying && !d.isPlaying) play(id, ghost);
 }
 
+/**
+ * Pitch Play — Pioneer/Serato style. Plays a hot cue with a temporary
+ * pitch shift (semitones) by adjusting the playback rate. Each press
+ * jumps to the cue and applies the shift; release restores the deck's
+ * original pitch (from the user's pitch fader). Without keyLock the song
+ * also changes tempo — same trade-off Serato makes when keyLock is off.
+ */
+const pitchPlayState = new Map<DeckId, { prevRate: number; prevOffset: number; wasPlaying: boolean }>();
+
+export function beginPitchPlay(id: DeckId, slot: number, semitones: number) {
+  const ds = useApp.getState().decks[id];
+  const cue = ds.hotCues.find((c) => c.id === slot);
+  if (!cue) return;
+  const d = getDeck(id);
+  if (!d.buffer) return;
+  // Save previous state if not already in a press (allow re-trigger across pads).
+  const prev = pitchPlayState.get(id);
+  if (!prev) {
+    pitchPlayState.set(id, {
+      prevRate: d.playbackRate,
+      prevOffset: currentTime(id),
+      wasPlaying: d.isPlaying,
+    });
+  }
+  const baseRate = (prev?.prevRate ?? d.playbackRate);
+  const shift = Math.pow(2, semitones / 12);
+  setPlaybackRate(id, baseRate * shift);
+  seek(id, cue.pos);
+  if (!d.isPlaying) play(id, cue.pos);
+}
+
+export function endPitchPlay(id: DeckId) {
+  const st = pitchPlayState.get(id);
+  if (!st) return;
+  pitchPlayState.delete(id);
+  setPlaybackRate(id, st.prevRate);
+  // Stop the cue if the deck wasn't playing before pitch-play started.
+  if (!st.wasPlaying) {
+    const d = getDeck(id);
+    if (d.isPlaying) pause(id);
+    useApp.getState().updateDeck(id, { isPlaying: false });
+  }
+}
+
 // ===== Voice-over presets =====
 export function setVoicePreset(presetId: string) {
   const p = VOICE_PRESETS.find((x) => x.id === presetId) ?? VOICE_PRESETS[0];
