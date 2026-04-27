@@ -123,6 +123,8 @@ export function LibraryPanel() {
   const selectedFolderId = useApp((s) => s.selectedFolderId);
   const setSelectedFolder = useApp((s) => s.setSelectedFolder);
   const segments = useApp((s) => s.segments);
+  const vdjSelected = useApp((s) => s.settings.vdjSelectedTrackIds ?? []);
+  const vdjSelectedSet = useMemo(() => new Set(vdjSelected), [vdjSelected]);
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -772,7 +774,7 @@ export function LibraryPanel() {
                 <td style={{ padding: 6, textAlign: "center" }}>
                   <input
                     type="checkbox"
-                    checked={(useApp.getState().settings.vdjSelectedTrackIds ?? []).includes(t.id)}
+                    checked={vdjSelectedSet.has(t.id)}
                     onChange={(e) => { e.stopPropagation(); toggleVdjTrack(t.id); }}
                     onClick={(e) => e.stopPropagation()}
                     title="Incluir en la mezcla del Virtual DJ"
