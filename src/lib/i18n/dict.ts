@@ -680,6 +680,10 @@ export const DICT = {
     viewModeStudio: "Studio (extended)",
     viewModeBooth: "Booth (compact)",
     viewModeTip: "Booth mode enlarges controls and hides non-essential panels for live performance.",
+    autoMixProPanel: "AutoMix Pro panel",
+    autoMixProPanelTip: "Show the AutoMix Pro engine and visual panel inside the mixer",
+    smartFader: "Smart Fader",
+    smartFaderTip: "Automatically moves the crossfader as the master deck nears its smart exit point",
 
     // ===== Session metrics =====
     sessionMetrics: "Session metrics",
@@ -1603,6 +1607,10 @@ export const DICT = {
     viewModeStudio: "Estudio (extendido)",
     viewModeBooth: "Cabina (compacto)",
     viewModeTip: "El modo Cabina agranda los controles y oculta paneles no esenciales para performance en vivo.",
+    autoMixProPanel: "Panel de mezcla automática Pro",
+    autoMixProPanelTip: "Muestra el motor de mezcla automática Pro y su panel visual dentro del mezclador",
+    smartFader: "Fader inteligente",
+    smartFaderTip: "Mueve automáticamente el crossfader cuando el deck principal se acerca a su punto de salida inteligente",
 
     sessionMetrics: "Métricas de sesión",
     sessionMetricsTime: "Tiempo de mezcla",
