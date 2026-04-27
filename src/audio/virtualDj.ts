@@ -23,6 +23,10 @@ import {
   setDeckFilter,
   setLoop,
   clearLoop,
+  setDeckGain,
+  beginScratchDeck,
+  scratchDeck,
+  endScratchDeck,
 } from "@/state/controller";
 import { setPlaybackRate } from "@/audio/deck";
 import { analyzeLoudness } from "@/audio/analysis/loudness";
@@ -30,6 +34,7 @@ import { startRecording, stopRecording, isRecording } from "@/audio/recorder";
 import { listRecordings, putRecording, uid, type TrackRecord } from "@/lib/db";
 import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
+import { getEngine } from "@/audio/engine";
 
 export type VdjGenre =
   | "auto"
@@ -115,7 +120,14 @@ function getQueue(): TrackRecord[] {
   const s = useApp.getState();
   const selected = new Set(s.settings.vdjSelectedTrackIds ?? []);
   const genre = (s.settings.vdjGenre ?? "auto").toLowerCase();
-  const allSelected = s.tracks.filter((t) => selected.has(t.id));
+  // Preserve order of first appearance; ensure NO duplicates.
+  const seen = new Set<string>();
+  const allSelected = s.tracks.filter((t) => {
+    if (!selected.has(t.id)) return false;
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
   if (genre === "auto") return allSelected;
   const filtered = allSelected.filter((t) => {
     const tags = (t.tags ?? []).map((x) => x.toLowerCase());
@@ -272,9 +284,17 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
   const fast = genre === "drumandbass" || genre === "dubstep" || genre === "techno";
   const dreamy = genre === "ambient" || genre === "lofi" || genre === "trance";
 
+  // 0) DJ-name announcement on the master bus (and out loud)
+  announceDjName();
+
   // 1) Filter sweep up
   await filterSweep(id, 0, fast ? 0.5 : 0.7, dreamy ? 4 : 2.5);
   if (cancelRequested) { setDeckFilter(id, 0); return; }
+
+  // 1.5) EQ kill on the lows briefly for a "filter drop" feel
+  const ds2 = useApp.getState().decks[id];
+  const startLo = ds2.lo;
+  await ramp((v) => setEQ(id, "lo", v), startLo, -0.9, 0.6);
 
   // 2) Beat loop (if BPM known) — 4 beats for fast, 8 for slow
   if (ds.bpm) {
@@ -287,11 +307,31 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
       param1: 0.55,
       param2: 0.5,
     });
+    // Add a hot cue at the loop entry for future reference
+    try { addHotCue(id, 1); } catch { /* noop */ }
+    // Mid-loop gain pump (down + back up) to feel like a "ducker"
+    void ramp((v) => setDeckGain(id, v), 1, 0.55, (60 / ds.bpm) * (beats / 2));
     await sleep((60 / ds.bpm) * beats * 1000 * 1.0);
+    // Restore gain
+    setDeckGain(id, 1);
     try { clearLoop(id); } catch { /* ignore */ }
     await fxWetRamp(2, 0.55, 0, 1.5);
     useApp.getState().updateFx(2, { kind: "off", wet: 0 });
   }
+
+  // 2.5) Restore lows
+  await ramp((v) => setEQ(id, "lo", v), -0.9, 0, 0.8);
+
+  // 2.6) A short scratch flourish (genre-aware)
+  if (!dreamy) {
+    await performScratch(id, fast ? 4 : 2);
+  }
+
+  // 2.7) Tiny pitch bend (±2%) — micro-beatmatch feel
+  const dsP = useApp.getState().decks[id];
+  const startPitch = dsP.pitch;
+  await ramp((v) => setDeckPitch(id, v), startPitch, Math.min(1, startPitch + 0.025), 0.6);
+  await ramp((v) => setDeckPitch(id, v), Math.min(1, startPitch + 0.025), startPitch, 0.6);
 
   // 3) Filter sweep back to neutral
   await filterSweep(id, 0.7, 0, 2);
@@ -313,6 +353,150 @@ async function waitUntilExitPoint(id: DeckId, leadSec: number) {
 /** Sanitize a string for filename use. */
 function safeName(s: string): string {
   return s.replace(/[\\/:*?"<>|]+/g, "_").trim().slice(0, 64) || "session";
+}
+
+/** ============ Robotic DJ-name announcement ============
+ * Plays the DJ name through:
+ *  1) Web Speech API (live, audible in the room)
+ *  2) A short FM-modulated robotic stinger routed through the master bus,
+ *     so the recording captures it even though Web Speech can't be tapped.
+ */
+function speakRobotic(text: string) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.85;
+    u.pitch = 0.2;     // very low → robotic
+    u.volume = 1;
+    const lang = useApp.getState().settings.lang;
+    u.lang = lang === "es" ? "es-ES"
+      : lang === "pt" ? "pt-BR"
+      : lang === "fr" ? "fr-FR"
+      : lang === "it" ? "it-IT"
+      : "en-US";
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch { /* noop */ }
+}
+
+/** Robotic stinger: ring-modulated formant burst routed to the master bus
+ * so it's captured by the recorder. Length depends on text length. */
+function playRoboticStinger(text: string) {
+  try {
+    const { ctx, master } = getEngine();
+    const now = ctx.currentTime;
+    const syllables = Math.max(2, Math.min(10, Math.round(text.length / 2)));
+    const totalDur = Math.min(2.4, 0.18 * syllables + 0.3);
+
+    const out = ctx.createGain();
+    out.gain.value = 0;
+    out.connect(master);
+
+    // Master envelope (overall volume)
+    out.gain.setValueAtTime(0, now);
+    out.gain.linearRampToValueAtTime(0.18, now + 0.04);
+    out.gain.linearRampToValueAtTime(0.18, now + totalDur - 0.15);
+    out.gain.linearRampToValueAtTime(0, now + totalDur);
+
+    // Carrier (sawtooth) — vocal-like
+    const carrier = ctx.createOscillator();
+    carrier.type = "sawtooth";
+    carrier.frequency.value = 110;
+
+    // Modulator (sine LFO around 30Hz → ring-mod buzz = robotic timbre)
+    const mod = ctx.createOscillator();
+    mod.type = "sine";
+    mod.frequency.value = 32;
+    const modGain = ctx.createGain();
+    modGain.gain.value = 80;
+    mod.connect(modGain);
+    modGain.connect(carrier.frequency);
+
+    // Bandpass formant
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 1100;
+    bp.Q.value = 8;
+
+    // Subtle high-shelf for "tinny" robot edge
+    const hs = ctx.createBiquadFilter();
+    hs.type = "highshelf";
+    hs.frequency.value = 3000;
+    hs.gain.value = 4;
+
+    carrier.connect(bp);
+    bp.connect(hs);
+    hs.connect(out);
+
+    // Syllable gate — chops the carrier into syllable-like bursts
+    const gate = ctx.createGain();
+    gate.gain.value = 0;
+    hs.disconnect();
+    hs.connect(gate);
+    gate.connect(out);
+    const sylDur = totalDur / syllables;
+    for (let i = 0; i < syllables; i++) {
+      const t0 = now + i * sylDur;
+      gate.gain.setValueAtTime(0, t0);
+      gate.gain.linearRampToValueAtTime(1, t0 + sylDur * 0.15);
+      gate.gain.linearRampToValueAtTime(1, t0 + sylDur * 0.7);
+      gate.gain.linearRampToValueAtTime(0, t0 + sylDur * 0.95);
+      // Vary pitch per syllable for "speech" feel
+      const f = 95 + (i % 4) * 18;
+      carrier.frequency.setValueAtTime(f, t0);
+    }
+
+    carrier.start(now);
+    mod.start(now);
+    carrier.stop(now + totalDur + 0.05);
+    mod.stop(now + totalDur + 0.05);
+    setTimeout(() => { try { out.disconnect(); } catch { /* noop */ } }, (totalDur + 0.2) * 1000);
+  } catch (err) {
+    console.warn("[vdj] stinger error", err);
+  }
+}
+
+function announceDjName() {
+  const name = (useApp.getState().settings.djName || "").trim();
+  if (!name) return;
+  // Live spoken voice + recorded robotic stinger
+  playRoboticStinger(name);
+  speakRobotic(name);
+}
+
+/** Quick simulated scratch on the given deck — back-and-forth nudges. */
+async function performScratch(id: DeckId, scratches = 3) {
+  try {
+    await beginScratchDeck(id);
+    for (let i = 0; i < scratches; i++) {
+      scratchDeck(id, -0.12);
+      await sleep(80);
+      scratchDeck(id, 0.18);
+      await sleep(80);
+    }
+    endScratchDeck(id);
+  } catch { /* noop */ }
+}
+
+/** Smoothly ramp a numeric setter from `from` to `to` over `seconds`. */
+async function ramp(
+  setter: (v: number) => void,
+  from: number,
+  to: number,
+  seconds: number,
+) {
+  const t0 = performance.now();
+  return new Promise<void>((resolve) => {
+    const step = () => {
+      if (cancelRequested) { setter(to); resolve(); return; }
+      const t = (performance.now() - t0) / (seconds * 1000);
+      const k = Math.min(1, t);
+      setter(from + (to - from) * k);
+      if (k < 1) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
 }
 
 export async function startVirtualDj(): Promise<void> {
@@ -365,6 +549,8 @@ export async function startVirtualDj(): Promise<void> {
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
+    // Opening DJ-name shoutout (delayed so the track has a moment to breathe)
+    setTimeout(() => { if (running && !cancelRequested) announceDjName(); }, 1500);
 
     for (let i = 1; i < queue.length; i++) {
       if (cancelRequested) break;
@@ -374,16 +560,16 @@ export async function startVirtualDj(): Promise<void> {
 
       const fxCfg = GENRE_FX[genre] ?? GENRE_FX.auto;
 
-      // Mid-track flair: spice up the playing deck once it's well underway,
-      // before we head to the exit point.
+      // Mid-track flair: spice up the playing deck around ~50% through.
+      // We DO NOT wait for the track to finish — we cut into the next song
+      // earlier (~70-78%) so the mix stays energetic.
       const dsCur = useApp.getState().decks[fromId];
       const durCur = dsCur.duration || 0;
       if (durCur > 0) {
-        // Wait until ~55% of the track to spice
         while (!cancelRequested) {
           const ds2 = useApp.getState().decks[fromId];
           const pos = (ds2.position ?? 0) * (ds2.duration || 0);
-          if (pos >= (ds2.duration || 0) * 0.55) break;
+          if (pos >= (ds2.duration || 0) * 0.50) break;
           if (!ds2.isPlaying) break;
           await sleep(400);
         }
@@ -393,8 +579,16 @@ export async function startVirtualDj(): Promise<void> {
         }
       }
 
-      // Wait until the current deck is near its end before transitioning
-      await waitUntilExitPoint(fromId, fxCfg.xfadeSec + 2);
+      // Cut early — wait until ~72% of the track (or 75% for short tracks),
+      // never letting it run out completely.
+      const cutPct = durCur > 240 ? 0.72 : 0.78;
+      while (!cancelRequested) {
+        const ds2 = useApp.getState().decks[fromId];
+        const pos = (ds2.position ?? 0) * (ds2.duration || 0);
+        if (pos >= (ds2.duration || 0) * cutPct) break;
+        if (!ds2.isPlaying) break;
+        await sleep(300);
+      }
       if (cancelRequested) break;
 
       // Preload next on the other deck
@@ -414,19 +608,28 @@ export async function startVirtualDj(): Promise<void> {
       else seek(toId, 0);
       play(toId, useApp.getState().decks[toId].cuePoint || 0);
 
-      // Pre-transition: filter sweep down on outgoing for smoother handoff
+      // Pre-transition: scratch flourish on outgoing as a "DJ mark"
+      void performScratch(fromId, 2);
+      // Filter sweep down on outgoing for smoother handoff
       void filterSweep(fromId, 0, -0.6, Math.min(3, fxCfg.xfadeSec / 2));
+      // Gain pump down on outgoing during the crossfade
+      void ramp((v) => setDeckGain(fromId, v), 1, 0.7, fxCfg.xfadeSec * 0.5);
       // Apply genre FX during transition with a wet ramp
       applyGenreFx(genre);
       setMessage(`Mezclando → ${next.title}`);
       await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
-      // Reset outgoing filter
+      // Reset outgoing filter + gain
       setDeckFilter(fromId, 0);
+      setDeckGain(fromId, 1);
       // Stop the outgoing deck cleanly
       pause(fromId);
       // Ramp down FX
       await fxWetRamp(1, fxCfg.wet, 0, 1.5);
       clearGenreFx();
+      // Light boost on the new track's lows for a fresh-energy feel
+      setEQ(toId, "lo", 0);
+      void ramp((v) => setEQ(toId, "lo", v), 0, 0.3, 0.8);
+      setTimeout(() => { try { setEQ(toId, "lo", 0); } catch { /* noop */ } }, 4000);
 
       currentDeck = toId;
       currentIndex = i;
