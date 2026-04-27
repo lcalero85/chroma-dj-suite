@@ -279,6 +279,15 @@ function VirtualDjSettings() {
           disabled={!enabled}
         />
       </Row>
+      <Row label="Grabar pantalla (video)">
+        <input
+          type="checkbox"
+          checked={settings.vdjScreenRecord === true}
+          onChange={(e) => update({ vdjScreenRecord: e.target.checked })}
+          disabled={!enabled}
+          title="Captura la pantalla mientras el Virtual DJ mezcla. Al iniciar te pedirá elegir qué pantalla/ventana compartir."
+        />
+      </Row>
       <Row label="Nombre de la sesión">
         <input
           type="text"

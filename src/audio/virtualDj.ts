@@ -32,6 +32,7 @@ import {
 import { setPlaybackRate } from "@/audio/deck";
 import { analyzeLoudness } from "@/audio/analysis/loudness";
 import { startRecording, stopRecording, isRecording } from "@/audio/recorder";
+import { startScreenRecording, stopScreenRecording, isScreenRecording, downloadBlob } from "@/audio/screenRecorder";
 import { listRecordings, putRecording, uid, type TrackRecord } from "@/lib/db";
 import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
@@ -1380,6 +1381,19 @@ export async function startVirtualDj(): Promise<void> {
     }
   }
 
+  // (v1.7.8) Screen recording — capture the screen for the whole VDJ set.
+  // getDisplayMedia requires a user gesture; we're called from the TopBar
+  // click handler so the picker shows up immediately.
+  if (settings.vdjScreenRecord === true && !isScreenRecording()) {
+    try {
+      const ok = await startScreenRecording();
+      if (ok) toast.success("📹 Grabación de pantalla iniciada");
+      else toast.error("No se pudo iniciar la grabación de pantalla");
+    } catch (err) {
+      console.warn("[vdj] screen rec error", err);
+    }
+  }
+
   // (v1.7.5 #6) Mic shoutout sidechain — duck master when user speaks.
   if (settings.vdjMicShoutout === true) {
     try { startMicShoutoutMonitor(); } catch (err) { console.warn("[vdj] mic shoutout error", err); }
@@ -1808,6 +1822,23 @@ export async function startVirtualDj(): Promise<void> {
     }
     // (v1.7.5 #6) Stop mic shoutout monitor.
     try { stopMicShoutoutMonitor(); } catch { /* noop */ }
+    // (v1.7.8) Stop screen recording and download the resulting video.
+    if (isScreenRecording()) {
+      try {
+        const res = await stopScreenRecording();
+        if (res) {
+          const sname = safeName(settings.vdjSessionName ?? "");
+          const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+          const fname = sname
+            ? `VirtualDJ_${sname}_${stamp}.${res.ext}`
+            : `VirtualDJ_${stamp}.${res.ext}`;
+          downloadBlob(res.blob, fname);
+          toast.success(`📹 Video guardado: ${fname}`);
+        }
+      } catch (err) {
+        console.warn("[vdj] error guardando captura de pantalla", err);
+      }
+    }
     // (v1.7.6) Stop energy monitor + voice commands.
     try { stopEnergyMonitor(); } catch { /* noop */ }
     try { stopVoiceCommands(); } catch { /* noop */ }

@@ -274,6 +274,8 @@ export interface SettingsState {
   vdjGenre?: string;
   /** Virtual DJ — grabar la sesión completa (default true). */
   vdjRecord?: boolean;
+  /** Virtual DJ — grabar también captura de pantalla en video (default false). */
+  vdjScreenRecord?: boolean;
   /** Virtual DJ — nombre de la sesión (opcional). */
   vdjSessionName?: string;
   /** Virtual DJ — habilitar el panel/botón en TopBar. Default false. */
