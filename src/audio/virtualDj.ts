@@ -1033,6 +1033,8 @@ export async function startVirtualDj(): Promise<void> {
   currentIndex = 0;
   currentDeck = "A";
   recordingActive = false;
+  cuePoints = [];
+  recordingStartMs = 0;
   setMessage(`Iniciando Virtual DJ (${queue.length} pistas)`);
 
   // Start recording if requested
@@ -1040,9 +1042,27 @@ export async function startVirtualDj(): Promise<void> {
     try {
       await startRecording();
       recordingActive = true;
+      recordingStartMs = Date.now();
       toast.success("Grabando sesión Virtual DJ");
     } catch (err) {
       console.warn("[vdj] no se pudo iniciar grabación", err);
+    }
+  }
+
+  // (v1.7.5 #6) Mic shoutout sidechain — duck master when user speaks.
+  if (settings.vdjMicShoutout === true) {
+    try { startMicShoutoutMonitor(); } catch (err) { console.warn("[vdj] mic shoutout error", err); }
+  }
+  // (v1.7.5 #10) Auto-start live stream of this set, if user enabled it.
+  if (settings.vdjAutoStream === true) {
+    const cfg = useApp.getState().stream;
+    if (cfg.serverUrl && cfg.password && !isStreaming()) {
+      try {
+        await startStream(cfg);
+        toast.success("📡 Streaming en vivo iniciado");
+      } catch (err) {
+        console.warn("[vdj] stream start failed", err);
+      }
     }
   }
 
@@ -1061,6 +1081,12 @@ export async function startVirtualDj(): Promise<void> {
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
+    // (v1.7.5 #9) capture cue point for first track
+    pushCue(0, queue[0]);
+    // (v1.7.5 #10) Push current track metadata to the live stream.
+    if (settings.vdjAutoStream === true && isStreaming()) {
+      void updateStreamMetadata(queue[0].title || "Track 1", queue[0].artist || "");
+    }
     // Opening DJ-name shoutout (any mode except 'mid'-only mode)
     const annMode = settings.vdjAnnounceMode ?? "mid";
     if (annMode !== "mid") {
