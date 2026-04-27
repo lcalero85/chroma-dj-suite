@@ -1314,6 +1314,7 @@ async function battleMode(fromId: DeckId, toId: DeckId, bars: number, rounds: nu
 export async function startVirtualDj(): Promise<void> {
   if (running) { toast.error("Virtual DJ ya está corriendo"); return; }
   const queue = getQueue();
+  // mutable working copy for harmonic re-ordering
   if (queue.length === 0) {
     const s = useApp.getState();
     const selectedCount = (s.settings.vdjSelectedTrackIds ?? []).length;
