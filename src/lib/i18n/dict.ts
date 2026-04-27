@@ -86,6 +86,8 @@ export const DICT = {
     gridHalveBpm: "Halve track BPM (½)",
     gridDoubleBpm: "Double track BPM (×2)",
     gridOffset: "off",
+    tempoLockBtn: "TEMPO LOCK",
+    tempoLockTitle: "Master Tempo Lock — continuously syncs every other deck's BPM to the master deck",
     pro: "PRO",
     bpm: "BPM",
     bpmNoTrack: "No track",
