@@ -1822,6 +1822,23 @@ export async function startVirtualDj(): Promise<void> {
     }
     // (v1.7.5 #6) Stop mic shoutout monitor.
     try { stopMicShoutoutMonitor(); } catch { /* noop */ }
+    // (v1.7.8) Stop screen recording and download the resulting video.
+    if (isScreenRecording()) {
+      try {
+        const res = await stopScreenRecording();
+        if (res) {
+          const sname = safeName(settings.vdjSessionName ?? "");
+          const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+          const fname = sname
+            ? `VirtualDJ_${sname}_${stamp}.${res.ext}`
+            : `VirtualDJ_${stamp}.${res.ext}`;
+          downloadBlob(res.blob, fname);
+          toast.success(`📹 Video guardado: ${fname}`);
+        }
+      } catch (err) {
+        console.warn("[vdj] error guardando captura de pantalla", err);
+      }
+    }
     // (v1.7.6) Stop energy monitor + voice commands.
     try { stopEnergyMonitor(); } catch { /* noop */ }
     try { stopVoiceCommands(); } catch { /* noop */ }
