@@ -797,22 +797,26 @@ export async function startVirtualDj(): Promise<void> {
       // Pro outro: filter sweep down + echo tail + sustained brake + reverb tail
       if (!cancelRequested && settings.vdjUseOutro !== false) {
         setMessage(`Outro profesional…`);
-        const brakeSec = Math.max(1, Math.min(8, settings.vdjBrakeSec ?? 3.5));
+        const lvlOut = getIntensity();
+        // Hard = brake más corto y seco; soft = brake más largo y dramático.
+        const brakeBase = settings.vdjBrakeSec ?? 3.5;
+        const brakeSec = Math.max(1, Math.min(8, brakeBase * (1 / lvlOut.xfadeMul)));
         // Final goodbye announce
         if (annMode === "every" || annMode === "start") announceDjName();
         // Sweep + echo simultaneously
-        void filterSweep(currentDeck, 0, -0.9, brakeSec * 0.8);
+        void filterSweep(currentDeck, 0, -lvlOut.filterDepth, brakeSec * 0.8);
         void echoOut(brakeSec * 1.2);
         // Sustained brake (longer = more dramatic spin-down)
         await brakeStop(currentDeck, brakeSec);
         // Final reverb tail wash on master after the brake
+        const tailWet = Math.max(0.3, Math.min(0.95, 0.85 * lvlOut.fxWetMul));
         useApp.getState().updateFx(3, {
           kind: "reverb",
-          wet: 0.85,
+          wet: tailWet,
           param1: 0.9,
           param2: 0.8,
         });
-        await fxWetRamp(3, 0.85, 0, 3.5);
+        await fxWetRamp(3, tailWet, 0, 3.5);
         useApp.getState().updateFx(3, { kind: "off", wet: 0 });
         setDeckFilter(currentDeck, 0);
       } else {
