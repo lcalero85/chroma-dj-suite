@@ -414,7 +414,8 @@ export function addHotCue(id: DeckId, slot: number) {
     const ds = useApp.getState().decks[id];
     if (ds.bpm) {
       const beat = 60 / ds.bpm;
-      t = Math.round(t / beat) * beat;
+      const off = ds.gridOffsetSec ?? 0;
+      t = Math.round((t - off) / beat) * beat + off;
     }
   }
   const palette = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
