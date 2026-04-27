@@ -27,6 +27,7 @@ import {
   beginScratchDeck,
   scratchDeck,
   endScratchDeck,
+  setDeckVocalCut,
 } from "@/state/controller";
 import { setPlaybackRate } from "@/audio/deck";
 import { analyzeLoudness } from "@/audio/analysis/loudness";
