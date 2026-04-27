@@ -25,6 +25,8 @@ export interface TrackRecord {
   tags?: string[];
   /** Auto-gain offset in dB to normalize loudness on import. */
   gainOffsetDb?: number;
+  /** Auto-detected first transient (seconds) — used as default cue point. */
+  autoCueSec?: number;
   /** Times this track has been loaded onto a deck. */
   playCount?: number;
   /** User-marked favorite for quick access in the library. */
