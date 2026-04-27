@@ -312,6 +312,12 @@ export interface SettingsState {
   vdjBrakeSec?: number;
   /** Reproducir en orden aleatorio las pistas seleccionadas. */
   vdjShuffle?: boolean;
+  /** Intensidad de la mezcla del Virtual DJ:
+   *  - 'soft' = transiciones largas, FX sutiles, pocos scratches, pitch bends mínimos.
+   *  - 'normal' = balanceado (default).
+   *  - 'hard' = transiciones más cortas y agresivas, FX más mojados, scratches más
+   *     frecuentes, EQ kills más profundos, loops más cortos, "ácido". */
+  vdjIntensity?: "soft" | "normal" | "hard";
 }
 
 export interface SessionStats {
