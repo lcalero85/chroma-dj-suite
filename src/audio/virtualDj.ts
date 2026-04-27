@@ -1704,11 +1704,11 @@ export async function startVirtualDj(): Promise<void> {
           await sleep(400);
         }
         if (!cancelRequested) {
-          setMessage(`Live FX en ${currentDeck}`);
+          setMessage(vt("vdjLiveFx", { deck: currentDeck }));
           await spiceCurrent(currentDeck, settings.vdjMoodAdaptive === true ? "ambient" : genre);
         }
       }
-      setMessage(`Esperando final de la última pista`);
+      setMessage(vt("vdjWaitingLast"));
       // Wait until ~5s before end so we can do a brake outro
       while (!cancelRequested) {
         const ds = useApp.getState().decks[currentDeck];
@@ -1720,7 +1720,7 @@ export async function startVirtualDj(): Promise<void> {
       }
       // Pro outro: filter sweep down + echo tail + sustained brake + reverb tail
       if (!cancelRequested && settings.vdjUseOutro !== false) {
-        setMessage(`Outro profesional…`);
+        setMessage(vt("vdjOutroPro"));
         const lvlOut = getIntensity();
         // Hard = brake más corto y seco; soft = brake más largo y dramático.
         const brakeBase = settings.vdjBrakeSec ?? 3.5;
