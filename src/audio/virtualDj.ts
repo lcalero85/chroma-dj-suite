@@ -1482,7 +1482,7 @@ export async function startVirtualDj(): Promise<void> {
           await sleep(400);
         }
         if (!cancelRequested) {
-          setMessage(`Live FX en ${fromId}`);
+          setMessage(vt("vdjLiveFx", { deck: fromId }));
           await spiceCurrent(fromId, moodGenre);
           // (v1.7.5 #11) Beatjuggling on slow tracks
           if (settings.vdjBeatjuggle === true) {
@@ -1490,7 +1490,7 @@ export async function startVirtualDj(): Promise<void> {
             const maxBpm = settings.vdjBeatjuggleMaxBpm ?? 100;
             const prob = Math.max(0, Math.min(1, settings.vdjBeatjuggleProb ?? 0.4));
             if (dsB.bpm && dsB.bpm > 40 && dsB.bpm <= maxBpm && Math.random() < prob) {
-              setMessage(`🤹 Beatjuggle ${fromId}`);
+              setMessage(vt("vdjBeatjuggle", { deck: fromId }));
               await beatjuggle(fromId, otherDeck(fromId), 2);
             }
           }
