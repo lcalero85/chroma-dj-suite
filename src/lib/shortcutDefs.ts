@@ -25,6 +25,21 @@ export const SHORTCUT_DEFS: ShortcutDef[] = [
   { id: "stopA",   label: "Stop Deck A", group: "Decks", default: "KeyU" },
   { id: "brakeAB", label: "Brake (B if Shift, else A)", group: "Decks", default: "KeyB" },
   { id: "reverseAB", label: "Reverse (B if Shift, else A)", group: "Decks", default: "KeyV" },
+  // Decks C & D (only active when 4 decks are enabled)
+  { id: "playC",   label: "Play / Pause Deck C", group: "Decks C/D", default: "KeyG" },
+  { id: "playD",   label: "Play / Pause Deck D", group: "Decks C/D", default: "KeyH" },
+  { id: "cueC",    label: "Cue Deck C", group: "Decks C/D", default: "KeyE" },
+  { id: "cueD",    label: "Cue Deck D", group: "Decks C/D", default: "KeyY" },
+  { id: "syncC",   label: "Sync Deck C", group: "Decks C/D", default: "KeyD" },
+  { id: "syncD",   label: "Sync Deck D", group: "Decks C/D", default: "KeyF" },
+  { id: "brakeC",  label: "Brake Deck C", group: "Decks C/D", default: "KeyI" },
+  { id: "brakeD",  label: "Brake Deck D", group: "Decks C/D", default: "KeyZ" },
+  { id: "reverseC", label: "Reverse Deck C", group: "Decks C/D", default: "KeyX" },
+  { id: "reverseD", label: "Reverse Deck D", group: "Decks C/D", default: "KeyC" },
+  { id: "jumpCback", label: "Beat jump Deck C −4", group: "Decks C/D", default: "Comma" },
+  { id: "jumpCfwd",  label: "Beat jump Deck C +4", group: "Decks C/D", default: "Period" },
+  { id: "jumpDback", label: "Beat jump Deck D −4", group: "Decks C/D", default: "Minus" },
+  { id: "jumpDfwd",  label: "Beat jump Deck D +4", group: "Decks C/D", default: "Equal" },
   // Mix
   { id: "automix", label: "Auto-mix between decks", group: "Mix", default: "KeyM" },
   { id: "tap",     label: "Tap tempo", group: "Mix", default: "KeyT" },
@@ -32,6 +47,8 @@ export const SHORTCUT_DEFS: ShortcutDef[] = [
   { id: "micToggle", label: "Voice-over ON/OFF", group: "Mix", default: "KeyN" },
   { id: "radioNext", label: "Radio: next track (Shift+L)", group: "Mix", default: "KeyL", shift: true },
   { id: "numpadToggle", label: "Toggle numpad target deck", group: "Mix", default: "Backquote" },
+  { id: "smartFaderToggle", label: "Smart Fader ON/OFF", group: "Mix", default: "KeyK", shift: true },
+  { id: "automixProToggle", label: "AutoMix Pro panel ON/OFF", group: "Mix", default: "KeyP", shift: true },
   // Beat jump
   { id: "jumpAback",  label: "Beat jump Deck A −4", group: "Loops", default: "BracketLeft" },
   { id: "jumpAfwd",   label: "Beat jump Deck A +4", group: "Loops", default: "BracketRight" },
@@ -46,8 +63,19 @@ export const SHORTCUT_DEFS: ShortcutDef[] = [
   { id: "npFx1",      label: "Numpad: toggle FX 1", group: "Numpad", default: "NumpadMultiply" },
   { id: "npFx2",      label: "Numpad: toggle FX 2", group: "Numpad", default: "NumpadDivide" },
   { id: "npRecord",   label: "Numpad: rec start/stop", group: "Numpad", default: "NumpadEnter" },
-  // UI
+  // UI / Panels
   { id: "showShortcuts", label: "Show / hide shortcuts panel", group: "UI", default: "Slash", shift: true },
+  { id: "panelLibrary",   label: "Open panel: Library",   group: "Panels", default: "F1" },
+  { id: "panelRecorder",  label: "Open panel: Recorder",  group: "Panels", default: "F2" },
+  { id: "panelFx",        label: "Open panel: FX",        group: "Panels", default: "F3" },
+  { id: "panelSampler",   label: "Open panel: Sampler",   group: "Panels", default: "F4" },
+  { id: "panelStems",     label: "Open panel: Stems",     group: "Panels", default: "F5" },
+  { id: "panelPresets",   label: "Open panel: Presets",   group: "Panels", default: "F6" },
+  { id: "panelRadio",     label: "Open panel: Radio",     group: "Panels", default: "F7" },
+  { id: "panelOnline",    label: "Open panel: Online",    group: "Panels", default: "F8" },
+  { id: "panelSynth",     label: "Open panel: Synth",     group: "Panels", default: "F9" },
+  { id: "panelLiveVocal", label: "Open panel: Live Vocal", group: "Panels", default: "F10" },
+  { id: "panelBeatMaker", label: "Open panel: Beat Maker", group: "Panels", default: "F11" },
 ];
 
 /** Build the full default map (id -> code). */
