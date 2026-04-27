@@ -535,6 +535,106 @@ export function clearLoopSlot(id: DeckId, slot: number) {
   return true;
 }
 
+/**
+ * Loop Roll — Serato/Rekordbox style "press & hold" stutter loop.
+ * While held, the deck repeats `beats` of audio (e.g. 1/8, 1/4, 1/2, 1).
+ * On release, playback returns to the "ghost playhead": the position the
+ * track would have reached if it had kept playing forward through the roll.
+ */
+const rollState = new Map<DeckId, {
+  startedAt: number;       // performance.now() when roll began
+  ghostStart: number;      // currentTime(deck) when roll began (in seconds)
+  prevLoopStart: number | null;
+  prevLoopEnd: number | null;
+  prevLoopActive: boolean;
+  wasPlaying: boolean;
+}>();
+
+export function beginLoopRoll(id: DeckId, beats: number) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const d = getDeck(id);
+  if (!d.buffer) return;
+  // Don't stack rolls
+  if (rollState.has(id)) return;
+  const start = currentTime(id);
+  const end = start + (60 / ds.bpm) * beats;
+  rollState.set(id, {
+    startedAt: performance.now(),
+    ghostStart: start,
+    prevLoopStart: ds.loopStart,
+    prevLoopEnd: ds.loopEnd,
+    prevLoopActive: ds.loopActive,
+    wasPlaying: d.isPlaying,
+  });
+  useApp.getState().updateDeck(id, { loopStart: start, loopEnd: end, loopActive: true });
+  if (!d.isPlaying) play(id, start);
+}
+
+export function endLoopRoll(id: DeckId) {
+  const st = rollState.get(id);
+  if (!st) return;
+  rollState.delete(id);
+  const d = getDeck(id);
+  if (!d.buffer) {
+    useApp.getState().updateDeck(id, {
+      loopStart: st.prevLoopStart,
+      loopEnd: st.prevLoopEnd,
+      loopActive: st.prevLoopActive,
+    });
+    return;
+  }
+  const elapsed = (performance.now() - st.startedAt) / 1000;
+  // Account for current playback rate so the ghost matches what would have played.
+  const ghost = Math.min(d.buffer.duration - 0.05, st.ghostStart + elapsed * d.playbackRate);
+  // Restore previous loop config (usually none) and jump to ghost playhead.
+  useApp.getState().updateDeck(id, {
+    loopStart: st.prevLoopStart,
+    loopEnd: st.prevLoopEnd,
+    loopActive: st.prevLoopActive,
+  });
+  seek(id, ghost);
+  useApp.getState().updateDeck(id, { position: ghost / d.buffer.duration });
+  if (st.wasPlaying && !d.isPlaying) play(id, ghost);
+}
+
+/**
+ * Censor — momentary reverse. While held, audio plays backwards.
+ * On release, returns to forward playback at the "ghost playhead" (where the
+ * track would have been if it had kept playing forward).
+ */
+import { setReverse as engSetReverse } from "@/audio/transport";
+const censorState = new Map<DeckId, { startedAt: number; ghostStart: number; wasPlaying: boolean }>();
+
+export function beginCensor(id: DeckId) {
+  const d = getDeck(id);
+  if (!d.buffer) return;
+  if (censorState.has(id)) return;
+  const ds = useApp.getState().decks[id];
+  censorState.set(id, {
+    startedAt: performance.now(),
+    ghostStart: currentTime(id),
+    wasPlaying: d.isPlaying,
+  });
+  if (!ds.reverse) engSetReverse(id, true);
+  if (!d.isPlaying) play(id, currentTime(id));
+}
+
+export function endCensor(id: DeckId) {
+  const st = censorState.get(id);
+  if (!st) return;
+  censorState.delete(id);
+  const d = getDeck(id);
+  const ds = useApp.getState().decks[id];
+  if (ds.reverse) engSetReverse(id, false);
+  if (!d.buffer) return;
+  const elapsed = (performance.now() - st.startedAt) / 1000;
+  const ghost = Math.min(d.buffer.duration - 0.05, Math.max(0, st.ghostStart + elapsed * d.playbackRate));
+  seek(id, ghost);
+  useApp.getState().updateDeck(id, { position: ghost / d.buffer.duration });
+  if (st.wasPlaying && !d.isPlaying) play(id, ghost);
+}
+
 // ===== Voice-over presets =====
 export function setVoicePreset(presetId: string) {
   const p = VOICE_PRESETS.find((x) => x.id === presetId) ?? VOICE_PRESETS[0];

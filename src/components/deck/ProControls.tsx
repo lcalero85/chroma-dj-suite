@@ -1,5 +1,6 @@
 import { useApp, type DeckId } from "@/state/store";
 import { beatJump, brake, setReverse } from "@/audio/transport";
+import { beginLoopRoll, endLoopRoll, beginCensor, endCensor } from "@/state/controller";
 import { Rewind, FastForward, RotateCcw, Disc, Square } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
@@ -9,6 +10,32 @@ export function ProControls({ id }: Props) {
   const ds = useApp((s) => s.decks[id]);
   const t = useT();
   const toggleSlip = () => useApp.getState().updateDeck(id, { slip: !ds.slip });
+
+  // Press-and-hold helpers — keep the action active while the user holds the
+  // pad (mouse, touch, keyboard). Pointer events handle all input devices.
+  const holdProps = (begin: () => void, end: () => void) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      begin();
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      end();
+    },
+    onPointerCancel: () => end(),
+    onPointerLeave: (e: React.PointerEvent) => {
+      // Only end if pointer button is no longer pressed (avoids double-end).
+      if (e.buttons === 0) end();
+    },
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); begin(); }
+    },
+    onKeyUp: (e: React.KeyboardEvent) => {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); end(); }
+    },
+  });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div className="vdj-label">{t("pro")}</div>
@@ -30,6 +57,32 @@ export function ProControls({ id }: Props) {
         </button>
         <button className="vdj-btn" data-active={ds.reverse} data-tone="danger" title={t("reversePlayback")} style={{ fontSize: 9, padding: "4px 0" }} onClick={() => setReverse(id, !ds.reverse)}>
           <RotateCcw size={10} /> REV
+        </button>
+      </div>
+      {/* Loop Roll pads (press & hold) */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span className="vdj-label" style={{ minWidth: 44, fontSize: 9 }}>{t("loopRoll")}</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4, flex: 1 }}>
+          {[1 / 8, 1 / 4, 1 / 2, 1].map((b) => (
+            <button
+              key={b}
+              className="vdj-btn"
+              title={t("loopRollHold", { beats: b < 1 ? `1/${1 / b}` : String(b) })}
+              style={{ fontSize: 9, padding: "4px 0", touchAction: "none" }}
+              {...holdProps(() => beginLoopRoll(id, b), () => endLoopRoll(id))}
+            >
+              {b < 1 ? `1/${1 / b}` : b}
+            </button>
+          ))}
+        </div>
+        <button
+          className="vdj-btn"
+          data-tone="danger"
+          title={t("censorHold")}
+          style={{ fontSize: 9, padding: "4px 8px", touchAction: "none" }}
+          {...holdProps(() => beginCensor(id), () => endCensor(id))}
+        >
+          {t("censor")}
         </button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 4 }}>
