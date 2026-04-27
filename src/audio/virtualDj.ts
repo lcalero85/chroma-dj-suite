@@ -770,6 +770,91 @@ async function echoFreezeTransition(fromId: DeckId, toId: DeckId): Promise<void>
   setTimeout(() => { try { setEQ(toId, "lo", 0); } catch { /* noop */ } }, 3500);
 }
 
+/** ============ (v1.7.4) Mash-up Double Drop ============
+ * Ambas pistas suenan simultáneamente N compases con EQ split:
+ *   outgoing → mantiene LOWS, pierde HIGHS
+ *   incoming → mantiene HIGHS, pierde LOWS
+ * Termina con un corte limpio al downbeat siguiente.
+ */
+async function mashupDoubleDrop(fromId: DeckId, toId: DeckId, bars: number): Promise<void> {
+  const dsFrom = useApp.getState().decks[fromId];
+  const dsTo = useApp.getState().decks[toId];
+  const beatSec = dsFrom.bpm && dsFrom.bpm > 40 ? 60 / dsFrom.bpm : 0.5;
+  const totalSec = beatSec * 4 * Math.max(2, Math.min(16, bars));
+  // Center the xfader so both decks audible.
+  const startX = useApp.getState().mixer.xfader;
+  void ramp((v) => setXfaderPosition(v), startX, 0, 1.2);
+  // EQ split — gradual to avoid clicks.
+  const fromLoStart = dsFrom.lo, fromHiStart = dsFrom.hi;
+  const toLoStart = dsTo.lo, toHiStart = dsTo.hi;
+  void ramp((v) => setEQ(fromId, "hi", v), fromHiStart, -1.0, 1.5);
+  void ramp((v) => setEQ(toId,   "lo", v), toLoStart,   -1.0, 1.5);
+  // Slight gain duck on both so combined level stays controlled.
+  void ramp((v) => setDeckGain(fromId, v), 1, 0.85, 1.2);
+  void ramp((v) => setDeckGain(toId,   v), 1, 0.95, 1.2);
+  // Hold the double drop.
+  await sleep(totalSec * 1000);
+  if (cancelRequested) {
+    setEQ(fromId, "hi", fromHiStart); setEQ(toId, "lo", toLoStart);
+    setDeckGain(fromId, 1); setDeckGain(toId, 1);
+    return;
+  }
+  // Quick clean cut to incoming on the downbeat.
+  const target: -1 | 1 = toId === "A" ? -1 : 1;
+  await ramp((v) => setXfaderPosition(v), 0, target, beatSec * 2);
+  setEQ(fromId, "hi", 0); setEQ(fromId, "lo", fromLoStart);
+  setEQ(toId, "lo", 0);   setEQ(toId, "hi", toHiStart);
+  setDeckGain(fromId, 1); setDeckGain(toId, 1);
+  pause(fromId);
+  useApp.getState().updateMixer({ masterDeck: toId });
+}
+
+/** ============ (v1.7.4) Stem-aware vocal duck ============
+ * Sube el vocalCut del outgoing durante la transición y lo restaura
+ * cuando el incoming ya suena. Evita choques de voces.
+ */
+async function applyStemAwareDuck(fromId: DeckId, amount: number, seconds: number) {
+  const start = useApp.getState().decks[fromId].vocalCut ?? 0;
+  await ramp((v) => setDeckVocalCut(fromId, v), start, Math.max(0, Math.min(1, amount)), seconds);
+}
+function releaseStemAwareDuck(fromId: DeckId) {
+  try { setDeckVocalCut(fromId, 0); } catch { /* noop */ }
+}
+
+/** ============ (v1.7.4) Battle Mode ============
+ * Alterna decks cada N compases con scratches y cortes secos estilo
+ * turntablism. Termina dejando el incoming como master.
+ */
+async function battleMode(fromId: DeckId, toId: DeckId, bars: number, rounds: number): Promise<void> {
+  const dsFrom = useApp.getState().decks[fromId];
+  const beatSec = dsFrom.bpm && dsFrom.bpm > 40 ? 60 / dsFrom.bpm : 0.5;
+  const roundSec = beatSec * 4 * Math.max(4, Math.min(16, bars));
+  const totalRounds = Math.max(2, Math.min(8, rounds));
+  // Start centered, then slam to fromId.
+  setXfaderPosition(fromId === "A" ? -1 : 1);
+  for (let r = 0; r < totalRounds; r++) {
+    if (cancelRequested) break;
+    const onIncoming = r % 2 === 1;
+    const activeDeck: DeckId = onIncoming ? toId : fromId;
+    const otherD: DeckId = onIncoming ? fromId : toId;
+    // Hard cut crossfader to active deck.
+    setXfaderPosition(activeDeck === "A" ? -1 : 1);
+    useApp.getState().updateMixer({ masterDeck: activeDeck });
+    // Quick scratch flourish on the active deck halfway through.
+    setTimeout(() => { if (!cancelRequested) void performScratch(activeDeck, 2); }, roundSec * 500);
+    // EQ accent: kill lows briefly on the silent deck so its bass doesn't bleed.
+    setEQ(otherD, "lo", -1);
+    await sleep(roundSec * 1000);
+    setEQ(otherD, "lo", 0);
+  }
+  // End on incoming.
+  if (!cancelRequested) {
+    setXfaderPosition(toId === "A" ? -1 : 1);
+    useApp.getState().updateMixer({ masterDeck: toId });
+    pause(fromId);
+  }
+}
+
 export async function startVirtualDj(): Promise<void> {
   if (running) { toast.error("Virtual DJ ya está corriendo"); return; }
   const queue = getQueue();
