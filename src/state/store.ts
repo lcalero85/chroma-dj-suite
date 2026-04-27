@@ -278,6 +278,40 @@ export interface SettingsState {
   vdjSessionName?: string;
   /** Virtual DJ — habilitar el panel/botón en TopBar. Default false. */
   vdjEnabled?: boolean;
+  /** ============ Virtual DJ — comportamientos configurables ============ */
+  /** Duración base del crossfade entre pistas (segundos). 0 = usar el default por género. */
+  vdjXfadeSec?: number;
+  /** % del track al que se corta para entrar a la siguiente (0.5–0.95). */
+  vdjCutAtPct?: number;
+  /** Activar el "spice" (loops + sweeps + scratch + bend) a mitad de pista. */
+  vdjUseSpice?: boolean;
+  /** Aplicar FX de género en cada transición. */
+  vdjUseFx?: boolean;
+  /** Hacer scratch flourish antes de cada transición. */
+  vdjUseScratch?: boolean;
+  /** Hacer pequeños pitch-bends durante el spice. */
+  vdjUsePitchBend?: boolean;
+  /** Aplicar loops automáticos durante el spice. */
+  vdjUseLoops?: boolean;
+  /** Marcar hot-cues automáticamente al cargar cada pista. */
+  vdjUseHotCues?: boolean;
+  /** Sincronizar BPM (sync) al precargar la siguiente pista. */
+  vdjSyncBpm?: boolean;
+  /** Aplicar AutoGain a cada pista cargada. */
+  vdjAutoGain?: boolean;
+  /** Anunciar el nombre del DJ (voz robótica + stinger en master). */
+  vdjAnnounceDj?: boolean;
+  /** Frecuencia de anuncio del nombre del DJ: 'start' = sólo al iniciar,
+   *  'every' = en cada transición, 'mid' = sólo a mitad de pista (default). */
+  vdjAnnounceMode?: "start" | "every" | "mid";
+  /** Volumen del stinger robótico (0..1). */
+  vdjAnnounceVolume?: number;
+  /** Outro profesional al finalizar la última pista (brake + echo + reverb). */
+  vdjUseOutro?: boolean;
+  /** Duración del brake (frenada de plato) al cierre, en segundos. */
+  vdjBrakeSec?: number;
+  /** Reproducir en orden aleatorio las pistas seleccionadas. */
+  vdjShuffle?: boolean;
 }
 
 export interface SessionStats {

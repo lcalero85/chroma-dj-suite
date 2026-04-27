@@ -128,15 +128,25 @@ function getQueue(): TrackRecord[] {
     seen.add(t.id);
     return true;
   });
-  if (genre === "auto") return allSelected;
-  const filtered = allSelected.filter((t) => {
-    const tags = (t.tags ?? []).map((x) => x.toLowerCase());
-    return tags.some((tag) => tag.includes(genre));
-  });
-  // Fallback: if the genre filter eliminates every selected track, fall back
-  // to the full selection rather than returning an empty queue. This keeps
-  // the user's explicit selection respected even when tracks lack tags.
-  return filtered.length > 0 ? filtered : allSelected;
+  let pool = allSelected;
+  if (genre !== "auto") {
+    const filtered = allSelected.filter((t) => {
+      const tags = (t.tags ?? []).map((x) => x.toLowerCase());
+      return tags.some((tag) => tag.includes(genre));
+    });
+    pool = filtered.length > 0 ? filtered : allSelected;
+  }
+  // Optional shuffle (Fisher–Yates) — never repeats a track because the input
+  // already has duplicates removed above.
+  if (s.settings.vdjShuffle) {
+    const arr = [...pool];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    pool = arr;
+  }
+  return pool;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -158,6 +168,7 @@ function syncBpm(masterId: DeckId, incomingId: DeckId) {
 }
 
 function applyAutoGain(id: DeckId) {
+  if (useApp.getState().settings.vdjAutoGain === false) return;
   const d = getDeck(id);
   if (!d.buffer) return;
   try {
@@ -255,15 +266,24 @@ async function crossfadeBetween(fromId: DeckId, toId: DeckId, seconds: number) {
       if (cancelRequested) { resolve(); return; }
       const t = (performance.now() - t0) / (seconds * 1000);
       const k = Math.min(1, t);
-      const v = start + (target - start) * k;
+      // Equal-power S-curve (smoother and more "pro" than linear) — minimizes
+      // perceived dip at the midpoint.
+      const sCurve = 0.5 - 0.5 * Math.cos(Math.PI * k);
+      const v = start + (target - start) * sCurve;
       setXfaderPosition(v);
-      // EQ blend: outgoing hi cut, incoming lo cut
-      setEQ(fromId, "hi", -k * 0.6);
-      setEQ(toId,   "lo", -(1 - k) * 0.6);
+      // EQ blend: outgoing hi+lo cut progressively, incoming lo cut early then released.
+      // Cleaner handoff — kills the bass clash entirely between 35%-65%.
+      const hiCut = sCurve * 0.7;
+      const loCutFrom = k < 0.5 ? sCurve * 0.5 : sCurve * 1.0;
+      const loCutTo = k < 0.5 ? (1 - sCurve) * 1.0 : (1 - sCurve) * 0.4;
+      setEQ(fromId, "hi", -hiCut);
+      setEQ(fromId, "lo", -loCutFrom);
+      setEQ(toId,   "lo", -loCutTo);
       if (k < 1) {
         requestAnimationFrame(step);
       } else {
         setEQ(fromId, "hi", 0);
+        setEQ(fromId, "lo", 0);
         setEQ(toId,   "lo", 0);
         useApp.getState().updateMixer({ masterDeck: toId });
         resolve();
@@ -277,6 +297,8 @@ function otherDeck(id: DeckId): DeckId { return id === "A" ? "B" : "A"; }
 
 /** Build a mid-track "spice" routine: hot cue jumps, loops, filter sweeps. */
 async function spiceCurrent(id: DeckId, genre: VdjGenre) {
+  const cfg = useApp.getState().settings;
+  if (cfg.vdjUseSpice === false) return;
   const ds = useApp.getState().decks[id];
   const dur = ds.duration || 0;
   if (dur <= 0) return;
@@ -284,8 +306,9 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
   const fast = genre === "drumandbass" || genre === "dubstep" || genre === "techno";
   const dreamy = genre === "ambient" || genre === "lofi" || genre === "trance";
 
-  // 0) DJ-name announcement on the master bus (and out loud)
-  announceDjName();
+  // 0) DJ-name announcement on the master bus (and out loud) — only in 'mid'/'every' modes.
+  const mode = cfg.vdjAnnounceMode ?? "mid";
+  if (mode === "mid" || mode === "every") announceDjName();
 
   // 1) Filter sweep up
   await filterSweep(id, 0, fast ? 0.5 : 0.7, dreamy ? 4 : 2.5);
@@ -297,41 +320,47 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
   await ramp((v) => setEQ(id, "lo", v), startLo, -0.9, 0.6);
 
   // 2) Beat loop (if BPM known) — 4 beats for fast, 8 for slow
-  if (ds.bpm) {
+  if (ds.bpm && cfg.vdjUseLoops !== false) {
     const beats = fast ? 4 : 8;
     try { setLoop(id, beats); } catch { /* ignore */ }
     // Add an FX layer during loop
-    useApp.getState().updateFx(2, {
-      kind: dreamy ? "reverb" : "delay",
-      wet: 0.55,
-      param1: 0.55,
-      param2: 0.5,
-    });
+    if (cfg.vdjUseFx !== false) {
+      useApp.getState().updateFx(2, {
+        kind: dreamy ? "reverb" : "delay",
+        wet: 0.55,
+        param1: 0.55,
+        param2: 0.5,
+      });
+    }
     // Add a hot cue at the loop entry for future reference
-    try { addHotCue(id, 1); } catch { /* noop */ }
+    if (cfg.vdjUseHotCues !== false) { try { addHotCue(id, 1); } catch { /* noop */ } }
     // Mid-loop gain pump (down + back up) to feel like a "ducker"
     void ramp((v) => setDeckGain(id, v), 1, 0.55, (60 / ds.bpm) * (beats / 2));
     await sleep((60 / ds.bpm) * beats * 1000 * 1.0);
     // Restore gain
     setDeckGain(id, 1);
     try { clearLoop(id); } catch { /* ignore */ }
-    await fxWetRamp(2, 0.55, 0, 1.5);
-    useApp.getState().updateFx(2, { kind: "off", wet: 0 });
+    if (cfg.vdjUseFx !== false) {
+      await fxWetRamp(2, 0.55, 0, 1.5);
+      useApp.getState().updateFx(2, { kind: "off", wet: 0 });
+    }
   }
 
   // 2.5) Restore lows
   await ramp((v) => setEQ(id, "lo", v), -0.9, 0, 0.8);
 
   // 2.6) A short scratch flourish (genre-aware)
-  if (!dreamy) {
+  if (!dreamy && cfg.vdjUseScratch !== false) {
     await performScratch(id, fast ? 4 : 2);
   }
 
   // 2.7) Tiny pitch bend (±2%) — micro-beatmatch feel
-  const dsP = useApp.getState().decks[id];
-  const startPitch = dsP.pitch;
-  await ramp((v) => setDeckPitch(id, v), startPitch, Math.min(1, startPitch + 0.025), 0.6);
-  await ramp((v) => setDeckPitch(id, v), Math.min(1, startPitch + 0.025), startPitch, 0.6);
+  if (cfg.vdjUsePitchBend !== false) {
+    const dsP = useApp.getState().decks[id];
+    const startPitch = dsP.pitch;
+    await ramp((v) => setDeckPitch(id, v), startPitch, Math.min(1, startPitch + 0.025), 0.6);
+    await ramp((v) => setDeckPitch(id, v), Math.min(1, startPitch + 0.025), startPitch, 0.6);
+  }
 
   // 3) Filter sweep back to neutral
   await filterSweep(id, 0.7, 0, 2);
@@ -392,10 +421,14 @@ function playRoboticStinger(text: string) {
     out.gain.value = 0;
     out.connect(master);
 
+    // User-controlled stinger volume (default 0.18 — same as before).
+    const userVol = useApp.getState().settings.vdjAnnounceVolume;
+    const peak = Math.max(0.02, Math.min(0.6, userVol ?? 0.18));
+
     // Master envelope (overall volume)
     out.gain.setValueAtTime(0, now);
-    out.gain.linearRampToValueAtTime(0.18, now + 0.04);
-    out.gain.linearRampToValueAtTime(0.18, now + totalDur - 0.15);
+    out.gain.linearRampToValueAtTime(peak, now + 0.04);
+    out.gain.linearRampToValueAtTime(peak, now + totalDur - 0.15);
     out.gain.linearRampToValueAtTime(0, now + totalDur);
 
     // Carrier (sawtooth) — vocal-like
@@ -457,6 +490,7 @@ function playRoboticStinger(text: string) {
 }
 
 function announceDjName() {
+  if (useApp.getState().settings.vdjAnnounceDj === false) return;
   const name = (useApp.getState().settings.djName || "").trim();
   if (!name) return;
   // Live spoken voice + recorded robotic stinger
@@ -540,17 +574,20 @@ export async function startVirtualDj(): Promise<void> {
     await loadTrackToDeck("A", queue[0].id);
     currentTrackId = queue[0].id;
     applyAutoGain("A");
-    addHotCue("A", 0); // mark intro for reference
-    // Drop a second hot-cue mid-track for later use
-    {
+    if (settings.vdjUseHotCues !== false) {
+      addHotCue("A", 0); // mark intro for reference
+      // Drop a second hot-cue mid-track for later use
       const dA = useApp.getState().decks["A"];
       if (dA.duration > 30) addHotCue("A", dA.duration * 0.45);
     }
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
-    // Opening DJ-name shoutout (delayed so the track has a moment to breathe)
-    setTimeout(() => { if (running && !cancelRequested) announceDjName(); }, 1500);
+    // Opening DJ-name shoutout (any mode except 'mid'-only mode)
+    const annMode = settings.vdjAnnounceMode ?? "mid";
+    if (annMode !== "mid") {
+      setTimeout(() => { if (running && !cancelRequested) announceDjName(); }, 1500);
+    }
 
     for (let i = 1; i < queue.length; i++) {
       if (cancelRequested) break;
@@ -558,7 +595,13 @@ export async function startVirtualDj(): Promise<void> {
       const toId = otherDeck(fromId);
       const next = queue[i];
 
-      const fxCfg = GENRE_FX[genre] ?? GENRE_FX.auto;
+      const fxCfgBase = GENRE_FX[genre] ?? GENRE_FX.auto;
+      // Allow user override of crossfade duration
+      const xfadeOverride = settings.vdjXfadeSec;
+      const xfadeSec = (xfadeOverride && xfadeOverride > 0)
+        ? xfadeOverride
+        : fxCfgBase.xfadeSec;
+      const fxCfg = { ...fxCfgBase, xfadeSec };
 
       // Mid-track flair: spice up the playing deck around ~50% through.
       // We DO NOT wait for the track to finish — we cut into the next song
@@ -579,9 +622,11 @@ export async function startVirtualDj(): Promise<void> {
         }
       }
 
-      // Cut early — wait until ~72% of the track (or 75% for short tracks),
-      // never letting it run out completely.
-      const cutPct = durCur > 240 ? 0.72 : 0.78;
+      // Cut early — user-configurable; defaults to 72% (long) or 78% (short).
+      const userCut = settings.vdjCutAtPct;
+      const cutPct = (userCut && userCut >= 0.5 && userCut <= 0.95)
+        ? userCut
+        : (durCur > 240 ? 0.72 : 0.78);
       while (!cancelRequested) {
         const ds2 = useApp.getState().decks[fromId];
         const pos = (ds2.position ?? 0) * (ds2.duration || 0);
@@ -596,9 +641,9 @@ export async function startVirtualDj(): Promise<void> {
       await loadTrackToDeck(toId, next.id);
       currentTrackId = next.id;
       applyAutoGain(toId);
-      syncBpm(fromId, toId);
-      addHotCue(toId, 0);
-      {
+      if (settings.vdjSyncBpm !== false) syncBpm(fromId, toId);
+      if (settings.vdjUseHotCues !== false) {
+        addHotCue(toId, 0);
         const dT = useApp.getState().decks[toId];
         if (dT.duration > 30) addHotCue(toId, dT.duration * 0.45);
       }
@@ -608,14 +653,16 @@ export async function startVirtualDj(): Promise<void> {
       else seek(toId, 0);
       play(toId, useApp.getState().decks[toId].cuePoint || 0);
 
+      // Per-transition DJ-name shoutout (only in 'every' mode)
+      if (annMode === "every") announceDjName();
       // Pre-transition: scratch flourish on outgoing as a "DJ mark"
-      void performScratch(fromId, 2);
-      // Filter sweep down on outgoing for smoother handoff
-      void filterSweep(fromId, 0, -0.6, Math.min(3, fxCfg.xfadeSec / 2));
-      // Gain pump down on outgoing during the crossfade
-      void ramp((v) => setDeckGain(fromId, v), 1, 0.7, fxCfg.xfadeSec * 0.5);
+      if (settings.vdjUseScratch !== false) void performScratch(fromId, 2);
+      // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
+      void filterSweep(fromId, 0, -0.7, Math.min(3.5, fxCfg.xfadeSec / 2));
+      // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
+      void ramp((v) => setDeckGain(fromId, v), 1, 0.55, fxCfg.xfadeSec * 0.6);
       // Apply genre FX during transition with a wet ramp
-      applyGenreFx(genre);
+      if (settings.vdjUseFx !== false) applyGenreFx(genre);
       setMessage(`Mezclando → ${next.title}`);
       await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
       // Reset outgoing filter + gain
@@ -624,8 +671,10 @@ export async function startVirtualDj(): Promise<void> {
       // Stop the outgoing deck cleanly
       pause(fromId);
       // Ramp down FX
-      await fxWetRamp(1, fxCfg.wet, 0, 1.5);
-      clearGenreFx();
+      if (settings.vdjUseFx !== false) {
+        await fxWetRamp(1, fxCfg.wet, 0, 1.5);
+        clearGenreFx();
+      }
       // Light boost on the new track's lows for a fresh-energy feel
       setEQ(toId, "lo", 0);
       void ramp((v) => setEQ(toId, "lo", v), 0, 0.3, 0.8);
@@ -662,12 +711,26 @@ export async function startVirtualDj(): Promise<void> {
         if (!ds.isPlaying) break;
         await sleep(400);
       }
-      // Pro outro: filter sweep down + echo tail + brake stop
-      if (!cancelRequested) {
+      // Pro outro: filter sweep down + echo tail + sustained brake + reverb tail
+      if (!cancelRequested && settings.vdjUseOutro !== false) {
         setMessage(`Outro profesional…`);
-        void filterSweep(currentDeck, 0, -0.85, 3);
-        void echoOut(3.5);
-        await brakeStop(currentDeck, 2.2);
+        const brakeSec = Math.max(1, Math.min(8, settings.vdjBrakeSec ?? 3.5));
+        // Final goodbye announce
+        if (annMode === "every" || annMode === "start") announceDjName();
+        // Sweep + echo simultaneously
+        void filterSweep(currentDeck, 0, -0.9, brakeSec * 0.8);
+        void echoOut(brakeSec * 1.2);
+        // Sustained brake (longer = more dramatic spin-down)
+        await brakeStop(currentDeck, brakeSec);
+        // Final reverb tail wash on master after the brake
+        useApp.getState().updateFx(3, {
+          kind: "reverb",
+          wet: 0.85,
+          param1: 0.9,
+          param2: 0.8,
+        });
+        await fxWetRamp(3, 0.85, 0, 3.5);
+        useApp.getState().updateFx(3, { kind: "off", wet: 0 });
         setDeckFilter(currentDeck, 0);
       } else {
         pause(currentDeck);
