@@ -1404,6 +1404,7 @@ export async function startVirtualDj(): Promise<void> {
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
     // (v1.7.5 #9) capture cue point for first track
     pushCue(0, queue[0]);
+    pushReportEntry(0, queue[0], "Start");
     // (v1.7.5 #10) Push current track metadata to the live stream.
     if (settings.vdjAutoStream === true && isStreaming()) {
       void updateStreamMetadata(queue[0].title || "Track 1", queue[0].artist || "");
@@ -1592,6 +1593,41 @@ export async function startVirtualDj(): Promise<void> {
 
       // (v1.7.5 #9) Capture cue point for the new track.
       pushCue(i, next);
+      // (v1.7.6 #10) Mix Report entry — record transition style chosen above.
+      const transLabel = useFreeze ? "Echo-Freeze" : useBattle ? "Battle" : useMashup ? "Mash-up" : "Crossfade";
+      pushReportEntry(i, next, transLabel);
+      logFx(transLabel);
+      // (v1.7.6 #3) Loop Roll buildup post-transition (probabilistic).
+      if (settings.vdjLoopRoll === true && Math.random() < (settings.vdjLoopRollProb ?? 0.25)) {
+        await loopRollBuildup(toId);
+      }
+      // (v1.7.6 #6) Reverse FX (probabilistic, occasional).
+      if (settings.vdjReverseFx === true && Math.random() < (settings.vdjReverseFxProb ?? 0.15)) {
+        await reverseCensor(toId, settings.vdjReverseBars ?? 1);
+      }
+      // (v1.7.6 #7) Auto Drop Builder before drop entry (probabilistic).
+      if (settings.vdjDropBuilder === true && Math.random() < (settings.vdjDropBuilderProb ?? 0.2)) {
+        void autoDropBuilder(settings.vdjDropBuilderSec ?? 4);
+      }
+      // (v1.7.6 #2) Acapella layer (probabilistic, on next iteration's outgoing).
+      if (settings.vdjAcapellaLayer === true && Math.random() < (settings.vdjAcapellaProb ?? 0.2)) {
+        await acapellaLayer(currentDeck, otherDeck(currentDeck), settings.vdjAcapellaBars ?? 4);
+      }
+      // (v1.7.6 #9) Auto Mashup every N tracks.
+      if (settings.vdjAutoMashup === true && (i % Math.max(2, settings.vdjAutoMashupEveryN ?? 6) === 0)) {
+        // Pre-load the track AFTER `next` onto otherDeck for the mashup.
+        const j = i + 1;
+        if (j < queue.length) {
+          const otherD = otherDeck(currentDeck);
+          await loadTrackToDeck(otherD, queue[j].id);
+          play(otherD, 0);
+          await autoMashupSequence(currentDeck, otherD);
+          pause(currentDeck);
+          currentDeck = otherD;
+          currentIndex = j;
+          pushReportEntry(j, queue[j], "Auto Mashup");
+        }
+      }
       // (v1.7.5 #10) Update live stream metadata.
       if (settings.vdjAutoStream === true && isStreaming()) {
         void updateStreamMetadata(next.title || `Track ${i + 1}`, next.artist || "");
