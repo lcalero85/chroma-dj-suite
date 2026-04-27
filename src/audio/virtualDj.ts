@@ -381,7 +381,7 @@ function startVoiceCommands() {
     const SR = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike;
       webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition
       ?? (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
-    if (!SR) { toast("Comando por voz no soportado en este navegador"); return; }
+    if (!SR) { toast(vt("toastVoiceUnsupported")); return; }
     const settings = useApp.getState().settings;
     const rec = new SR();
     rec.lang = settings.vdjVoiceLang || (
@@ -406,7 +406,7 @@ function startVoiceCommands() {
     };
     rec.start();
     voiceRec = rec;
-    toast.success("🎤 Comandos por voz activos");
+    toast.success(vt("toastVoiceOn"));
   } catch (e) { console.warn("[vdj] voice cmd error", e); }
 }
 function stopVoiceCommands() {
