@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp, type DeckId } from "@/state/store";
 import { applyMixPreset, captureMixPreset, deleteMixPreset, resetDefaultMixPresets } from "@/state/controller";
 import { Plus, Trash2, RotateCcw } from "lucide-react";
 import { CATEGORY_ORDER, type PresetCategory } from "@/lib/mixPresets";
 import { useT } from "@/lib/i18n";
 import type { DictKey } from "@/lib/i18n/dict";
+import { useActiveDeck } from "@/lib/activeDeck";
 
 /** Map a builtin preset id to its base i18n key (e.g. "builtin-lp-intro" → "preset_lp_intro"). */
 function presetI18nBase(id: string): string {
@@ -45,7 +46,15 @@ export function MixPresetsPanel() {
   };
   const presets = useApp((s) => s.mixPresets);
   const activeDecks = useApp((s) => s.activeDecks);
-  const [target, setTarget] = useState<DeckId>(activeDecks[0] ?? "A");
+  const liveDeck = useActiveDeck();
+  const [autoTarget, setAutoTarget] = useState<boolean>(true);
+  const [manualTarget, setManualTarget] = useState<DeckId>(activeDecks[0] ?? "A");
+  // While "Auto" is enabled, target follows the live (playing) deck.
+  const target: DeckId = autoTarget ? liveDeck : manualTarget;
+  // Keep manual target in sync if the user disables auto-mode after auto picked one.
+  useEffect(() => {
+    if (autoTarget) setManualTarget(liveDeck);
+  }, [autoTarget, liveDeck]);
   const [newName, setNewName] = useState("");
   const [filter, setFilter] = useState<PresetCategory | "all" | "user">("all");
 
@@ -69,12 +78,24 @@ export function MixPresetsPanel() {
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
         <span className="vdj-label">{t("presetsApplyTo")}</span>
         <div style={{ display: "flex", gap: 4 }}>
+          <button
+            className="vdj-btn"
+            data-active={autoTarget}
+            onClick={() => setAutoTarget((v) => !v)}
+            title={t("presetsAutoTip")}
+            style={{ minWidth: 48 }}
+          >
+            {t("presetsAuto")}
+          </button>
           {(["A", "B", "C", "D"] as DeckId[]).map((d) => (
             <button
               key={d}
               className="vdj-btn"
-              data-active={target === d}
-              onClick={() => setTarget(d)}
+              data-active={!autoTarget && manualTarget === d}
+              onClick={() => {
+                setAutoTarget(false);
+                setManualTarget(d);
+              }}
               disabled={!activeDecks.includes(d)}
               style={{ minWidth: 36 }}
             >
@@ -82,6 +103,11 @@ export function MixPresetsPanel() {
             </button>
           ))}
         </div>
+        {autoTarget && (
+          <span className="vdj-label" style={{ opacity: 0.7, fontSize: 10 }}>
+            → {target}
+          </span>
+        )}
         <div style={{ flex: 1 }} />
         <input
           type="text"
