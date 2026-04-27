@@ -23,11 +23,13 @@ export function CrowdEnergyMeter() {
   useEffect(() => {
     if (!enabled || !running) return;
     let raf = 0;
-    let buf: Uint8Array | null = null;
+    let buf: Uint8Array<ArrayBuffer> | null = null;
     const tick = () => {
       try {
         const { masterAnalyser } = getEngine();
-        if (!buf || buf.length !== masterAnalyser.fftSize) buf = new Uint8Array(masterAnalyser.fftSize);
+        if (!buf || buf.length !== masterAnalyser.fftSize) {
+          buf = new Uint8Array(new ArrayBuffer(masterAnalyser.fftSize));
+        }
         masterAnalyser.getByteTimeDomainData(buf);
         let s = 0;
         for (let i = 0; i < buf.length; i++) {
