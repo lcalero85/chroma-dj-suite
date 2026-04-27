@@ -282,6 +282,61 @@ export function setDeckPitch(id: DeckId, pitch: number) {
   useApp.getState().updateDeck(id, { pitch });
 }
 
+/** ===== Beat Grid editor ===== */
+
+function persistGrid(id: DeckId, patch: { gridOffsetSec?: number; bpm?: number | null }) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.trackId) return;
+  void getTrack(ds.trackId).then((tr) => {
+    if (!tr) return;
+    const next = { ...tr } as TrackRecord;
+    if (patch.gridOffsetSec !== undefined) next.gridOffsetSec = patch.gridOffsetSec;
+    if (patch.bpm !== undefined) next.bpm = patch.bpm;
+    putTrack(next);
+  });
+}
+
+/** Shift the beat-grid downbeat by deltaSec (negative = earlier). */
+export function nudgeGridOffset(id: DeckId, deltaSec: number) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const beat = 60 / ds.bpm;
+  // Keep the offset within one beat — adding multiples of beat is a no-op for the grid.
+  let next = ((ds.gridOffsetSec ?? 0) + deltaSec) % beat;
+  if (next < 0) next += beat;
+  useApp.getState().updateDeck(id, { gridOffsetSec: next });
+  persistGrid(id, { gridOffsetSec: next });
+}
+
+/** Snap the grid downbeat (beat 0) to the current playhead position. */
+export function snapGridToPlayhead(id: DeckId) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const beat = 60 / ds.bpm;
+  const t = currentTime(id);
+  let next = t % beat;
+  if (next < 0) next += beat;
+  useApp.getState().updateDeck(id, { gridOffsetSec: next });
+  persistGrid(id, { gridOffsetSec: next });
+  toast.success(tI18n("gridSet"));
+}
+
+/** Halve / double the track BPM (doesn't affect playback rate, only the grid + sync math). */
+export function scaleBpm(id: DeckId, factor: 0.5 | 2) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const newBpm = Math.max(40, Math.min(300, ds.bpm * factor));
+  useApp.getState().updateDeck(id, { bpm: newBpm });
+  persistGrid(id, { bpm: newBpm });
+}
+
+/** Manually set the BPM to an exact value. */
+export function setTrackBpm(id: DeckId, bpm: number) {
+  const clamped = Math.max(40, Math.min(300, bpm));
+  useApp.getState().updateDeck(id, { bpm: clamped });
+  persistGrid(id, { bpm: clamped });
+}
+
 export function setDeckEQ(id: DeckId, band: "hi" | "mid" | "lo", v: number) {
   setEQ(id, band, v);
   useApp.getState().updateDeck(id, { [band]: v });
