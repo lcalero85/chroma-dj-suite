@@ -549,6 +549,8 @@ export async function startVirtualDj(): Promise<void> {
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
+    // Opening DJ-name shoutout (delayed so the track has a moment to breathe)
+    setTimeout(() => { if (running && !cancelRequested) announceDjName(); }, 1500);
 
     for (let i = 1; i < queue.length; i++) {
       if (cancelRequested) break;
