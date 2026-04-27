@@ -226,16 +226,38 @@ function applyAutoGain(id: DeckId) {
 /** Apply genre FX to slot 1, ramping wet up then down across the crossfade. */
 function applyGenreFx(genre: VdjGenre) {
   const cfg = GENRE_FX[genre] ?? GENRE_FX.auto;
+  const lvl = getIntensity();
+  const wet = Math.max(0, Math.min(1, cfg.wet * lvl.fxWetMul));
   useApp.getState().updateFx(1, {
     kind: cfg.kind,
-    wet: cfg.wet,
+    wet,
     param1: cfg.param1,
     param2: cfg.param2,
+    beatSync: lvl.fxBeatSync,
+    beatDiv: 1,
   });
+  // Acid edge (hard mode): add a layered phaser/bitcrusher on slot 2 for grit.
+  if (lvl.acidEdge) {
+    useApp.getState().updateFx(2, {
+      kind: genre === "techno" || genre === "dubstep" || genre === "drumandbass"
+        ? "bitcrusher"
+        : "phaser",
+      wet: 0.35,
+      param1: 0.55,
+      param2: 0.5,
+      beatSync: true,
+      beatDiv: 0.5,
+    });
+  }
 }
 
 function clearGenreFx() {
   useApp.getState().updateFx(1, { kind: "off", wet: 0 });
+  // Clear the acid layer too (no-op if it wasn't set).
+  const fx2 = useApp.getState().fx.find((f) => f.id === 2);
+  if (fx2 && (fx2.kind === "bitcrusher" || fx2.kind === "phaser") && fx2.wet > 0 && fx2.wet <= 0.5) {
+    useApp.getState().updateFx(2, { kind: "off", wet: 0 });
+  }
 }
 
 /** Smooth filter sweep on a deck over `seconds`. start/end in -1..1. */
