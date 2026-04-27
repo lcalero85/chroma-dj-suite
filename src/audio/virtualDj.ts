@@ -120,7 +120,14 @@ function getQueue(): TrackRecord[] {
   const s = useApp.getState();
   const selected = new Set(s.settings.vdjSelectedTrackIds ?? []);
   const genre = (s.settings.vdjGenre ?? "auto").toLowerCase();
-  const allSelected = s.tracks.filter((t) => selected.has(t.id));
+  // Preserve order of first appearance; ensure NO duplicates.
+  const seen = new Set<string>();
+  const allSelected = s.tracks.filter((t) => {
+    if (!selected.has(t.id)) return false;
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
   if (genre === "auto") return allSelected;
   const filtered = allSelected.filter((t) => {
     const tags = (t.tags ?? []).map((x) => x.toLowerCase());
