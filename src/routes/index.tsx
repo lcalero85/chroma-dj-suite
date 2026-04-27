@@ -12,6 +12,7 @@ import { BottomTabs } from "@/components/console/BottomTabs";
 import { Deck } from "@/components/deck/Deck";
 import { Mixer } from "@/components/mixer/Mixer";
 import { VideoStage, VideoStageToggle } from "@/components/video/VideoStage";
+import { SmallScreenOverlay } from "@/components/console/SmallScreenOverlay";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -120,6 +121,7 @@ function Index() {
       <VideoStage />
       <VideoStageToggle />
       <Toaster />
+      <SmallScreenOverlay />
     </div>
   );
 }

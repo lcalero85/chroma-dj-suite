@@ -39,7 +39,13 @@ export type SkinId =
   | "bigjogs-gold"
   | "bigjogs-ocean"
   | "bigjogs-blood"
-  | "bigjogs-forest";
+  | "bigjogs-forest"
+  | "xl-bubblegum"
+  | "xl-vaporwave"
+  | "xl-tropical"
+  | "xl-skater"
+  | "xl-icecream"
+  | "xl-galaxy";
 
 export interface DeckState {
   trackId: string | null;
@@ -176,6 +182,14 @@ export interface FxState {
   wet: number;
   param1: number;
   param2: number;
+  /** When true, time-based FX (delay/echo/gate/tremolo/autopan/wahwah/chorus)
+   *  derive their rate from the master deck's BPM × `beatDiv`, instead of
+   *  the raw param1 knob. Param1 is then re-purposed as a fine-tune offset.
+   *  Mimics Pioneer Beat FX / Serato BeatGrid sync. */
+  beatSync?: boolean;
+  /** Beat division when beatSync is on. 0.125 = 1/8, 0.25 = 1/4, 0.5 = 1/2,
+   *  1 = 1 beat, 2 = 2 beats, 4 = 4 beats. */
+  beatDiv?: number;
 }
 
 export interface SettingsState {
@@ -405,9 +419,9 @@ export const useApp = create<AppState>()(
         autoActiveDeck: true,
       },
       fx: [
-        { id: 1, kind: "off", wet: 0, param1: 0.5, param2: 0.5 },
-        { id: 2, kind: "off", wet: 0, param1: 0.5, param2: 0.5 },
-        { id: 3, kind: "off", wet: 0, param1: 0.5, param2: 0.5 },
+        { id: 1, kind: "off", wet: 0, param1: 0.5, param2: 0.5, beatSync: false, beatDiv: 1 },
+        { id: 2, kind: "off", wet: 0, param1: 0.5, param2: 0.5, beatSync: false, beatDiv: 1 },
+        { id: 3, kind: "off", wet: 0, param1: 0.5, param2: 0.5, beatSync: false, beatDiv: 1 },
       ],
       skin: "pioneer",
       settings: defaultSettings,

@@ -830,3 +830,119 @@ html[data-skin="bigjogs-forest"] {
   --beat-glow: 0 0 16px oklch(0.7 0.16 145 / 0.7);
   --jog-size: 280px;
 }
+
+/* ============================================================
+   YOUTHFUL XL — vibrant pop palettes with oversized 320px jogs.
+   Designed for Gen-Z performers: high-contrast accents, playful
+   gradients, generous corner radii, and oversized platters.
+   ============================================================ */
+
+/* 28. XL Bubblegum — hot pink + cyan, candy-pop vibes */
+html[data-skin="xl-bubblegum"] {
+  --accent: oklch(0.78 0.24 350);
+  --accent-2: oklch(0.84 0.16 200);
+  --surface-1: oklch(0.12 0.03 330);
+  --surface-2: oklch(0.18 0.05 330);
+  --surface-3: oklch(0.24 0.07 330);
+  --surface-4: oklch(0.32 0.09 330);
+  --text-1: oklch(0.98 0.02 330);
+  --text-2: oklch(0.82 0.08 330);
+  --line: oklch(0.78 0.24 350 / 0.25);
+  --line-strong: oklch(0.78 0.24 350 / 0.45);
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --beat-glow: 0 0 22px oklch(0.78 0.24 350 / 0.85), 0 0 36px oklch(0.84 0.16 200 / 0.5);
+  --jog-size: 320px;
+}
+
+/* 29. XL Vaporwave — pastel purple + teal, retro-futuristic */
+html[data-skin="xl-vaporwave"] {
+  --accent: oklch(0.78 0.18 310);
+  --accent-2: oklch(0.82 0.14 195);
+  --surface-1: oklch(0.14 0.05 290);
+  --surface-2: oklch(0.2 0.07 285);
+  --surface-3: oklch(0.27 0.09 280);
+  --surface-4: oklch(0.34 0.11 275);
+  --text-1: oklch(0.98 0.03 300);
+  --text-2: oklch(0.82 0.09 300);
+  --line: oklch(0.78 0.18 310 / 0.25);
+  --line-strong: oklch(0.82 0.14 195 / 0.4);
+  --r-md: 14px;
+  --r-lg: 22px;
+  --beat-glow: 0 0 20px oklch(0.78 0.18 310 / 0.8), 0 0 32px oklch(0.82 0.14 195 / 0.5);
+  --jog-size: 320px;
+}
+
+/* 30. XL Tropical — punchy lime + coral sunset */
+html[data-skin="xl-tropical"] {
+  --accent: oklch(0.86 0.2 130);
+  --accent-2: oklch(0.78 0.2 35);
+  --surface-1: oklch(0.1 0.02 90);
+  --surface-2: oklch(0.15 0.03 90);
+  --surface-3: oklch(0.21 0.05 90);
+  --surface-4: oklch(0.29 0.06 90);
+  --text-1: oklch(0.97 0.04 100);
+  --text-2: oklch(0.78 0.08 100);
+  --line: oklch(0.86 0.2 130 / 0.22);
+  --line-strong: oklch(0.78 0.2 35 / 0.4);
+  --r-md: 12px;
+  --r-lg: 18px;
+  --beat-glow: 0 0 22px oklch(0.86 0.2 130 / 0.8), 0 0 30px oklch(0.78 0.2 35 / 0.5);
+  --jog-size: 320px;
+}
+
+/* 31. XL Skater — electric yellow + violet street vibe */
+html[data-skin="xl-skater"] {
+  --accent: oklch(0.9 0.2 95);
+  --accent-2: oklch(0.65 0.22 295);
+  --surface-1: oklch(0.08 0.01 280);
+  --surface-2: oklch(0.13 0.02 280);
+  --surface-3: oklch(0.19 0.03 280);
+  --surface-4: oklch(0.26 0.04 280);
+  --text-1: oklch(0.98 0.04 95);
+  --text-2: oklch(0.78 0.1 95);
+  --line: oklch(0.9 0.2 95 / 0.25);
+  --line-strong: oklch(0.65 0.22 295 / 0.45);
+  --r-md: 10px;
+  --r-lg: 16px;
+  --beat-glow: 0 0 22px oklch(0.9 0.2 95 / 0.85), 0 0 32px oklch(0.65 0.22 295 / 0.55);
+  --jog-size: 320px;
+}
+
+/* 32. XL Ice Cream — soft pastel mint + peach + lilac */
+html[data-skin="xl-icecream"] {
+  --accent: oklch(0.85 0.13 165);
+  --accent-2: oklch(0.85 0.12 35);
+  --surface-1: oklch(0.16 0.02 320);
+  --surface-2: oklch(0.22 0.03 320);
+  --surface-3: oklch(0.29 0.04 320);
+  --surface-4: oklch(0.36 0.05 320);
+  --text-1: oklch(0.98 0.02 320);
+  --text-2: oklch(0.82 0.06 320);
+  --line: oklch(0.85 0.13 165 / 0.22);
+  --line-strong: oklch(0.85 0.12 35 / 0.38);
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --beat-glow: 0 0 18px oklch(0.85 0.13 165 / 0.7), 0 0 28px oklch(0.85 0.12 35 / 0.45);
+  --jog-size: 320px;
+}
+
+/* 33. XL Galaxy — deep cosmic blue + magenta nebula */
+html[data-skin="xl-galaxy"] {
+  --accent: oklch(0.7 0.22 295);
+  --accent-2: oklch(0.78 0.22 340);
+  --surface-1: oklch(0.07 0.04 280);
+  --surface-2: oklch(0.12 0.06 280);
+  --surface-3: oklch(0.18 0.08 280);
+  --surface-4: oklch(0.25 0.1 280);
+  --text-1: oklch(0.98 0.02 300);
+  --text-2: oklch(0.8 0.08 300);
+  --line: oklch(0.7 0.22 295 / 0.28);
+  --line-strong: oklch(0.78 0.22 340 / 0.45);
+  --r-md: 14px;
+  --r-lg: 22px;
+  --beat-glow: 0 0 24px oklch(0.7 0.22 295 / 0.85), 0 0 40px oklch(0.78 0.22 340 / 0.55);
+  --jog-size: 320px;
+}

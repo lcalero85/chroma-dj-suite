@@ -5,7 +5,7 @@ import { createFxRack, setFxKind, setFxMix, setFxParam, type FxKind, type FxRack
 import { getEngine } from "@/audio/engine";
 import { useT, type DictKey } from "@/lib/i18n";
 import { useState } from "react";
-import { Save, Trash2 } from "lucide-react";
+import { Save, Trash2, Activity } from "lucide-react";
 import { toast } from "sonner";
 import {
   loadFxChainPresets,
@@ -18,6 +18,73 @@ const KINDS: FxKind[] = [
   "off", "reverb", "delay", "echo", "filter", "flanger", "phaser",
   "chorus", "tremolo", "autopan", "wahwah", "ringmod", "bitcrusher", "lofi", "gate",
 ];
+
+/** FX kinds whose param1 represents a time/rate that can be locked to the
+ *  master deck's BPM. */
+const BEAT_SYNCABLE: FxKind[] = [
+  "delay", "echo", "flanger", "phaser", "gate", "tremolo",
+  "autopan", "wahwah", "chorus", "ringmod",
+];
+
+const BEAT_DIVS: { v: number; key: DictKey }[] = [
+  { v: 0.125, key: "fxBeats_1_8" },
+  { v: 0.25,  key: "fxBeats_1_4" },
+  { v: 0.5,   key: "fxBeats_1_2" },
+  { v: 1,     key: "fxBeats_1" },
+  { v: 2,     key: "fxBeats_2" },
+  { v: 4,     key: "fxBeats_4" },
+];
+
+/** Convert a beat division at a given BPM into the natural param1 value
+ *  expected by mapParam(). Returns the *normalized* (0..1) value the knob
+ *  would have produced — so we feed it through mapParam below. */
+function beatsToParam1(kind: FxKind, bpm: number, beats: number): number {
+  const sec = (60 / bpm) * beats;       // beat duration in seconds
+  const hz  = 1 / sec;                  // rate in Hz
+  switch (kind) {
+    case "delay":
+    case "echo": {
+      // mapParam: 0.05 + v * 1.5 → solve for v
+      const v = (Math.min(1.55, sec) - 0.05) / 1.5;
+      return Math.max(0, Math.min(1, v));
+    }
+    case "flanger": {
+      // 0.05 + v * 4
+      return Math.max(0, Math.min(1, (hz - 0.05) / 4));
+    }
+    case "phaser": {
+      // 0.1 + v * 4
+      return Math.max(0, Math.min(1, (hz - 0.1) / 4));
+    }
+    case "gate": {
+      // 1 + v * 16
+      return Math.max(0, Math.min(1, (hz - 1) / 16));
+    }
+    case "tremolo": {
+      // 0.5 + v * 12
+      return Math.max(0, Math.min(1, (hz - 0.5) / 12));
+    }
+    case "autopan": {
+      // 0.1 + v * 6
+      return Math.max(0, Math.min(1, (hz - 0.1) / 6));
+    }
+    case "wahwah": {
+      // 0.2 + v * 6
+      return Math.max(0, Math.min(1, (hz - 0.2) / 6));
+    }
+    case "chorus": {
+      // 0.1 + v * 3
+      return Math.max(0, Math.min(1, (hz - 0.1) / 3));
+    }
+    case "ringmod": {
+      // 30 + v² * 1500 — use hz*32 carrier as a musical-ish offset
+      const target = Math.min(1500, hz * 32);
+      return Math.max(0, Math.min(1, Math.sqrt(target / 1500)));
+    }
+    default:
+      return 0.5;
+  }
+}
 const KIND_KEY: Record<FxKind, DictKey> = {
   off: "fxKindOff",
   reverb: "fxKindReverb",
@@ -39,6 +106,8 @@ const KIND_KEY: Record<FxKind, DictKey> = {
 export function FxPanel() {
   const t = useT();
   const fxs = useApp((s) => s.fx);
+  // Master deck BPM drives beat-sync rates.
+  const masterBpm = useApp((s) => s.decks[s.mixer.masterDeck].bpm) ?? 120;
   const racks = useRef<Record<number, FxRackHandles>>({});
   const [presets, setPresets] = useState<FxChainPreset[]>(() => loadFxChainPresets());
   const [filter, setFilter] = useState<FxChainPreset["category"] | "all">("all");
@@ -62,6 +131,17 @@ export function FxPanel() {
       // keep alive across renders
     };
   }, []);
+
+  // Whenever masterBpm or per-FX beatSync settings change, re-derive each
+  // synced FX's param1 so the rate stays locked to the grid.
+  useEffect(() => {
+    fxs.forEach((fx) => {
+      const rack = racks.current[fx.id];
+      if (!rack || !fx.beatSync || !BEAT_SYNCABLE.includes(fx.kind)) return;
+      const v = beatsToParam1(fx.kind, masterBpm, fx.beatDiv ?? 1);
+      setFxParam(rack, 1, mapParam(fx.kind, 1, v));
+    });
+  }, [masterBpm, fxs]);
 
   const applyPreset = (p: FxChainPreset) => {
     [0, 1, 2].forEach((i) => {
@@ -186,6 +266,48 @@ export function FxPanel() {
               ))}
             </select>
           </div>
+          {/* Beat-sync row: only meaningful for time-based FX */}
+          {BEAT_SYNCABLE.includes(fx.kind) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <button
+                className="vdj-btn"
+                data-active={!!fx.beatSync}
+                style={{ padding: "3px 8px", fontSize: 10, display: "inline-flex", alignItems: "center", gap: 4 }}
+                onClick={() => {
+                  const next = !fx.beatSync;
+                  useApp.getState().updateFx(fx.id, { beatSync: next });
+                  if (next) {
+                    const v = beatsToParam1(fx.kind, masterBpm, fx.beatDiv ?? 1);
+                    useApp.getState().updateFx(fx.id, { param1: v });
+                    if (racks.current[fx.id]) setFxParam(racks.current[fx.id], 1, mapParam(fx.kind, 1, v));
+                  }
+                }}
+                title={t("fxBeatSyncTip")}
+              >
+                <Activity size={11} /> {t("fxBeatSync")}
+              </button>
+              {fx.beatSync && (
+                <div style={{ display: "inline-flex", gap: 2 }}>
+                  {BEAT_DIVS.map((b) => (
+                    <button
+                      key={b.v}
+                      className="vdj-btn"
+                      data-active={(fx.beatDiv ?? 1) === b.v}
+                      style={{ padding: "2px 6px", fontSize: 10, minWidth: 28 }}
+                      onClick={() => {
+                        useApp.getState().updateFx(fx.id, { beatDiv: b.v });
+                        const v = beatsToParam1(fx.kind, masterBpm, b.v);
+                        useApp.getState().updateFx(fx.id, { param1: v });
+                        if (racks.current[fx.id]) setFxParam(racks.current[fx.id], 1, mapParam(fx.kind, 1, v));
+                      }}
+                    >
+                      {t(b.key)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-around", paddingTop: 6 }}>
             <Knob
               value={fx.param1}
@@ -193,7 +315,7 @@ export function FxPanel() {
                 useApp.getState().updateFx(fx.id, { param1: v });
                 if (racks.current[fx.id]) setFxParam(racks.current[fx.id], 1, mapParam(fx.kind, 1, v));
               }}
-              label={t("fxParam1")}
+              label={fx.beatSync && BEAT_SYNCABLE.includes(fx.kind) ? `${t("fxParam1")} · ♪` : t("fxParam1")}
               size={48}
             />
             <Knob
