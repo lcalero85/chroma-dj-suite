@@ -1573,11 +1573,11 @@ export async function startVirtualDj(): Promise<void> {
       if (stemAware) void applyStemAwareDuck(fromId, stemAmt, 1.5);
 
       if (useFreeze) {
-        setMessage(`❄ Echo-Freeze → ${next.title}`);
+        setMessage(vt("vdjEchoFreezeTo", { title: next.title || "?" }));
         if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
         await echoFreezeTransition(fromId, toId);
       } else if (useBattle) {
-        setMessage(`⚔ Battle Mode → ${next.title}`);
+        setMessage(vt("vdjBattleTo", { title: next.title || "?" }));
         if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
         const bbars = (settings.vdjBattleBars ?? 4) as 4 | 8 | 16;
         const brounds = settings.vdjBattleRounds ?? 4;
@@ -1587,7 +1587,7 @@ export async function startVirtualDj(): Promise<void> {
           clearGenreFx();
         }
       } else if (useMashup) {
-        setMessage(`💥 Double Drop → ${next.title}`);
+        setMessage(vt("vdjMashupTo", { title: next.title || "?" }));
         if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
         const mbars = settings.vdjMashupBars ?? 8;
         await mashupDoubleDrop(fromId, toId, mbars);
@@ -1604,7 +1604,7 @@ export async function startVirtualDj(): Promise<void> {
         void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
         // Apply genre FX during transition with a wet ramp
         if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
-        setMessage(`Mezclando → ${next.title}`);
+        setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
         await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
         // Reset outgoing filter + gain
         setDeckFilter(fromId, 0);
