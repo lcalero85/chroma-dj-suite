@@ -12,7 +12,6 @@ import { useT } from "@/lib/i18n";
 import { useActiveDeck } from "@/lib/activeDeck";
 import { Sparkles, Bot, Loader2 } from "lucide-react";
 import { aiAutoTag } from "@/lib/aiClient";
-import { toast } from "sonner";
 import { toggleVdjTrack } from "@/audio/virtualDj";
 
 function FolderNode({
