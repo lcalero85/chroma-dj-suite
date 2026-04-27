@@ -642,11 +642,11 @@ function PhraseStrip({ id }: { id: DeckId }) {
           display: "flex",
           flexWrap: "nowrap",
           gap: 4,
-          minHeight: 26,
-          maxHeight: 56,
+          minHeight: 32,
           overflowX: "auto",
           overflowY: "hidden",
-          paddingBottom: 4,
+          paddingBottom: 8,
+          paddingTop: 2,
           alignItems: "center",
         }}
       >
@@ -669,14 +669,15 @@ function PhraseStrip({ id }: { id: DeckId }) {
                 fontSize: 9,
                 fontWeight: 700,
                 letterSpacing: 0.4,
-                padding: "3px 7px",
+                padding: "4px 8px",
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 4,
                 flexShrink: 0,
                 whiteSpace: "nowrap",
-                lineHeight: 1.2,
+                lineHeight: 1.1,
+                height: 22,
                 boxShadow: "0 1px 2px rgba(0,0,0,0.4)",
               }}
             >
