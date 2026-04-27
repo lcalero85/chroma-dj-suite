@@ -828,7 +828,21 @@ async function crossfadeBetween(fromId: DeckId, toId: DeckId, seconds: number) {
   });
 }
 
-function otherDeck(id: DeckId): DeckId { return id === "A" ? "B" : "A"; }
+/**
+ * Rotación de decks para el set automático.
+ *
+ * Antes: hardcoded A↔B, lo que ignoraba C y D cuando el usuario habilitaba
+ * 4 decks. Ahora respetamos `state.activeDecks` (la lista que el usuario
+ * eligió para la sesión) y rotamos cíclicamente: A→B→C→D→A. Si solo hay
+ * 2 decks activos, el comportamiento es idéntico al anterior (A↔B).
+ */
+function otherDeck(id: DeckId): DeckId {
+  const active = useApp.getState().activeDecks;
+  if (!active || active.length < 2) return id === "A" ? "B" : "A";
+  const idx = active.indexOf(id);
+  if (idx < 0) return active[0];
+  return active[(idx + 1) % active.length];
+}
 
 /** Build a mid-track "spice" routine: hot cue jumps, loops, filter sweeps. */
 async function spiceCurrent(id: DeckId, genre: VdjGenre) {
