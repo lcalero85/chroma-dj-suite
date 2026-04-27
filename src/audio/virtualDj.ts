@@ -168,6 +168,7 @@ function syncBpm(masterId: DeckId, incomingId: DeckId) {
 }
 
 function applyAutoGain(id: DeckId) {
+  if (useApp.getState().settings.vdjAutoGain === false) return;
   const d = getDeck(id);
   if (!d.buffer) return;
   try {
@@ -402,10 +403,14 @@ function playRoboticStinger(text: string) {
     out.gain.value = 0;
     out.connect(master);
 
+    // User-controlled stinger volume (default 0.18 — same as before).
+    const userVol = useApp.getState().settings.vdjAnnounceVolume;
+    const peak = Math.max(0.02, Math.min(0.6, userVol ?? 0.18));
+
     // Master envelope (overall volume)
     out.gain.setValueAtTime(0, now);
-    out.gain.linearRampToValueAtTime(0.18, now + 0.04);
-    out.gain.linearRampToValueAtTime(0.18, now + totalDur - 0.15);
+    out.gain.linearRampToValueAtTime(peak, now + 0.04);
+    out.gain.linearRampToValueAtTime(peak, now + totalDur - 0.15);
     out.gain.linearRampToValueAtTime(0, now + totalDur);
 
     // Carrier (sawtooth) — vocal-like
@@ -467,6 +472,7 @@ function playRoboticStinger(text: string) {
 }
 
 function announceDjName() {
+  if (useApp.getState().settings.vdjAnnounceDj === false) return;
   const name = (useApp.getState().settings.djName || "").trim();
   if (!name) return;
   // Live spoken voice + recorded robotic stinger
