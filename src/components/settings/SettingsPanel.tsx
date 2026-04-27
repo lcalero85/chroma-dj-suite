@@ -285,6 +285,20 @@ function VirtualDjSettings() {
       <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>
         Comportamiento del Virtual DJ
       </div>
+      <Row label="Nivel de mezcla">
+        <select
+          className="vdj-btn"
+          value={settings.vdjIntensity ?? "normal"}
+          onChange={(e) => update({ vdjIntensity: e.target.value as "soft" | "normal" | "hard" })}
+          style={{ padding: "6px 8px" }}
+          disabled={!enabled}
+          title="Soft = transiciones largas y suaves · Normal = balanceado · Hard = ácido y agresivo"
+        >
+          <option value="soft">🌊 Suave (Soft)</option>
+          <option value="normal">⚖️ Normal</option>
+          <option value="hard">🔥 Duro (Hard / ácido)</option>
+        </select>
+      </Row>
       <Row label="Orden aleatorio (shuffle)">
         <input
           type="checkbox"
