@@ -769,6 +769,15 @@ export function LibraryPanel() {
                 <td style={{ padding: 6, color: t.kind === "video" ? "var(--accent)" : "var(--text-3)" }}>
                   {t.kind === "video" ? <Film size={12} /> : null}
                 </td>
+                <td style={{ padding: 6, textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={(useApp.getState().settings.vdjSelectedTrackIds ?? []).includes(t.id)}
+                    onChange={(e) => { e.stopPropagation(); toggleVdjTrack(t.id); }}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Incluir en la mezcla del Virtual DJ"
+                  />
+                </td>
                 <td style={{ padding: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ width: 4, height: 16, background: t.color, borderRadius: 2 }} />
