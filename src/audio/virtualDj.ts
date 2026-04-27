@@ -17,7 +17,13 @@ import type { DeckId } from "@/state/store";
 import { useApp } from "@/state/store";
 import { loadTrackToDeck, addHotCue, jumpHotCue } from "@/state/controller";
 import { getDeck, play, pause, seek, setEQ, setAutoGainDb } from "@/audio/deck";
-import { setXfaderPosition, setDeckPitch } from "@/state/controller";
+import {
+  setXfaderPosition,
+  setDeckPitch,
+  setDeckFilter,
+  setLoop,
+  clearLoop,
+} from "@/state/controller";
 import { setPlaybackRate } from "@/audio/deck";
 import { analyzeLoudness } from "@/audio/analysis/loudness";
 import { startRecording, stopRecording, isRecording } from "@/audio/recorder";
@@ -163,6 +169,71 @@ function clearGenreFx() {
   useApp.getState().updateFx(1, { kind: "off", wet: 0 });
 }
 
+/** Smooth filter sweep on a deck over `seconds`. start/end in -1..1. */
+async function filterSweep(id: DeckId, from: number, to: number, seconds: number) {
+  const t0 = performance.now();
+  return new Promise<void>((resolve) => {
+    const step = () => {
+      if (cancelRequested) { setDeckFilter(id, 0); resolve(); return; }
+      const t = (performance.now() - t0) / (seconds * 1000);
+      const k = Math.min(1, t);
+      setDeckFilter(id, from + (to - from) * k);
+      if (k < 1) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+/** Smooth FX wet ramp on slot `slot` from -> to over `seconds`. */
+async function fxWetRamp(slot: 1 | 2 | 3, from: number, to: number, seconds: number) {
+  const t0 = performance.now();
+  return new Promise<void>((resolve) => {
+    const step = () => {
+      if (cancelRequested) { resolve(); return; }
+      const t = (performance.now() - t0) / (seconds * 1000);
+      const k = Math.min(1, t);
+      useApp.getState().updateFx(slot, { wet: from + (to - from) * k });
+      if (k < 1) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+/** Smoothly ramp playback rate (brake / spin-down effect). */
+async function brakeStop(id: DeckId, seconds: number) {
+  const startRate = useApp.getState().decks[id].pitch !== undefined
+    ? 1 + (useApp.getState().decks[id].pitch * (useApp.getState().decks[id].pitchRange / 100))
+    : 1;
+  const t0 = performance.now();
+  return new Promise<void>((resolve) => {
+    const step = () => {
+      const t = (performance.now() - t0) / (seconds * 1000);
+      const k = Math.min(1, t);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - k, 3);
+      const rate = startRate * (1 - eased);
+      try { setPlaybackRate(id, Math.max(0.02, rate)); } catch { /* ignore */ }
+      if (k < 1) requestAnimationFrame(step);
+      else { try { pause(id); } catch { /* ignore */ } resolve(); }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+/** Quick echo-out tail: high feedback echo that fades out. */
+async function echoOut(seconds: number) {
+  useApp.getState().updateFx(2, {
+    kind: "echo",
+    wet: 0.9,
+    param1: 0.45,
+    param2: 0.7,
+  });
+  await fxWetRamp(2, 0.9, 0, seconds);
+  useApp.getState().updateFx(2, { kind: "off", wet: 0 });
+}
+
 /** Smooth crossfade between decks with EQ blend. */
 async function crossfadeBetween(fromId: DeckId, toId: DeckId, seconds: number) {
   const start = useApp.getState().mixer.xfader;
@@ -192,6 +263,41 @@ async function crossfadeBetween(fromId: DeckId, toId: DeckId, seconds: number) {
 }
 
 function otherDeck(id: DeckId): DeckId { return id === "A" ? "B" : "A"; }
+
+/** Build a mid-track "spice" routine: hot cue jumps, loops, filter sweeps. */
+async function spiceCurrent(id: DeckId, genre: VdjGenre) {
+  const ds = useApp.getState().decks[id];
+  const dur = ds.duration || 0;
+  if (dur <= 0) return;
+  // Roll a tasteful improv based on genre
+  const fast = genre === "drumandbass" || genre === "dubstep" || genre === "techno";
+  const dreamy = genre === "ambient" || genre === "lofi" || genre === "trance";
+
+  // 1) Filter sweep up
+  await filterSweep(id, 0, fast ? 0.5 : 0.7, dreamy ? 4 : 2.5);
+  if (cancelRequested) { setDeckFilter(id, 0); return; }
+
+  // 2) Beat loop (if BPM known) — 4 beats for fast, 8 for slow
+  if (ds.bpm) {
+    const beats = fast ? 4 : 8;
+    try { setLoop(id, beats); } catch { /* ignore */ }
+    // Add an FX layer during loop
+    useApp.getState().updateFx(2, {
+      kind: dreamy ? "reverb" : "delay",
+      wet: 0.55,
+      param1: 0.55,
+      param2: 0.5,
+    });
+    await sleep((60 / ds.bpm) * beats * 1000 * 1.0);
+    try { clearLoop(id); } catch { /* ignore */ }
+    await fxWetRamp(2, 0.55, 0, 1.5);
+    useApp.getState().updateFx(2, { kind: "off", wet: 0 });
+  }
+
+  // 3) Filter sweep back to neutral
+  await filterSweep(id, 0.7, 0, 2);
+  setDeckFilter(id, 0);
+}
 
 /** Wait until the current deck is near its end (or cancel). */
 async function waitUntilExitPoint(id: DeckId, leadSec: number) {
@@ -252,6 +358,11 @@ export async function startVirtualDj(): Promise<void> {
     currentTrackId = queue[0].id;
     applyAutoGain("A");
     addHotCue("A", 0); // mark intro for reference
+    // Drop a second hot-cue mid-track for later use
+    {
+      const dA = useApp.getState().decks["A"];
+      if (dA.duration > 30) addHotCue("A", dA.duration * 0.45);
+    }
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
@@ -263,6 +374,26 @@ export async function startVirtualDj(): Promise<void> {
       const next = queue[i];
 
       const fxCfg = GENRE_FX[genre] ?? GENRE_FX.auto;
+
+      // Mid-track flair: spice up the playing deck once it's well underway,
+      // before we head to the exit point.
+      const dsCur = useApp.getState().decks[fromId];
+      const durCur = dsCur.duration || 0;
+      if (durCur > 0) {
+        // Wait until ~55% of the track to spice
+        while (!cancelRequested) {
+          const ds2 = useApp.getState().decks[fromId];
+          const pos = (ds2.position ?? 0) * (ds2.duration || 0);
+          if (pos >= (ds2.duration || 0) * 0.55) break;
+          if (!ds2.isPlaying) break;
+          await sleep(400);
+        }
+        if (!cancelRequested) {
+          setMessage(`Live FX en ${fromId}`);
+          await spiceCurrent(fromId, genre);
+        }
+      }
+
       // Wait until the current deck is near its end before transitioning
       await waitUntilExitPoint(fromId, fxCfg.xfadeSec + 2);
       if (cancelRequested) break;
@@ -274,20 +405,28 @@ export async function startVirtualDj(): Promise<void> {
       applyAutoGain(toId);
       syncBpm(fromId, toId);
       addHotCue(toId, 0);
+      {
+        const dT = useApp.getState().decks[toId];
+        if (dT.duration > 30) addHotCue(toId, dT.duration * 0.45);
+      }
       // Jump to first hot-cue if exists, then play
       const tdState = useApp.getState().decks[toId];
       if (tdState.hotCues.length > 0) jumpHotCue(toId, 0);
       else seek(toId, 0);
       play(toId, useApp.getState().decks[toId].cuePoint || 0);
 
-      // Apply genre FX during transition
+      // Pre-transition: filter sweep down on outgoing for smoother handoff
+      void filterSweep(fromId, 0, -0.6, Math.min(3, fxCfg.xfadeSec / 2));
+      // Apply genre FX during transition with a wet ramp
       applyGenreFx(genre);
       setMessage(`Mezclando → ${next.title}`);
       await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
+      // Reset outgoing filter
+      setDeckFilter(fromId, 0);
       // Stop the outgoing deck cleanly
       pause(fromId);
       // Ramp down FX
-      useApp.getState().updateFx(1, { wet: 0 });
+      await fxWetRamp(1, fxCfg.wet, 0, 1.5);
       clearGenreFx();
 
       currentDeck = toId;
@@ -296,16 +435,41 @@ export async function startVirtualDj(): Promise<void> {
 
     // Wait for last track to finish
     if (!cancelRequested) {
+      // Mid-track flair on the final song too
+      const dsLast = useApp.getState().decks[currentDeck];
+      if ((dsLast.duration || 0) > 0) {
+        while (!cancelRequested) {
+          const d2 = useApp.getState().decks[currentDeck];
+          const pos = (d2.position ?? 0) * (d2.duration || 0);
+          if (pos >= (d2.duration || 0) * 0.55) break;
+          if (!d2.isPlaying) break;
+          await sleep(400);
+        }
+        if (!cancelRequested) {
+          setMessage(`Live FX en ${currentDeck}`);
+          await spiceCurrent(currentDeck, genre);
+        }
+      }
       setMessage(`Esperando final de la última pista`);
+      // Wait until ~5s before end so we can do a brake outro
       while (!cancelRequested) {
         const ds = useApp.getState().decks[currentDeck];
         const dur = ds.duration || 0;
         const pos = (ds.position ?? 0) * dur;
-        if (dur > 0 && pos >= dur - 0.5) break;
+        if (dur > 0 && pos >= dur - 5) break;
         if (!ds.isPlaying) break;
         await sleep(400);
       }
-      pause(currentDeck);
+      // Pro outro: filter sweep down + echo tail + brake stop
+      if (!cancelRequested) {
+        setMessage(`Outro profesional…`);
+        void filterSweep(currentDeck, 0, -0.85, 3);
+        void echoOut(3.5);
+        await brakeStop(currentDeck, 2.2);
+        setDeckFilter(currentDeck, 0);
+      } else {
+        pause(currentDeck);
+      }
     }
   } catch (err) {
     console.error("[vdj] error", err);
