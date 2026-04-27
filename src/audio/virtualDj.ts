@@ -146,6 +146,23 @@ let currentTrackId: string | null = null;
 let recordingActive = false;
 let lastMessage = "Idle";
 
+function deckXfaderTarget(id: DeckId): -1 | 1 {
+  return id === "A" || id === "C" ? -1 : 1;
+}
+
+const vdjDeckLoads = new Map<string, Promise<void>>();
+
+function warmLoadTrackToDeck(deckId: DeckId, trackId: string): Promise<void> {
+  const ds = useApp.getState().decks[deckId];
+  if (ds.trackId === trackId && getDeck(deckId).buffer) return Promise.resolve();
+  const key = `${deckId}:${trackId}`;
+  const existing = vdjDeckLoads.get(key);
+  if (existing) return existing;
+  const p = loadTrackToDeck(deckId, trackId).finally(() => vdjDeckLoads.delete(key));
+  vdjDeckLoads.set(key, p);
+  return p;
+}
+
 /** ============ (v1.7.5) Cue points capture ============ */
 interface CuePoint { trackIndex: number; timeSec: number; title: string; artist: string }
 let cuePoints: CuePoint[] = [];
