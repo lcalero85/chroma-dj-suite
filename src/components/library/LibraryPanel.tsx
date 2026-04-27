@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { radioAdd, addTrackToSegment } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
 import { useT } from "@/lib/i18n";
+import { useActiveDeck } from "@/lib/activeDeck";
+import { Sparkles } from "lucide-react";
 
 function FolderNode({
   folder,
