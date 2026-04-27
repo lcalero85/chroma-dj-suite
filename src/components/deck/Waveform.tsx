@@ -16,6 +16,8 @@ interface WaveformProps {
   isPlaying?: boolean;
   /** Visual style: classic = solid bars, bars = thicker spaced bars, dual = top/bottom mirror (Serato-like). */
   styleVariant?: "classic" | "bars" | "dual";
+  /** Beat grid downbeat offset (seconds) — shifts the grid lines without retiming. */
+  gridOffsetSec?: number;
 }
 
 export function Waveform({
@@ -32,6 +34,7 @@ export function Waveform({
   onSeek,
   isPlaying,
   styleVariant = "classic",
+  gridOffsetSec = 0,
 }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
