@@ -10,7 +10,8 @@ import { radioAdd, addTrackToSegment } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
 import { useT } from "@/lib/i18n";
 import { useActiveDeck } from "@/lib/activeDeck";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Bot, Loader2 } from "lucide-react";
+import { aiAutoTag } from "@/lib/aiClient";
 import { toggleVdjTrack } from "@/audio/virtualDj";
 
 function FolderNode({
@@ -207,6 +208,38 @@ export function LibraryPanel() {
     const next = { ...track, favorite: !track.favorite };
     await putTrack(next);
     setTracks(await listTracks());
+  };
+
+  const [aiTagBusy, setAiTagBusy] = useState(false);
+  const runAiAutoTag = async () => {
+    if (aiTagBusy) return;
+    // Only enrich tracks that have no tags yet, cap at 50 per run.
+    const candidates = tracks.filter((t) => !t.tags || t.tags.length === 0).slice(0, 50);
+    if (candidates.length === 0) {
+      const { toast } = await import("sonner");
+      toast.info("Todas las pistas ya tienen tags. Borra los tags manualmente para regenerarlos.");
+      return;
+    }
+    setAiTagBusy(true);
+    try {
+      const { aiAutoTag } = await import("@/lib/aiClient");
+      const tags = await aiAutoTag(
+        candidates.map((t) => ({ id: t.id, title: t.title, artist: t.artist, bpm: t.bpm ?? null })),
+      );
+      if (!tags) return;
+      const ids = Object.keys(tags);
+      for (const id of ids) {
+        const t = candidates.find((x) => x.id === id);
+        if (!t) continue;
+        const merged = Array.from(new Set([...(t.tags ?? []), ...tags[id]]));
+        await putTrack({ ...t, tags: merged });
+      }
+      setTracks(await listTracks());
+      const { toast } = await import("sonner");
+      toast.success(`🤖 IA etiquetó ${ids.length} de ${candidates.length} pistas.`);
+    } finally {
+      setAiTagBusy(false);
+    }
   };
 
   useEffect(() => {
@@ -568,6 +601,15 @@ export function LibraryPanel() {
         {smartPreset && (
           <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10, opacity: 0.7 }} onClick={() => applySmartPreset(null)}>{tr("smartClear")}</button>
         )}
+        <button
+          className="vdj-btn"
+          style={{ padding: "2px 8px", fontSize: 10, marginLeft: "auto" }}
+          onClick={() => void runAiAutoTag()}
+          disabled={aiTagBusy}
+          title="Etiquetar con IA las pistas que aún no tienen tags (género/mood/energía)."
+        >
+          {aiTagBusy ? <Loader2 size={11} className="animate-spin" /> : <Bot size={11} />} Auto-tag IA
+        </button>
       </div>
 
       {showFilters && (

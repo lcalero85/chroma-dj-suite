@@ -976,6 +976,26 @@ function SmartAutonomyRows() {
           onChange={(e) => update({ vdjShowStatusOverlay: e.target.checked })}
           disabled={!enabled} title={vt("showStatusOverlayTip")} />
       </Row>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "6px 0" }} />
+      <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>🤖 Inteligencia artificial</div>
+      <Row label="Smart Setlist (IA)">
+        <input
+          type="checkbox"
+          checked={settings.vdjAiSetlist === true}
+          onChange={(e) => update({ vdjAiSetlist: e.target.checked })}
+          disabled={!enabled}
+          title="Reordena automáticamente la cola del Virtual DJ con IA para un arco de energía profesional."
+        />
+      </Row>
+      <Row label="DJ Coach (IA)">
+        <input
+          type="checkbox"
+          checked={settings.vdjAiCoach === true}
+          onChange={(e) => update({ vdjAiCoach: e.target.checked })}
+          disabled={!enabled}
+          title="Al terminar el set, la IA te da feedback profesional en lenguaje natural."
+        />
+      </Row>
     </>
   );
 }

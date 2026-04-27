@@ -13,6 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiStreamIngestRouteImport } from './routes/api/stream/ingest'
 import { Route as ApiSoundcloudStreamRouteImport } from './routes/api/soundcloud/stream'
 import { Route as ApiSoundcloudSearchRouteImport } from './routes/api/soundcloud/search'
+import { Route as ApiAiSetlistRouteImport } from './routes/api/ai/setlist'
+import { Route as ApiAiCoachRouteImport } from './routes/api/ai/coach'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as ApiAiAutotagRouteImport } from './routes/api/ai/autotag'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,15 +38,43 @@ const ApiSoundcloudSearchRoute = ApiSoundcloudSearchRouteImport.update({
   path: '/api/soundcloud/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiSetlistRoute = ApiAiSetlistRouteImport.update({
+  id: '/api/ai/setlist',
+  path: '/api/ai/setlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiCoachRoute = ApiAiCoachRouteImport.update({
+  id: '/api/ai/coach',
+  path: '/api/ai/coach',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai/chat',
+  path: '/api/ai/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiAutotagRoute = ApiAiAutotagRouteImport.update({
+  id: '/api/ai/autotag',
+  path: '/api/ai/autotag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/ai/autotag': typeof ApiAiAutotagRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/coach': typeof ApiAiCoachRoute
+  '/api/ai/setlist': typeof ApiAiSetlistRoute
   '/api/soundcloud/search': typeof ApiSoundcloudSearchRoute
   '/api/soundcloud/stream': typeof ApiSoundcloudStreamRoute
   '/api/stream/ingest': typeof ApiStreamIngestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/ai/autotag': typeof ApiAiAutotagRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/coach': typeof ApiAiCoachRoute
+  '/api/ai/setlist': typeof ApiAiSetlistRoute
   '/api/soundcloud/search': typeof ApiSoundcloudSearchRoute
   '/api/soundcloud/stream': typeof ApiSoundcloudStreamRoute
   '/api/stream/ingest': typeof ApiStreamIngestRoute
@@ -50,6 +82,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/ai/autotag': typeof ApiAiAutotagRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/ai/coach': typeof ApiAiCoachRoute
+  '/api/ai/setlist': typeof ApiAiSetlistRoute
   '/api/soundcloud/search': typeof ApiSoundcloudSearchRoute
   '/api/soundcloud/stream': typeof ApiSoundcloudStreamRoute
   '/api/stream/ingest': typeof ApiStreamIngestRoute
@@ -58,18 +94,30 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/ai/autotag'
+    | '/api/ai/chat'
+    | '/api/ai/coach'
+    | '/api/ai/setlist'
     | '/api/soundcloud/search'
     | '/api/soundcloud/stream'
     | '/api/stream/ingest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/ai/autotag'
+    | '/api/ai/chat'
+    | '/api/ai/coach'
+    | '/api/ai/setlist'
     | '/api/soundcloud/search'
     | '/api/soundcloud/stream'
     | '/api/stream/ingest'
   id:
     | '__root__'
     | '/'
+    | '/api/ai/autotag'
+    | '/api/ai/chat'
+    | '/api/ai/coach'
+    | '/api/ai/setlist'
     | '/api/soundcloud/search'
     | '/api/soundcloud/stream'
     | '/api/stream/ingest'
@@ -77,6 +125,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiAiAutotagRoute: typeof ApiAiAutotagRoute
+  ApiAiChatRoute: typeof ApiAiChatRoute
+  ApiAiCoachRoute: typeof ApiAiCoachRoute
+  ApiAiSetlistRoute: typeof ApiAiSetlistRoute
   ApiSoundcloudSearchRoute: typeof ApiSoundcloudSearchRoute
   ApiSoundcloudStreamRoute: typeof ApiSoundcloudStreamRoute
   ApiStreamIngestRoute: typeof ApiStreamIngestRoute
@@ -112,11 +164,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSoundcloudSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/setlist': {
+      id: '/api/ai/setlist'
+      path: '/api/ai/setlist'
+      fullPath: '/api/ai/setlist'
+      preLoaderRoute: typeof ApiAiSetlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/coach': {
+      id: '/api/ai/coach'
+      path: '/api/ai/coach'
+      fullPath: '/api/ai/coach'
+      preLoaderRoute: typeof ApiAiCoachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/chat': {
+      id: '/api/ai/chat'
+      path: '/api/ai/chat'
+      fullPath: '/api/ai/chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/autotag': {
+      id: '/api/ai/autotag'
+      path: '/api/ai/autotag'
+      fullPath: '/api/ai/autotag'
+      preLoaderRoute: typeof ApiAiAutotagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiAiAutotagRoute: ApiAiAutotagRoute,
+  ApiAiChatRoute: ApiAiChatRoute,
+  ApiAiCoachRoute: ApiAiCoachRoute,
+  ApiAiSetlistRoute: ApiAiSetlistRoute,
   ApiSoundcloudSearchRoute: ApiSoundcloudSearchRoute,
   ApiSoundcloudStreamRoute: ApiSoundcloudStreamRoute,
   ApiStreamIngestRoute: ApiStreamIngestRoute,
