@@ -416,6 +416,7 @@ export const useApp = create<AppState>()(
         masterDeck: "A",
         quantize: false,
         autoMix: false,
+        tempoLock: false,
         sleepMinutes: 0,
         micOn: false,
         micLevel: 1,
