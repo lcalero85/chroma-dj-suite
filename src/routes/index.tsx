@@ -13,6 +13,7 @@ import { Deck } from "@/components/deck/Deck";
 import { Mixer } from "@/components/mixer/Mixer";
 import { VideoStage, VideoStageToggle } from "@/components/video/VideoStage";
 import { SmallScreenOverlay } from "@/components/console/SmallScreenOverlay";
+import { CrowdEnergyMeter } from "@/components/vdj/CrowdEnergyMeter";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -122,6 +123,7 @@ function Index() {
       <VideoStageToggle />
       <Toaster />
       <SmallScreenOverlay />
+      <CrowdEnergyMeter />
     </div>
   );
 }
