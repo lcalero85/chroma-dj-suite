@@ -367,6 +367,9 @@ function otherDeck(id: DeckId): DeckId { return id === "A" ? "B" : "A"; }
 async function spiceCurrent(id: DeckId, genre: VdjGenre) {
   const cfg = useApp.getState().settings;
   if (cfg.vdjUseSpice === false) return;
+  const lvl = getIntensity();
+  // Probabilistic spice: in soft mode we sometimes skip spice entirely.
+  if (Math.random() > lvl.spiceProb) return;
   const ds = useApp.getState().decks[id];
   const dur = ds.duration || 0;
   if (dur <= 0) return;
@@ -379,17 +382,19 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
   if (mode === "mid" || mode === "every") announceDjName();
 
   // 1) Filter sweep up
-  await filterSweep(id, 0, fast ? 0.5 : 0.7, dreamy ? 4 : 2.5);
+  const swUp = (fast ? 0.5 : 0.7) * lvl.filterDepth;
+  await filterSweep(id, 0, swUp, dreamy ? 4 : 2.5);
   if (cancelRequested) { setDeckFilter(id, 0); return; }
 
   // 1.5) EQ kill on the lows briefly for a "filter drop" feel
   const ds2 = useApp.getState().decks[id];
   const startLo = ds2.lo;
-  await ramp((v) => setEQ(id, "lo", v), startLo, -0.9, 0.6);
+  await ramp((v) => setEQ(id, "lo", v), startLo, -lvl.eqKillLo, 0.6);
 
   // 2) Beat loop (if BPM known) — 4 beats for fast, 8 for slow
   if (ds.bpm && cfg.vdjUseLoops !== false) {
-    const beats = fast ? 4 : 8;
+    const beatsBase = fast ? 4 : 8;
+    const beats = Math.max(1, Math.round(beatsBase * lvl.loopBeatsMul));
     try { setLoop(id, beats); } catch { /* ignore */ }
     // Add an FX layer during loop
     if (cfg.vdjUseFx !== false) {
@@ -403,7 +408,7 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
     // Add a hot cue at the loop entry for future reference
     if (cfg.vdjUseHotCues !== false) { try { addHotCue(id, 1); } catch { /* noop */ } }
     // Mid-loop gain pump (down + back up) to feel like a "ducker"
-    void ramp((v) => setDeckGain(id, v), 1, 0.55, (60 / ds.bpm) * (beats / 2));
+    void ramp((v) => setDeckGain(id, v), 1, lvl.duckTo, (60 / ds.bpm) * (beats / 2));
     await sleep((60 / ds.bpm) * beats * 1000 * 1.0);
     // Restore gain
     setDeckGain(id, 1);
@@ -415,23 +420,24 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
   }
 
   // 2.5) Restore lows
-  await ramp((v) => setEQ(id, "lo", v), -0.9, 0, 0.8);
+  await ramp((v) => setEQ(id, "lo", v), -lvl.eqKillLo, 0, 0.8);
 
   // 2.6) A short scratch flourish (genre-aware)
   if (!dreamy && cfg.vdjUseScratch !== false) {
-    await performScratch(id, fast ? 4 : 2);
+    await performScratch(id, Math.max(1, Math.round((fast ? 4 : 2) * (lvl.scratchCount / 2))));
   }
 
   // 2.7) Tiny pitch bend (±2%) — micro-beatmatch feel
   if (cfg.vdjUsePitchBend !== false) {
     const dsP = useApp.getState().decks[id];
     const startPitch = dsP.pitch;
-    await ramp((v) => setDeckPitch(id, v), startPitch, Math.min(1, startPitch + 0.025), 0.6);
-    await ramp((v) => setDeckPitch(id, v), Math.min(1, startPitch + 0.025), startPitch, 0.6);
+    const bend = lvl.pitchBendAmt;
+    await ramp((v) => setDeckPitch(id, v), startPitch, Math.min(1, startPitch + bend), 0.6);
+    await ramp((v) => setDeckPitch(id, v), Math.min(1, startPitch + bend), startPitch, 0.6);
   }
 
   // 3) Filter sweep back to neutral
-  await filterSweep(id, 0.7, 0, 2);
+  await filterSweep(id, swUp, 0, 2);
   setDeckFilter(id, 0);
 }
 
