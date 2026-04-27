@@ -259,6 +259,7 @@ export function BeatMakerPanel() {
             onClear={() => clearTrack(trackIdx)}
             onChange={(patch) => updateTrack(trackIdx, patch)}
             onPreview={() => previewVoice(tr.id as BeatTrackId, tr.volume * pattern.master)}
+            t={t}
           />
         ))}
       </div>
@@ -276,7 +277,7 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 }
 
 function TrackRow({
-  track, currentStep, stepsCount, onToggle, onClear, onChange, onPreview,
+  track, currentStep, stepsCount, onToggle, onClear, onChange, onPreview, t,
 }: {
   track: BeatPattern["tracks"][number];
   currentStep: number;
@@ -285,6 +286,7 @@ function TrackRow({
   onClear: () => void;
   onChange: (patch: Partial<BeatPattern["tracks"][number]>) => void;
   onPreview: () => void;
+  t: (key: import("@/lib/i18n").DictKey, params?: Record<string, string | number>) => string;
 }) {
   return (
     <div
@@ -307,14 +309,14 @@ function TrackRow({
             data-tone="danger"
             style={{ fontSize: 9, padding: "2px 6px" }}
             onClick={() => onChange({ mute: !track.mute })}
-            title="Mute"
+            title={t("bmMuteTip")}
           >M</button>
           <button
             className="vdj-btn"
             data-active={track.solo}
             style={{ fontSize: 9, padding: "2px 6px" }}
             onClick={() => onChange({ solo: !track.solo })}
-            title="Solo"
+            title={t("bmSoloTip")}
           >S</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -323,14 +325,14 @@ function TrackRow({
             value={track.volume}
             onChange={(e) => onChange({ volume: Number(e.target.value) })}
             style={{ flex: 1, accentColor: "var(--accent)" }}
-            title="Volume"
+            title={t("bmVolumeTip")}
           />
           <input
             type="range" min={-1} max={1} step={0.01}
             value={track.pan}
             onChange={(e) => onChange({ pan: Number(e.target.value) })}
             style={{ flex: 1, accentColor: "var(--accent)" }}
-            title="Pan"
+            title={t("bmPanTip")}
           />
         </div>
       </div>

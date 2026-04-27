@@ -817,6 +817,48 @@ export const DICT = {
     recBtnStartSession: "Record mix session",
     recBtnStopSession: "Stop session recording",
     recSessionName: "Set {date}",
+
+    // ===== AutoMix Pro panel =====
+    amTitleSmartFaderActive: "Smart Fader active",
+    amKeyMatch: "Key match",
+    amAutoGain: "AutoGain",
+    amEqBlend: "EQ blend",
+    amVoxGuard: "Vox guard",
+    amSmartFaderTip: "When on, the crossfader auto-rides as the master deck nears its smart-exit",
+    amSmartFader: "Smart Fader",
+    amOn: "ON",
+    amOff: "OFF",
+    amSmartMix: "SMART MIX",
+    amSmartMixTip: "Trigger an intelligent transition now",
+    amCancel: "CANCEL",
+    amCancelTip: "Cancel any running or pending mix",
+    amHistory: "History",
+    amHistoryEmpty: "No tracks yet",
+    amHistoryClear: "Clear",
+    amHistoryDefaults: "Defaults",
+
+    // ===== Library extras =====
+    libFavOnlyTip: "Show only favorites",
+    libSortByTip: "Sort by",
+    libSortRecent: "Recent",
+    libSortTitle: "Title",
+    libSortArtist: "Artist",
+    libSortBpm: "BPM",
+    libSortKey: "Key",
+    libSortDuration: "Duration",
+    libSortAsc: "Ascending",
+    libSortDesc: "Descending",
+
+    // ===== FX preset buttons =====
+    fxDeletePresetTip: "Delete preset",
+    fxSavePresetTip: "Save current settings as preset",
+    fxSavePresetBtn: "Save",
+
+    // ===== BeatMaker tooltips =====
+    bmMuteTip: "Mute",
+    bmSoloTip: "Solo",
+    bmVolumeTip: "Volume",
+    bmPanTip: "Pan",
   },
 
   es: {
@@ -1600,6 +1642,48 @@ export const DICT = {
     recBtnStartSession: "Grabar sesión de mezcla",
     recBtnStopSession: "Detener grabación de sesión",
     recSessionName: "Sesión {date}",
+
+    // ===== AutoMix Pro panel =====
+    amTitleSmartFaderActive: "Smart Fader activo",
+    amKeyMatch: "Compat. tonal",
+    amAutoGain: "AutoGain",
+    amEqBlend: "Mezcla EQ",
+    amVoxGuard: "Anti-voces",
+    amSmartFaderTip: "Cuando está activo, el crossfader se mueve solo al acercarse al punto de salida inteligente",
+    amSmartFader: "Smart Fader",
+    amOn: "ON",
+    amOff: "OFF",
+    amSmartMix: "MEZCLA INTELIGENTE",
+    amSmartMixTip: "Disparar una transición inteligente ahora",
+    amCancel: "CANCELAR",
+    amCancelTip: "Cancelar cualquier mezcla en curso o pendiente",
+    amHistory: "Historial",
+    amHistoryEmpty: "Aún no hay pistas",
+    amHistoryClear: "Limpiar",
+    amHistoryDefaults: "Por defecto",
+
+    // ===== Library extras =====
+    libFavOnlyTip: "Mostrar solo favoritos",
+    libSortByTip: "Ordenar por",
+    libSortRecent: "Recientes",
+    libSortTitle: "Título",
+    libSortArtist: "Artista",
+    libSortBpm: "BPM",
+    libSortKey: "Key",
+    libSortDuration: "Duración",
+    libSortAsc: "Ascendente",
+    libSortDesc: "Descendente",
+
+    // ===== FX preset buttons =====
+    fxDeletePresetTip: "Borrar preset",
+    fxSavePresetTip: "Guardar configuración actual como preset",
+    fxSavePresetBtn: "Guardar",
+
+    // ===== BeatMaker tooltips =====
+    bmMuteTip: "Silenciar",
+    bmSoloTip: "Solo",
+    bmVolumeTip: "Volumen",
+    bmPanTip: "Paneo",
   },
 } as const;
 

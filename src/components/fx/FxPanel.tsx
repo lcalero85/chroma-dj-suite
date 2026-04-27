@@ -147,7 +147,7 @@ export function FxPanel() {
                   className="vdj-btn"
                   style={{ padding: "3px 4px", fontSize: 9 }}
                   onClick={() => deletePreset(p.id)}
-                  title="Borrar preset"
+                  title={t("fxDeletePresetTip")}
                 >
                   <Trash2 size={9} />
                 </button>
@@ -159,9 +159,9 @@ export function FxPanel() {
           className="vdj-btn"
           style={{ padding: "3px 8px", fontSize: 10 }}
           onClick={saveCurrentAsPreset}
-          title="Guardar configuración actual como preset"
+          title={t("fxSavePresetTip")}
         >
-          <Save size={11} /> Guardar
+          <Save size={11} /> {t("fxSavePresetBtn")}
         </button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, flex: 1, minHeight: 0 }}>

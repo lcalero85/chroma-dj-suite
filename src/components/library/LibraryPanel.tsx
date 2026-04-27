@@ -454,7 +454,7 @@ export function LibraryPanel() {
           className="vdj-btn"
           data-active={showFavOnly}
           onClick={() => setShowFavOnly((v) => !v)}
-          title="Mostrar solo favoritos"
+          title={tr("libFavOnlyTip")}
         >
           <Star size={12} fill={showFavOnly ? "currentColor" : "none"} />
         </button>
@@ -462,20 +462,20 @@ export function LibraryPanel() {
           className="vdj-btn"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortKey)}
-          title="Ordenar por"
+          title={tr("libSortByTip")}
           style={{ padding: "4px 6px", fontSize: 11 }}
         >
-          <option value="added">Recientes</option>
-          <option value="title">Título</option>
-          <option value="artist">Artista</option>
-          <option value="bpm">BPM</option>
-          <option value="key">Key</option>
-          <option value="duration">Duración</option>
+          <option value="added">{tr("libSortRecent")}</option>
+          <option value="title">{tr("libSortTitle")}</option>
+          <option value="artist">{tr("libSortArtist")}</option>
+          <option value="bpm">{tr("libSortBpm")}</option>
+          <option value="key">{tr("libSortKey")}</option>
+          <option value="duration">{tr("libSortDuration")}</option>
         </select>
         <button
           className="vdj-btn"
           onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-          title={sortDir === "asc" ? "Ascendente" : "Descendente"}
+          title={sortDir === "asc" ? tr("libSortAsc") : tr("libSortDesc")}
           style={{ padding: "4px 6px" }}
         >
           <ArrowUpDown size={12} />{sortDir === "asc" ? "↑" : "↓"}
