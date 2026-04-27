@@ -582,6 +582,10 @@ const defaultSettings: SettingsState = {
   },
   djName: "",
   showControllerInTopbar: true,
+  vdjAutoRecover: true,
+  vdjTightTransitions: true,
+  vdjShowStatusOverlay: true,
+  vdjDefaultSkin: "",
 };
 
 export const useApp = create<AppState>()(
