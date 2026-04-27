@@ -260,7 +260,7 @@ export function Waveform({
       rafRef.current = null;
       ro.disconnect();
     };
-  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, height, variant, isPlaying]);
+  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, height, variant, isPlaying, gridOffsetSec, styleVariant]);
 
   const handleClick = (e: React.MouseEvent) => {
     if (!onSeek || variant !== "mini") return;
