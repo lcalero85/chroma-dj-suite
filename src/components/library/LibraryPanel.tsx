@@ -545,6 +545,21 @@ export function LibraryPanel() {
         </button>
       </div>
 
+      {/* Smart Playlist quick presets — one click curates BPM/Key/Sort */}
+      <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", padding: "0 2px" }}>
+        <span title={tr("smartPlaylistsTip")} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, color: "var(--text-3)", marginRight: 2 }}>
+          <Sparkles size={11} /> {tr("smartPlaylists")}
+        </span>
+        <button className="vdj-btn" data-active={smartPreset === "warmup"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("warmup")} title={tr("smartWarmupTip")}>{tr("smartWarmup")}</button>
+        <button className="vdj-btn" data-active={smartPreset === "peak"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("peak")} title={tr("smartPeakTip")}>{tr("smartPeak")}</button>
+        <button className="vdj-btn" data-active={smartPreset === "cooldown"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("cooldown")} title={tr("smartCooldownTip")}>{tr("smartCooldown")}</button>
+        <button className="vdj-btn" data-active={smartPreset === "compat"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("compat")} title={tr("smartCompatTip", { deck: activeDeckId })} disabled={!activeDeckBpm && !activeDeckKey}>{tr("smartCompat", { deck: activeDeckId })}</button>
+        <button className="vdj-btn" data-active={smartPreset === "fresh"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("fresh")} title={tr("smartFreshTip")}>{tr("smartFresh")}</button>
+        {smartPreset && (
+          <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10, opacity: 0.7 }} onClick={() => applySmartPreset(null)}>{tr("smartClear")}</button>
+        )}
+      </div>
+
       {showFilters && (
         <div className="vdj-panel-inset" style={{ padding: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", fontSize: 11 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
