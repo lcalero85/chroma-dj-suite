@@ -419,16 +419,16 @@ function handleVoiceCommand(txt: string) {
   if (!txt) return;
   // Spanish + English keywords
   if (/(siguiente|next|skip)/.test(txt)) {
-    setMessage("🎤 Comando: siguiente"); cancelRequested = false;
+    setMessage(vt("toastVoiceSkip")); cancelRequested = false;
     // Force-cut by jumping outgoing position to 99% to trigger transition.
     const ds = useApp.getState().decks[currentDeck];
     if (ds.duration > 0) seek(currentDeck, ds.duration * 0.99);
-    toast("⏭ Siguiente pista");
+    toast(vt("toastVoiceNext"));
   } else if (/(pausa|pause|stop|para)/.test(txt)) {
-    pause(currentDeck); toast("⏸ Pausado");
+    pause(currentDeck); toast(vt("toastVoicePause"));
   } else if (/(play|reanuda|resume|continua)/.test(txt)) {
     play(currentDeck, useApp.getState().decks[currentDeck].position * (useApp.getState().decks[currentDeck].duration || 0));
-    toast("▶ Continúa");
+    toast(vt("toastVoicePlay"));
   } else if (/(reverse|reversa|atras|reverso)/.test(txt)) {
     void reverseCensor(currentDeck, 1);
   } else if (/(drop|builder)/.test(txt)) {
@@ -436,7 +436,7 @@ function handleVoiceCommand(txt: string) {
   } else if (/(scratch|raya)/.test(txt)) {
     void performScratch(currentDeck, 4);
   } else if (/(reporte|report|pdf)/.test(txt)) {
-    toast("📄 El reporte se generará al finalizar");
+    toast(vt("toastVoiceReportNote"));
   }
 }
 
