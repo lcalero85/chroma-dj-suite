@@ -139,6 +139,59 @@ export function LibraryPanel() {
   const [sortBy, setSortBy] = useState<SortKey>("added");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showFavOnly, setShowFavOnly] = useState(false);
+  // Smart Playlists — quick one-click curation presets that drive the
+  // existing filter state (BPM range, key compatibility, favorites).
+  type SmartPreset = "warmup" | "peak" | "cooldown" | "compat" | "fresh";
+  const [smartPreset, setSmartPreset] = useState<SmartPreset | null>(null);
+  const activeDeckId = useActiveDeck();
+  const activeDeckKey = useApp((s) => s.decks[activeDeckId].key);
+  const activeDeckBpm = useApp((s) => s.decks[activeDeckId].bpm);
+
+  const applySmartPreset = (p: SmartPreset | null) => {
+    if (p === null || smartPreset === p) {
+      // toggle off → restore neutral filters
+      setSmartPreset(null);
+      setShowFilters(false);
+      setBpmMin(0);
+      setBpmMax(220);
+      setCompatibleWith("");
+      setShowFavOnly(false);
+      setSortBy("added");
+      setSortDir("desc");
+      return;
+    }
+    setSmartPreset(p);
+    setShowFilters(true);
+    setShowFavOnly(false);
+    setCompatibleWith("");
+    switch (p) {
+      case "warmup":
+        setBpmMin(90); setBpmMax(115);
+        setSortBy("bpm"); setSortDir("asc");
+        break;
+      case "peak":
+        setBpmMin(122); setBpmMax(132);
+        setSortBy("bpm"); setSortDir("asc");
+        break;
+      case "cooldown":
+        setBpmMin(60); setBpmMax(95);
+        setSortBy("bpm"); setSortDir("desc");
+        break;
+      case "compat": {
+        // Match active deck ±4 BPM and harmonically compatible key.
+        const bpm = activeDeckBpm ?? 0;
+        if (bpm > 0) { setBpmMin(Math.max(0, Math.round(bpm - 4))); setBpmMax(Math.round(bpm + 4)); }
+        else { setBpmMin(0); setBpmMax(220); }
+        if (activeDeckKey) setCompatibleWith(activeDeckKey as CamelotKey);
+        setSortBy("bpm"); setSortDir("asc");
+        break;
+      }
+      case "fresh":
+        setBpmMin(0); setBpmMax(220);
+        setSortBy("added"); setSortDir("desc");
+        break;
+    }
+  };
 
   const toggleFavorite = async (track: TrackRecord) => {
     const next = { ...track, favorite: !track.favorite };
