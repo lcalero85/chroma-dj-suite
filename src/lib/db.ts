@@ -35,6 +35,19 @@ export interface TrackRecord {
   playCount?: number;
   /** User-marked favorite for quick access in the library. */
   favorite?: boolean;
+  /** Phrase / structure markers (intro, verse, break, buildup, drop, outro). */
+  phrases?: PhraseMarker[];
+}
+
+export type PhraseType = "intro" | "verse" | "break" | "buildup" | "drop" | "outro";
+
+export interface PhraseMarker {
+  id: string;
+  type: PhraseType;
+  /** Position in seconds from the start of the track. */
+  pos: number;
+  color: string;
+  label?: string;
 }
 
 export interface PlaylistRecord {
