@@ -66,6 +66,8 @@ export interface DeckState {
   loopStart: number | null;
   loopEnd: number | null;
   loopActive: boolean;
+  /** Saved loops — 8 slots (id 0..7). Each stores start/end in seconds and a color. */
+  savedLoops: { id: number; start: number; end: number; color: string; label?: string }[];
   peaks: number[];
   bands?: { lo: number[]; mid: number[]; hi: number[] } | null;
   reverse: boolean;
@@ -274,6 +276,7 @@ const defaultDeck = (): DeckState => ({
   loopStart: null,
   loopEnd: null,
   loopActive: false,
+  savedLoops: [],
   peaks: [],
   bands: null,
   reverse: false,
