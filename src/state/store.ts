@@ -436,6 +436,20 @@ export interface SettingsState {
   vdjAutoMashupEveryN?: number;
   /** #10 Mix Report PDF — generar reporte al terminar la sesión. */
   vdjMixReport?: boolean;
+  /** ============ Funcionalidades autónomas (v1.7.7) ============ */
+  /** Skin que se aplica automáticamente al iniciar el Virtual DJ; el skin
+   *  previo se restaura al detener. Vacío = no cambiar el skin. */
+  vdjDefaultSkin?: SkinId | "";
+  /** Autopiloto inteligente — ajusta solo intensidad por hora del día. */
+  vdjSmartAutopilot?: boolean;
+  /** Recuperación automática: si una pista falla al cargar, salta a la
+   *  siguiente sin romper la mezcla. Default true. */
+  vdjAutoRecover?: boolean;
+  /** Transiciones ajustadas — pre-carga la siguiente pista antes y muestrea
+   *  los waits cada 100ms para crossfade sin huecos. Default true. */
+  vdjTightTransitions?: boolean;
+  /** Mostrar overlay flotante "MEZCLANDO" durante el set. Default true. */
+  vdjShowStatusOverlay?: boolean;
 }
 
 export interface SessionStats {
