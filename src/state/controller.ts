@@ -34,7 +34,7 @@ import { applyCrossfader } from "@/audio/crossfader";
 import { detectBPM, extractPeaks, extractBandPeaks } from "@/audio/analysis/bpm";
 import { analyzeLoudness, dbToGain } from "@/audio/analysis/loudness";
 import { detectFirstTransient } from "@/audio/analysis/autoCue";
-import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord } from "@/lib/db";
+import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord, type PhraseMarker, type PhraseType } from "@/lib/db";
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
 import { t as tI18n } from "@/lib/i18n";
@@ -364,8 +364,6 @@ export function setTrackBpm(id: DeckId, bpm: number) {
 }
 
 /** ===== Phrase markers (intro / verse / break / buildup / drop / outro) ===== */
-
-import type { PhraseMarker, PhraseType } from "@/lib/db";
 
 export const PHRASE_TYPES: PhraseType[] = ["intro", "verse", "break", "buildup", "drop", "outro"];
 export const PHRASE_COLORS: Record<PhraseType, string> = {
