@@ -18,6 +18,9 @@ import {
   beginScratchDeck,
   scratchDeck,
   endScratchDeck,
+  saveLoopSlot,
+  recallLoopSlot,
+  clearLoopSlot,
 } from "@/state/controller";
 import { Waveform } from "./Waveform";
 import { JogWheel } from "./JogWheel";
@@ -354,6 +357,8 @@ export function Deck({ id, side }: DeckProps) {
           </div>
         </div>
       </div>
+
+      <SavedLoops id={id} />
 
       <AdvancedDeckExtras id={id} />
 
