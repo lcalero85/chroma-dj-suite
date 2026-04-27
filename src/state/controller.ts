@@ -632,7 +632,7 @@ export function clearAllHotCues() {
 export function setLoop(id: DeckId, beats: number) {
   const ds = useApp.getState().decks[id];
   if (!ds.bpm) return;
-  const start = currentTime(id);
+  const start = quantizeIfEnabled(id, currentTime(id));
   const end = start + (60 / ds.bpm) * beats;
   useApp.getState().updateDeck(id, { loopStart: start, loopEnd: end, loopActive: true });
 }
@@ -640,12 +640,12 @@ export function clearLoop(id: DeckId) {
   useApp.getState().updateDeck(id, { loopStart: null, loopEnd: null, loopActive: false });
 }
 export function loopIn(id: DeckId) {
-  useApp.getState().updateDeck(id, { loopStart: currentTime(id) });
+  useApp.getState().updateDeck(id, { loopStart: quantizeIfEnabled(id, currentTime(id)) });
 }
 export function loopOut(id: DeckId) {
   const ds = useApp.getState().decks[id];
   if (ds.loopStart === null) return;
-  let end = currentTime(id);
+  let end = quantizeIfEnabled(id, currentTime(id));
   if (end <= ds.loopStart + 0.05) end = ds.loopStart + 0.25;
   useApp.getState().updateDeck(id, { loopEnd: end, loopActive: true });
 }
