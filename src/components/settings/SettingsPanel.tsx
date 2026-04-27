@@ -819,7 +819,7 @@ function VirtualDjSettings() {
           <option value="">{vt("none")}</option>
           {tracks.map((t) => (
             <option key={t.id} value={t.id}>
-              {(t.title || "{vt("untitled")}").slice(0, 40)}
+              {(t.title || vt("untitled")).slice(0, 40)}
               {t.artist ? ` · ${t.artist.slice(0, 20)}` : ""}
             </option>
           ))}
