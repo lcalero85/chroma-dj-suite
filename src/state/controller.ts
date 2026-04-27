@@ -33,6 +33,7 @@ import {
 import { applyCrossfader } from "@/audio/crossfader";
 import { detectBPM, extractPeaks, extractBandPeaks } from "@/audio/analysis/bpm";
 import { analyzeLoudness, dbToGain } from "@/audio/analysis/loudness";
+import { detectFirstTransient } from "@/audio/analysis/autoCue";
 import { getTrack, putTrack, type TrackRecord, listFolders, putFolder, deleteFolder as dbDeleteFolder, type FolderRecord } from "@/lib/db";
 import { pseudoDetectKey } from "@/lib/camelot";
 import { toast } from "sonner";
@@ -169,6 +170,20 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     }
   }
   const updated: TrackRecord = { ...t, bpm, key, peaks, bands, gainOffsetDb, lastPlayed: Date.now() };
+  // Auto-Cue: detect first transient (cached on the track record).
+  const autoCueEnabled = useApp.getState().settings.autoCueOnLoad ?? true;
+  let autoCueSec = t.autoCueSec;
+  if (autoCueSec === undefined) {
+    try {
+      autoCueSec = detectFirstTransient(buffer);
+    } catch {
+      autoCueSec = 0;
+    }
+    updated.autoCueSec = autoCueSec;
+  } else {
+    updated.autoCueSec = autoCueSec;
+  }
+  const initialCue = autoCueEnabled ? (autoCueSec ?? 0) : 0;
   await putTrack(updated);
 
   // Apply auto-gain to this deck's channel-gain (multiplies the user knob).
@@ -182,20 +197,24 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     title: t.title,
     artist: t.artist,
     duration: buffer.duration,
-    position: 0,
+    position: buffer.duration > 0 ? initialCue / buffer.duration : 0,
     isPlaying: false,
     bpm,
     key,
     peaks,
     bands: bands ?? null,
     hotCues: t.hotCues ?? [],
-    cuePoint: 0,
+    cuePoint: initialCue,
     loopStart: null,
     loopEnd: null,
     loopActive: false,
     savedLoops: t.savedLoops ?? [],
     hasVideo: isVideo,
   });
+  // Position the playhead at the auto-cue so first PLAY drops on the beat.
+  if (initialCue > 0) {
+    try { seek(deckId, initialCue); } catch { /* noop */ }
+  }
   toast(`${tI18n("loadedToast")} ${deckId}`, { description: t.title });
   markActiveDeck(deckId);
 
