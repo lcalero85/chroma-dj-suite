@@ -358,6 +358,40 @@ export interface SettingsState {
   vdjBattleBars?: 4 | 8 | 16;
   /** Número de rondas de battle antes de quedarse en el incoming (2..8). */
   vdjBattleRounds?: number;
+  /** ============ Funcionalidades avanzadas (v1.7.5) ============ */
+  /** #6 Live mic shoutouts — cuando el usuario hable por el mic durante
+   *  un set Virtual DJ, atenuar el master automáticamente (sidechain). */
+  vdjMicShoutout?: boolean;
+  /** Umbral de RMS del mic para activar el duck (0..1). */
+  vdjMicShoutoutThreshold?: number;
+  /** Profundidad del duck del master cuando habla el mic (0..0.9). */
+  vdjMicShoutoutDuck?: number;
+  /** #8 Mood adaptativo — cambia automáticamente el género objetivo cada N
+   *  pistas siguiendo un arco (chill → peak → cooldown). Solo afecta los
+   *  FX de género en cada transición; no reordena la cola. */
+  vdjMoodAdaptive?: boolean;
+  /** Cada cuántas pistas avanzar al siguiente "mood". Default 3. */
+  vdjMoodEveryN?: number;
+  /** Forma del arco de mood. */
+  vdjMoodShape?: "arc" | "ascending" | "descending" | "wave";
+  /** #9 Cue points exportables — incluir un archivo .cue con timestamps de
+   *  cada transición junto con la grabación. */
+  vdjExportCue?: boolean;
+  /** #10 Streaming en vivo — iniciar/parar el broadcast con el set y
+   *  actualizar metadata en cada pista. */
+  vdjAutoStream?: boolean;
+  /** #11 Beatjuggling — juggles A/B cortos en pistas con BPM bajo. */
+  vdjBeatjuggle?: boolean;
+  /** BPM máximo para activar beatjuggling (default 100). */
+  vdjBeatjuggleMaxBpm?: number;
+  /** Probabilidad de beatjuggling por pista lenta (0..1). */
+  vdjBeatjuggleProb?: number;
+  /** #12 Radio Show — insertar jingles + shoutouts cada N pistas. */
+  vdjRadioShow?: boolean;
+  /** Cada cuántas pistas insertar un jingle. Default 4. */
+  vdjRadioJingleEvery?: number;
+  /** ID del track marcado como jingle (debe estar en la library). */
+  vdjRadioJingleTrackId?: string | null;
 }
 
 export interface SessionStats {

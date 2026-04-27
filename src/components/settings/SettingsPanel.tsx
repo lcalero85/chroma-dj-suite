@@ -638,6 +638,174 @@ function VirtualDjSettings() {
           disabled={!enabled || settings.vdjBattleMode !== true}
         />
       </Row>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "6px 0" }} />
+      <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>
+        🎙 Avanzado (v1.7.5)
+      </div>
+
+      {/* #6 Mic shoutouts */}
+      <Row label="Sidechain mic shoutouts">
+        <input
+          type="checkbox"
+          checked={settings.vdjMicShoutout === true}
+          onChange={(e) => update({ vdjMicShoutout: e.target.checked })}
+          disabled={!enabled}
+          title="Detecta cuando hablas por el micrófono y atenúa el master automáticamente"
+        />
+      </Row>
+      <Row label="Umbral del mic (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjMicShoutoutThreshold ?? 0.12) * 100)}
+          min={2} max={60} step={2}
+          onChange={(e) => update({ vdjMicShoutoutThreshold: Math.max(0.02, Math.min(0.6, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjMicShoutout !== true}
+        />
+      </Row>
+      <Row label="Profundidad del duck (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjMicShoutoutDuck ?? 0.55) * 100)}
+          min={0} max={90} step={5}
+          onChange={(e) => update({ vdjMicShoutoutDuck: Math.max(0, Math.min(0.9, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjMicShoutout !== true}
+        />
+      </Row>
+
+      {/* #8 Mood adaptive */}
+      <Row label="Mood adaptativo (arco de género)">
+        <input
+          type="checkbox"
+          checked={settings.vdjMoodAdaptive === true}
+          onChange={(e) => update({ vdjMoodAdaptive: e.target.checked })}
+          disabled={!enabled}
+          title="Cambia automáticamente el género objetivo cada N pistas (chill → peak → cooldown)"
+        />
+      </Row>
+      <Row label="Cambiar mood cada N pistas">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjMoodEveryN ?? 3}
+          min={1} max={10} step={1}
+          onChange={(e) => update({ vdjMoodEveryN: Math.max(1, Math.min(10, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjMoodAdaptive !== true}
+        />
+      </Row>
+      <Row label="Forma del mood">
+        <select
+          className="vdj-btn"
+          value={settings.vdjMoodShape ?? "arc"}
+          onChange={(e) => update({ vdjMoodShape: e.target.value as "arc" | "ascending" | "descending" | "wave" })}
+          style={{ padding: "6px 8px" }}
+          disabled={!enabled || settings.vdjMoodAdaptive !== true}
+        >
+          <option value="arc">🏔 Arco (chill → peak → cooldown)</option>
+          <option value="ascending">📈 Ascendente</option>
+          <option value="descending">📉 Descendente</option>
+          <option value="wave">🌊 Olas</option>
+        </select>
+      </Row>
+
+      {/* #9 Cue export */}
+      <Row label="Exportar cue sheet (.cue) al terminar">
+        <input
+          type="checkbox"
+          checked={settings.vdjExportCue !== false}
+          onChange={(e) => update({ vdjExportCue: e.target.checked })}
+          disabled={!enabled}
+          title="Descarga un archivo .cue con los timestamps de cada transición junto con la grabación"
+        />
+      </Row>
+
+      {/* #10 Auto stream */}
+      <Row label="Streaming en vivo (auto)">
+        <input
+          type="checkbox"
+          checked={settings.vdjAutoStream === true}
+          onChange={(e) => update({ vdjAutoStream: e.target.checked })}
+          disabled={!enabled}
+          title="Inicia el broadcast Icecast automáticamente al arrancar el set y actualiza la metadata por pista"
+        />
+      </Row>
+
+      {/* #11 Beatjuggle */}
+      <Row label="Beatjuggling (en pistas lentas)">
+        <input
+          type="checkbox"
+          checked={settings.vdjBeatjuggle === true}
+          onChange={(e) => update({ vdjBeatjuggle: e.target.checked })}
+          disabled={!enabled}
+          title="Pequeños cortes A↔B sobre el mismo beat en tracks de BPM bajo"
+        />
+      </Row>
+      <Row label="BPM máximo para beatjuggle">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjBeatjuggleMaxBpm ?? 100}
+          min={70} max={140} step={5}
+          onChange={(e) => update({ vdjBeatjuggleMaxBpm: Math.max(70, Math.min(140, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjBeatjuggle !== true}
+        />
+      </Row>
+      <Row label="Probabilidad beatjuggle (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjBeatjuggleProb ?? 0.4) * 100)}
+          min={0} max={100} step={5}
+          onChange={(e) => update({ vdjBeatjuggleProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjBeatjuggle !== true}
+        />
+      </Row>
+
+      {/* #12 Radio show */}
+      <Row label="📻 Modo Radio Show">
+        <input
+          type="checkbox"
+          checked={settings.vdjRadioShow === true}
+          onChange={(e) => update({ vdjRadioShow: e.target.checked })}
+          disabled={!enabled}
+          title="Inserta jingles + voz del DJ entre pistas, estilo radio show"
+        />
+      </Row>
+      <Row label="Jingle cada N pistas">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjRadioJingleEvery ?? 4}
+          min={2} max={20} step={1}
+          onChange={(e) => update({ vdjRadioJingleEvery: Math.max(2, Math.min(20, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjRadioShow !== true}
+        />
+      </Row>
+      <Row label="Pista jingle (Library)">
+        <select
+          className="vdj-btn"
+          value={settings.vdjRadioJingleTrackId ?? ""}
+          onChange={(e) => update({ vdjRadioJingleTrackId: e.target.value || null })}
+          style={{ padding: "6px 8px", maxWidth: 220 }}
+          disabled={!enabled || settings.vdjRadioShow !== true}
+        >
+          <option value="">— ninguna —</option>
+          {tracks.map((t) => (
+            <option key={t.id} value={t.id}>
+              {(t.title || "Sin título").slice(0, 40)}
+              {t.artist ? ` · ${t.artist.slice(0, 20)}` : ""}
+            </option>
+          ))}
+        </select>
+      </Row>
+
       <div style={{ fontSize: 11, opacity: 0.7, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Pistas seleccionadas: <b>{selected.length}</b> / {tracks.length}</span>
         {selected.length > 0 && (

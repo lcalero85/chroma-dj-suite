@@ -37,6 +37,8 @@ import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
 import { getEngine } from "@/audio/engine";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
+import { enableMic } from "@/audio/engine";
+import { startStream, stopStream, updateStreamMetadata, isStreaming } from "@/audio/iceStreamer";
 
 export type VdjGenre =
   | "auto"
@@ -136,6 +138,160 @@ let currentIndex = 0;
 let currentTrackId: string | null = null;
 let recordingActive = false;
 let lastMessage = "Idle";
+
+/** ============ (v1.7.5) Cue points capture ============ */
+interface CuePoint { trackIndex: number; timeSec: number; title: string; artist: string }
+let cuePoints: CuePoint[] = [];
+let recordingStartMs = 0;
+function pushCue(idx: number, t: TrackRecord) {
+  if (recordingStartMs === 0) return;
+  const elapsed = (Date.now() - recordingStartMs) / 1000;
+  cuePoints.push({ trackIndex: idx, timeSec: elapsed, title: t.title || "Track", artist: t.artist || "" });
+}
+
+/** Build a CDJ-style .cue sheet referencing the given audio file. */
+function buildCueSheet(audioFileName: string, perfTitle: string, perfArtist: string): string {
+  const lines: string[] = [];
+  lines.push(`PERFORMER "${perfArtist.replace(/"/g, "'")}"`);
+  lines.push(`TITLE "${perfTitle.replace(/"/g, "'")}"`);
+  lines.push(`FILE "${audioFileName}" WAVE`);
+  cuePoints.forEach((c, i) => {
+    const trackNo = String(i + 1).padStart(2, "0");
+    lines.push(`  TRACK ${trackNo} AUDIO`);
+    lines.push(`    TITLE "${c.title.replace(/"/g, "'")}"`);
+    lines.push(`    PERFORMER "${c.artist.replace(/"/g, "'")}"`);
+    const total = Math.max(0, c.timeSec);
+    const mm = Math.floor(total / 60);
+    const ss = Math.floor(total % 60);
+    const ff = Math.floor((total - Math.floor(total)) * 75); // 75 frames per second
+    lines.push(`    INDEX 01 ${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}:${String(ff).padStart(2, "0")}`);
+  });
+  return lines.join("\n") + "\n";
+}
+
+/** ============ (v1.7.5) Mic shoutout sidechain ============ */
+let micShoutoutRaf: number | null = null;
+let micShoutoutDuckActive = false;
+function startMicShoutoutMonitor() {
+  const settings = useApp.getState().settings;
+  if (settings.vdjMicShoutout !== true) return;
+  // Try to enable the mic if it's not already on (don't disturb user's other usage).
+  void enableMic({ deviceId: settings.audioInputDeviceId || undefined,
+    noiseSuppression: settings.micNoiseSuppression !== false,
+    echoCancellation: settings.micEchoCancellation !== false,
+    autoGainControl: settings.micAutoGainControl === true });
+  const { ctx, micAnalyser, masterDuck } = getEngine();
+  const buf = new Uint8Array(micAnalyser.fftSize);
+  const threshold = Math.max(0.02, Math.min(0.6, settings.vdjMicShoutoutThreshold ?? 0.12));
+  const duckAmt = Math.max(0, Math.min(0.9, settings.vdjMicShoutoutDuck ?? 0.55));
+  const baseGain = 1;
+  const duckGain = 1 - duckAmt;
+  let lastAbove = 0;
+  const HOLD_MS = 350;
+  const tick = () => {
+    if (!running || cancelRequested) {
+      micShoutoutRaf = null;
+      try { masterDuck.gain.setTargetAtTime(baseGain, ctx.currentTime, 0.08); } catch { /* noop */ }
+      micShoutoutDuckActive = false;
+      return;
+    }
+    micAnalyser.getByteTimeDomainData(buf);
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) {
+      const v = (buf[i] - 128) / 128;
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / buf.length);
+    const now = performance.now();
+    if (rms > threshold) lastAbove = now;
+    const speaking = (now - lastAbove) < HOLD_MS;
+    if (speaking && !micShoutoutDuckActive) {
+      micShoutoutDuckActive = true;
+      try { masterDuck.gain.setTargetAtTime(duckGain, ctx.currentTime, 0.06); } catch { /* noop */ }
+    } else if (!speaking && micShoutoutDuckActive) {
+      micShoutoutDuckActive = false;
+      try { masterDuck.gain.setTargetAtTime(baseGain, ctx.currentTime, 0.18); } catch { /* noop */ }
+    }
+    micShoutoutRaf = requestAnimationFrame(tick);
+  };
+  micShoutoutRaf = requestAnimationFrame(tick);
+}
+function stopMicShoutoutMonitor() {
+  if (micShoutoutRaf !== null) cancelAnimationFrame(micShoutoutRaf);
+  micShoutoutRaf = null;
+  try {
+    const { ctx, masterDuck } = getEngine();
+    masterDuck.gain.setTargetAtTime(1, ctx.currentTime, 0.1);
+  } catch { /* noop */ }
+  micShoutoutDuckActive = false;
+  // Note: we DO NOT auto-disable the mic — the user may have it on for other
+  // reasons. They control that via the mic toggle.
+}
+
+/** ============ (v1.7.5) Mood-adaptive genre arc ============ */
+const MOOD_ARC: VdjGenre[] = ["lofi", "house", "techno", "edm", "drumandbass", "edm", "house", "lofi", "ambient"];
+function moodGenreAt(i: number, n: number, shape: "arc" | "ascending" | "descending" | "wave"): VdjGenre {
+  if (n <= 1) return "house";
+  const t = i / (n - 1);
+  let k: number;
+  switch (shape) {
+    case "ascending":  k = t; break;
+    case "descending": k = 1 - t; break;
+    case "wave":       k = 0.5 - 0.5 * Math.cos(t * Math.PI * 2); break;
+    case "arc":
+    default:           k = Math.sin(t * Math.PI); break;
+  }
+  const idx = Math.min(MOOD_ARC.length - 1, Math.floor(k * (MOOD_ARC.length - 1)));
+  return MOOD_ARC[idx];
+}
+
+/** ============ (v1.7.5) Beatjuggling ============
+ *  Pequeños cortes A↔B sobre el mismo beat, perfecto para tracks lentos. */
+async function beatjuggle(activeId: DeckId, sittingId: DeckId, bars = 2) {
+  const dsA = useApp.getState().decks[activeId];
+  const beatSec = dsA.bpm && dsA.bpm > 40 ? 60 / dsA.bpm : 0.5;
+  const totalBeats = bars * 4;
+  const startX = useApp.getState().mixer.xfader;
+  const tA: -1 | 1 = activeId === "A" ? -1 : 1;
+  const tB: -1 | 1 = sittingId === "A" ? -1 : 1;
+  for (let i = 0; i < totalBeats; i++) {
+    if (cancelRequested) break;
+    setXfaderPosition(i % 2 === 0 ? tA : tB);
+    if (i % 4 === 3) { try { void performScratch(i % 2 === 0 ? activeId : sittingId, 1); } catch { /* noop */ } }
+    await sleep(beatSec * 1000);
+  }
+  setXfaderPosition(startX);
+}
+
+/** ============ (v1.7.5) Radio show jingle insert ============
+ *  Reproduce un jingle elegido por el usuario en el deck "B" rapido entre
+ *  pistas, con un shoutout antes y después. */
+async function playRadioJingle(targetDeck: DeckId, jingleTrackId: string): Promise<void> {
+  try {
+    setMessage("📻 Jingle de radio…");
+    announceDjName();
+    await sleep(800);
+    await loadTrackToDeck(targetDeck, jingleTrackId);
+    applyAutoGain(targetDeck);
+    seek(targetDeck, 0);
+    setXfaderPosition(targetDeck === "A" ? -1 : 1);
+    play(targetDeck, 0);
+    // Wait for the jingle to play out (cap at 25s — jingles are short).
+    const t0 = performance.now();
+    while (!cancelRequested) {
+      const ds = useApp.getState().decks[targetDeck];
+      const dur = ds.duration || 0;
+      const pos = (ds.position ?? 0) * dur;
+      if (dur > 0 && pos >= dur - 0.3) break;
+      if (!ds.isPlaying) break;
+      if ((performance.now() - t0) / 1000 > 25) break;
+      await sleep(200);
+    }
+    pause(targetDeck);
+  } catch (e) {
+    console.warn("[vdj] jingle error", e);
+  }
+}
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -877,6 +1033,8 @@ export async function startVirtualDj(): Promise<void> {
   currentIndex = 0;
   currentDeck = "A";
   recordingActive = false;
+  cuePoints = [];
+  recordingStartMs = 0;
   setMessage(`Iniciando Virtual DJ (${queue.length} pistas)`);
 
   // Start recording if requested
@@ -884,9 +1042,27 @@ export async function startVirtualDj(): Promise<void> {
     try {
       await startRecording();
       recordingActive = true;
+      recordingStartMs = Date.now();
       toast.success("Grabando sesión Virtual DJ");
     } catch (err) {
       console.warn("[vdj] no se pudo iniciar grabación", err);
+    }
+  }
+
+  // (v1.7.5 #6) Mic shoutout sidechain — duck master when user speaks.
+  if (settings.vdjMicShoutout === true) {
+    try { startMicShoutoutMonitor(); } catch (err) { console.warn("[vdj] mic shoutout error", err); }
+  }
+  // (v1.7.5 #10) Auto-start live stream of this set, if user enabled it.
+  if (settings.vdjAutoStream === true) {
+    const cfg = useApp.getState().stream;
+    if (cfg.serverUrl && cfg.password && !isStreaming()) {
+      try {
+        await startStream(cfg);
+        toast.success("📡 Streaming en vivo iniciado");
+      } catch (err) {
+        console.warn("[vdj] stream start failed", err);
+      }
     }
   }
 
@@ -905,6 +1081,12 @@ export async function startVirtualDj(): Promise<void> {
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
     setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
+    // (v1.7.5 #9) capture cue point for first track
+    pushCue(0, queue[0]);
+    // (v1.7.5 #10) Push current track metadata to the live stream.
+    if (settings.vdjAutoStream === true && isStreaming()) {
+      void updateStreamMetadata(queue[0].title || "Track 1", queue[0].artist || "");
+    }
     // Opening DJ-name shoutout (any mode except 'mid'-only mode)
     const annMode = settings.vdjAnnounceMode ?? "mid";
     if (annMode !== "mid") {
@@ -917,7 +1099,16 @@ export async function startVirtualDj(): Promise<void> {
       const toId = otherDeck(fromId);
       const next = queue[i];
 
-      const fxCfgBase = GENRE_FX[genre] ?? GENRE_FX.auto;
+      // (v1.7.5 #8) Mood-adaptive: override genre per-position following an arc.
+      const moodGenre: VdjGenre =
+        settings.vdjMoodAdaptive === true
+          ? moodGenreAt(
+              Math.floor((i - 1) / Math.max(1, settings.vdjMoodEveryN ?? 3)),
+              Math.max(1, Math.ceil(queue.length / Math.max(1, settings.vdjMoodEveryN ?? 3))),
+              settings.vdjMoodShape ?? "arc",
+            )
+          : genre;
+      const fxCfgBase = GENRE_FX[moodGenre] ?? GENRE_FX.auto;
       const lvl = getIntensity();
       // Allow user override of crossfade duration
       const xfadeOverride = settings.vdjXfadeSec;
@@ -943,7 +1134,17 @@ export async function startVirtualDj(): Promise<void> {
         }
         if (!cancelRequested) {
           setMessage(`Live FX en ${fromId}`);
-          await spiceCurrent(fromId, genre);
+          await spiceCurrent(fromId, moodGenre);
+          // (v1.7.5 #11) Beatjuggling on slow tracks
+          if (settings.vdjBeatjuggle === true) {
+            const dsB = useApp.getState().decks[fromId];
+            const maxBpm = settings.vdjBeatjuggleMaxBpm ?? 100;
+            const prob = Math.max(0, Math.min(1, settings.vdjBeatjuggleProb ?? 0.4));
+            if (dsB.bpm && dsB.bpm > 40 && dsB.bpm <= maxBpm && Math.random() < prob) {
+              setMessage(`🤹 Beatjuggle ${fromId}`);
+              await beatjuggle(fromId, otherDeck(fromId), 2);
+            }
+          }
         }
       }
 
@@ -1017,7 +1218,7 @@ export async function startVirtualDj(): Promise<void> {
         await echoFreezeTransition(fromId, toId);
       } else if (useBattle) {
         setMessage(`⚔ Battle Mode → ${next.title}`);
-        if (settings.vdjUseFx !== false) applyGenreFx(genre);
+        if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
         const bbars = (settings.vdjBattleBars ?? 4) as 4 | 8 | 16;
         const brounds = settings.vdjBattleRounds ?? 4;
         await battleMode(fromId, toId, bbars, brounds);
@@ -1042,7 +1243,7 @@ export async function startVirtualDj(): Promise<void> {
         // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
         void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
         // Apply genre FX during transition with a wet ramp
-        if (settings.vdjUseFx !== false) applyGenreFx(genre);
+        if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
         setMessage(`Mezclando → ${next.title}`);
         await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
         // Reset outgoing filter + gain
@@ -1067,6 +1268,32 @@ export async function startVirtualDj(): Promise<void> {
 
       currentDeck = toId;
       currentIndex = i;
+
+      // (v1.7.5 #9) Capture cue point for the new track.
+      pushCue(i, next);
+      // (v1.7.5 #10) Update live stream metadata.
+      if (settings.vdjAutoStream === true && isStreaming()) {
+        void updateStreamMetadata(next.title || `Track ${i + 1}`, next.artist || "");
+      }
+      // (v1.7.5 #12) Radio Show: every N tracks, insert a jingle.
+      if (
+        settings.vdjRadioShow === true &&
+        settings.vdjRadioJingleTrackId &&
+        ((i + 1) % Math.max(2, settings.vdjRadioJingleEvery ?? 4) === 0) &&
+        i + 1 < queue.length
+      ) {
+        // Use the OTHER deck so the just-loaded track keeps its place visually.
+        const jdeck = otherDeck(currentDeck);
+        const dsCurNow = useApp.getState().decks[currentDeck];
+        const fadeOutSec = 1.5;
+        // Quick fade out of current
+        await ramp((v) => setDeckGain(currentDeck, v), 1, 0, fadeOutSec);
+        pause(currentDeck);
+        await playRadioJingle(jdeck, settings.vdjRadioJingleTrackId);
+        // Bring back current track from where it paused
+        setDeckGain(currentDeck, 1);
+        play(currentDeck, dsCurNow.position * (dsCurNow.duration || 0));
+      }
     }
 
     // Wait for last track to finish
@@ -1083,7 +1310,7 @@ export async function startVirtualDj(): Promise<void> {
         }
         if (!cancelRequested) {
           setMessage(`Live FX en ${currentDeck}`);
-          await spiceCurrent(currentDeck, genre);
+          await spiceCurrent(currentDeck, settings.vdjMoodAdaptive === true ? "ambient" : genre);
         }
       }
       setMessage(`Esperando final de la última pista`);
@@ -1149,11 +1376,35 @@ export async function startVirtualDj(): Promise<void> {
           });
           useApp.getState().setRecordings(await listRecordings());
           toast.success(`Sesión guardada: ${recName}`);
+          // (v1.7.5 #9) Export .cue sheet alongside the recording.
+          if (settings.vdjExportCue !== false && cuePoints.length > 0) {
+            try {
+              const audioFile = `${recName}.wav`;
+              const cueText = buildCueSheet(audioFile, recName, settings.djName || "Virtual DJ");
+              const blob = new Blob([cueText], { type: "application/x-cue" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${recName}.cue`;
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch { /* noop */ } }, 1500);
+              toast.success(`📋 Cue sheet exportado (${cuePoints.length} pistas)`);
+            } catch (e) { console.warn("[vdj] cue export error", e); }
+          }
         }
       } catch (err) {
         console.warn("[vdj] error guardando grabación", err);
       }
     }
+    // (v1.7.5 #6) Stop mic shoutout monitor.
+    try { stopMicShoutoutMonitor(); } catch { /* noop */ }
+    // (v1.7.5 #10) Stop live stream if WE started it for this set.
+    if (settings.vdjAutoStream === true && isStreaming()) {
+      try { await stopStream(); } catch { /* noop */ }
+    }
+    cuePoints = [];
+    recordingStartMs = 0;
     recordingActive = false;
     running = false;
     cancelRequested = false;
