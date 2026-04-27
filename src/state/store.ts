@@ -336,6 +336,28 @@ export interface SettingsState {
   /** Tolerancia de espera (segundos) para encontrar el siguiente downbeat
    *  o phrase marker. Si no aparece dentro de la ventana, corta igual. */
   vdjPhraseAlignWindowSec?: number;
+  /** ============ Funcionalidades avanzadas (v1.7.4) ============ */
+  /** Mash-up "Double Drop" — deja ambas pistas sonando varios compases
+   *  con EQ split (lows del outgoing, highs del incoming) antes del corte. */
+  vdjMashup?: boolean;
+  /** Probabilidad (0..1) de usar Mash-up double drop por transición. */
+  vdjMashupProb?: number;
+  /** Compases del double drop (2..16). */
+  vdjMashupBars?: number;
+  /** Stem-aware mixing — durante la transición, atenúa la voz central
+   *  del outgoing (vocalCut) para evitar choques vocales con el incoming. */
+  vdjStemAware?: boolean;
+  /** Cantidad de cancelación vocal aplicada al outgoing (0..1). */
+  vdjStemVocalCutAmt?: number;
+  /** Battle Mode — alterna decks cada N compases con cortes rápidos
+   *  y scratches estilo turntablism. */
+  vdjBattleMode?: boolean;
+  /** Probabilidad (0..1) de invocar Battle Mode por transición. */
+  vdjBattleProb?: number;
+  /** Compases por "ronda" en Battle Mode. */
+  vdjBattleBars?: 4 | 8 | 16;
+  /** Número de rondas de battle antes de quedarse en el incoming (2..8). */
+  vdjBattleRounds?: number;
 }
 
 export interface SessionStats {
