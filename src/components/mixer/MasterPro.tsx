@@ -10,6 +10,7 @@ export function MasterPro() {
   const decks = useApp((s) => s.decks);
   const setMasterDeck = (d: "A" | "B") => useApp.getState().updateMixer({ masterDeck: d });
   const toggleQuantize = () => useApp.getState().updateMixer({ quantize: !mixer.quantize });
+  const toggleTempoLock = () => useApp.getState().updateMixer({ tempoLock: !mixer.tempoLock });
   const [tappedBpm, setTappedBpm] = useState<number | null>(null);
 
   const masterBpm = decks[mixer.masterDeck]?.bpm ?? null;
@@ -40,6 +41,16 @@ export function MasterPro() {
         <button className="vdj-btn" data-active={mixer.masterDeck === "B"} style={{ fontSize: 9 }} onClick={() => setMasterDeck("B")}>{t("masterDeckB")}</button>
         <button className="vdj-btn" data-active={mixer.quantize} style={{ fontSize: 9 }} onClick={toggleQuantize} title={t("snapCuesLoops")}>{t("quantizeBtn")}</button>
       </div>
+      <button
+        className="vdj-btn"
+        data-active={mixer.tempoLock}
+        data-tone={mixer.tempoLock ? "accent" : undefined}
+        style={{ fontSize: 10, padding: "4px 0" }}
+        onClick={toggleTempoLock}
+        title={t("tempoLockTitle")}
+      >
+        🔒 {t("tempoLockBtn")} {mixer.tempoLock ? "ON" : "OFF"}
+      </button>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, alignItems: "center" }}>
         <button className="vdj-btn" style={{ fontSize: 9 }} onClick={onTap} title={t("tapTempoTitle")}>{t("tapBtn")} {tappedBpm ? tappedBpm.toFixed(1) : ""}</button>
         <button className="vdj-btn" style={{ fontSize: 9 }} onClick={onAutoMix} title={t("autoMixTitle")}>{t("autoMixBtn")}</button>
