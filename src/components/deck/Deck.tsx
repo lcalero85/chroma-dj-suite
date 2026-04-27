@@ -21,6 +21,10 @@ import {
   saveLoopSlot,
   recallLoopSlot,
   clearLoopSlot,
+  addPhraseAtPlayhead,
+  jumpPhrase,
+  removePhrase,
+  clearPhrases,
 } from "@/state/controller";
 import { Waveform } from "./Waveform";
 import { JogWheel } from "./JogWheel";
@@ -30,7 +34,7 @@ import { ProControls } from "./ProControls";
 import { BpmControls } from "./BpmControls";
 import { getDeck } from "@/audio/deck";
 import { formatTime } from "@/lib/format";
-import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown } from "lucide-react";
+import { Play, Pause, RotateCcw, Headphones, Lock, ChevronUp, ChevronDown, Bookmark } from "lucide-react";
 import { keyName } from "@/lib/camelot";
 import { isCompatible } from "@/lib/camelot";
 import { VideoFxPanel } from "../video/VideoFxPanel";
@@ -220,6 +224,7 @@ export function Deck({ id, side }: DeckProps) {
         bpm={ds.bpm}
         duration={ds.duration}
         hotCues={ds.hotCues}
+        phrases={ds.phrases}
         height={32}
         variant="mini"
         isPlaying={ds.isPlaying}
@@ -235,6 +240,7 @@ export function Deck({ id, side }: DeckProps) {
         loopStart={ds.loopStart}
         loopEnd={ds.loopEnd}
         hotCues={ds.hotCues}
+        phrases={ds.phrases}
         height={96}
         variant="main"
         isPlaying={ds.isPlaying}
@@ -361,6 +367,8 @@ export function Deck({ id, side }: DeckProps) {
       </div>
 
       <SavedLoops id={id} />
+
+      <PhraseStrip id={id} />
 
       <AdvancedDeckExtras id={id} />
 
