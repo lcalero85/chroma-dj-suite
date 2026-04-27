@@ -72,7 +72,7 @@ export function AiAssistantPanel() {
         signal: ctrl.signal,
       });
       if (res.status === 429) { setError("Demasiadas solicitudes. Intenta en unos segundos."); setBusy(false); return; }
-      if (res.status === 402) { setError("Créditos agotados. Agrega créditos en Settings → Workspace → Usage."); setBusy(false); return; }
+      if (res.status === 402) { setError("Créditos agotados. Agrega créditos en Configuración → Espacio de trabajo → Uso."); setBusy(false); return; }
       if (!res.ok || !res.body) { setError("La IA no está disponible ahora."); setBusy(false); return; }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

@@ -146,6 +146,23 @@ let currentTrackId: string | null = null;
 let recordingActive = false;
 let lastMessage = "Idle";
 
+function deckXfaderTarget(id: DeckId): -1 | 1 {
+  return id === "A" || id === "C" ? -1 : 1;
+}
+
+const vdjDeckLoads = new Map<string, Promise<void>>();
+
+function warmLoadTrackToDeck(deckId: DeckId, trackId: string): Promise<void> {
+  const ds = useApp.getState().decks[deckId];
+  if (ds.trackId === trackId && getDeck(deckId).buffer) return Promise.resolve();
+  const key = `${deckId}:${trackId}`;
+  const existing = vdjDeckLoads.get(key);
+  if (existing) return existing;
+  const p = loadTrackToDeck(deckId, trackId).finally(() => vdjDeckLoads.delete(key));
+  vdjDeckLoads.set(key, p);
+  return p;
+}
+
 /** ============ (v1.7.5) Cue points capture ============ */
 interface CuePoint { trackIndex: number; timeSec: number; title: string; artist: string }
 let cuePoints: CuePoint[] = [];
@@ -556,8 +573,8 @@ async function beatjuggle(activeId: DeckId, sittingId: DeckId, bars = 2) {
   const beatSec = dsA.bpm && dsA.bpm > 40 ? 60 / dsA.bpm : 0.5;
   const totalBeats = bars * 4;
   const startX = useApp.getState().mixer.xfader;
-  const tA: -1 | 1 = activeId === "A" ? -1 : 1;
-  const tB: -1 | 1 = sittingId === "A" ? -1 : 1;
+  const tA: -1 | 1 = deckXfaderTarget(activeId);
+  const tB: -1 | 1 = deckXfaderTarget(sittingId);
   for (let i = 0; i < totalBeats; i++) {
     if (cancelRequested) break;
     setXfaderPosition(i % 2 === 0 ? tA : tB);
@@ -575,10 +592,10 @@ async function playRadioJingle(targetDeck: DeckId, jingleTrackId: string): Promi
     setMessage(vt("vdjJingle"));
     announceDjName();
     await sleep(800);
-    await loadTrackToDeck(targetDeck, jingleTrackId);
+    await warmLoadTrackToDeck(targetDeck, jingleTrackId);
     applyAutoGain(targetDeck);
     seek(targetDeck, 0);
-    setXfaderPosition(targetDeck === "A" ? -1 : 1);
+    setXfaderPosition(deckXfaderTarget(targetDeck));
     play(targetDeck, 0);
     // Wait for the jingle to play out (cap at 25s — jingles are short).
     const t0 = performance.now();
@@ -795,7 +812,7 @@ async function echoOut(seconds: number) {
 /** Smooth crossfade between decks with EQ blend. */
 async function crossfadeBetween(fromId: DeckId, toId: DeckId, seconds: number) {
   const start = useApp.getState().mixer.xfader;
-  const target: -1 | 1 = toId === "A" ? -1 : 1;
+  const target: -1 | 1 = deckXfaderTarget(toId);
   const t0 = performance.now();
   return new Promise<void>((resolve) => {
     const step = () => {
@@ -1224,7 +1241,7 @@ async function echoFreezeTransition(fromId: DeckId, toId: DeckId): Promise<void>
   await sleep(freezeSec * 0.45 * 1000);
 
   // 4) HARD CUT crossfader to the incoming side at downbeat — no fade.
-  const target: -1 | 1 = toId === "A" ? -1 : 1;
+  const target: -1 | 1 = deckXfaderTarget(toId);
   setXfaderPosition(target);
   useApp.getState().updateMixer({ masterDeck: toId });
 
@@ -1274,7 +1291,7 @@ async function mashupDoubleDrop(fromId: DeckId, toId: DeckId, bars: number): Pro
     return;
   }
   // Quick clean cut to incoming on the downbeat.
-  const target: -1 | 1 = toId === "A" ? -1 : 1;
+  const target: -1 | 1 = deckXfaderTarget(toId);
   await ramp((v) => setXfaderPosition(v), 0, target, beatSec * 2);
   setEQ(fromId, "hi", 0); setEQ(fromId, "lo", fromLoStart);
   setEQ(toId, "lo", 0);   setEQ(toId, "hi", toHiStart);
@@ -1305,14 +1322,14 @@ async function battleMode(fromId: DeckId, toId: DeckId, bars: number, rounds: nu
   const roundSec = beatSec * 4 * Math.max(4, Math.min(16, bars));
   const totalRounds = Math.max(2, Math.min(8, rounds));
   // Start centered, then slam to fromId.
-  setXfaderPosition(fromId === "A" ? -1 : 1);
+  setXfaderPosition(deckXfaderTarget(fromId));
   for (let r = 0; r < totalRounds; r++) {
     if (cancelRequested) break;
     const onIncoming = r % 2 === 1;
     const activeDeck: DeckId = onIncoming ? toId : fromId;
     const otherD: DeckId = onIncoming ? fromId : toId;
     // Hard cut crossfader to active deck.
-    setXfaderPosition(activeDeck === "A" ? -1 : 1);
+    setXfaderPosition(deckXfaderTarget(activeDeck));
     useApp.getState().updateMixer({ masterDeck: activeDeck });
     // Quick scratch flourish on the active deck halfway through.
     setTimeout(() => { if (!cancelRequested) void performScratch(activeDeck, 2); }, roundSec * 500);
@@ -1323,7 +1340,7 @@ async function battleMode(fromId: DeckId, toId: DeckId, bars: number, rounds: nu
   }
   // End on incoming.
   if (!cancelRequested) {
-    setXfaderPosition(toId === "A" ? -1 : 1);
+    setXfaderPosition(deckXfaderTarget(toId));
     useApp.getState().updateMixer({ masterDeck: toId });
     pause(fromId);
   }
@@ -1480,7 +1497,7 @@ export async function startVirtualDj(): Promise<void> {
   try {
     // Load + start first track on Deck A
     setXfaderPosition(-1);
-    await loadTrackToDeck("A", queue[0].id);
+    await warmLoadTrackToDeck("A", queue[0].id);
     currentTrackId = queue[0].id;
     applyAutoGain("A");
     if (settings.vdjUseHotCues !== false) {
@@ -1572,8 +1589,9 @@ export async function startVirtualDj(): Promise<void> {
       const pollMs = settings.vdjTightTransitions !== false ? 80 : 300;
       // Pre-warm the OTHER deck early (~10% before cutPct) so the audio
       // buffer is decoded and ready the instant the crossfade begins.
-      const warmAt = Math.max(0.4, cutPct - 0.10);
+      const warmAt = Math.max(0.25, cutPct - 0.25);
       let warmed = false;
+      let warmPromise: Promise<void> | null = null;
       while (!cancelRequested) {
         const ds2 = useApp.getState().decks[fromId];
         const pos = (ds2.position ?? 0) * (ds2.duration || 0);
@@ -1581,7 +1599,8 @@ export async function startVirtualDj(): Promise<void> {
           warmed = true;
           // Fire-and-forget: load the next track ahead of time. The actual
           // (re)load below is a no-op cache hit if it's already loaded.
-          void loadTrackToDeck(toId, next.id).catch(() => { /* tried */ });
+          warmPromise = warmLoadTrackToDeck(toId, next.id);
+          void warmPromise.catch(() => { /* tried */ });
         }
         if (pos >= (ds2.duration || 0) * cutPct) break;
         if (!ds2.isPlaying) break;
@@ -1594,7 +1613,7 @@ export async function startVirtualDj(): Promise<void> {
       // (v1.7.7 #3) Tight transitions: if auto-recover is on and the load
       // fails, skip this track (don't break the mix).
       try {
-        await loadTrackToDeck(toId, next.id);
+        await (warmPromise ?? warmLoadTrackToDeck(toId, next.id));
       } catch (err) {
         console.warn("[vdj] track load failed", next.title, err);
         if (settings.vdjAutoRecover !== false) {
@@ -1733,7 +1752,7 @@ export async function startVirtualDj(): Promise<void> {
         const j = i + 1;
         if (j < queue.length) {
           const otherD = otherDeck(currentDeck);
-          await loadTrackToDeck(otherD, queue[j].id);
+          await warmLoadTrackToDeck(otherD, queue[j].id);
           play(otherD, 0);
           await autoMashupSequence(currentDeck, otherD);
           pause(currentDeck);
