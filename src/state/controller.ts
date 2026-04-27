@@ -654,6 +654,81 @@ export function endCensor(id: DeckId) {
   if (st.wasPlaying && !d.isPlaying) play(id, ghost);
 }
 
+/**
+ * Slicer — Pioneer/Serato style. The active bar (8 slices) is anchored to the
+ * playhead the moment the user presses a slice pad. Each pad jumps to the
+ * corresponding slice and loops it for as long as it's held. On release we
+ * return to the "ghost playhead" (where the track would have been if it had
+ * kept playing forward). This keeps the mix in time with the master deck.
+ */
+const sliceState = new Map<DeckId, {
+  startedAt: number;
+  ghostStart: number;
+  prevLoopStart: number | null;
+  prevLoopEnd: number | null;
+  prevLoopActive: boolean;
+  wasPlaying: boolean;
+  /** Anchor point of slice 0 (in seconds) for the current bar. */
+  anchor: number;
+  beatsPerSlice: number;
+}>();
+
+/** Begin holding slice `index` (0..7). `beatsPerSlice` defaults to 1. */
+export function beginSlice(id: DeckId, index: number, beatsPerSlice = 1) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const d = getDeck(id);
+  if (!d.buffer) return;
+  if (sliceState.has(id)) return; // don't stack
+  const beat = 60 / ds.bpm;
+  const sliceLen = beat * beatsPerSlice;
+  const barLen = sliceLen * 8;
+  const now = currentTime(id);
+  // Anchor the bar to the start of the bar containing the current playhead.
+  const anchor = Math.max(0, Math.floor(now / barLen) * barLen);
+  const start = Math.min(d.buffer.duration - 0.05, anchor + index * sliceLen);
+  const end = Math.min(d.buffer.duration - 0.01, start + sliceLen);
+  sliceState.set(id, {
+    startedAt: performance.now(),
+    ghostStart: now,
+    prevLoopStart: ds.loopStart,
+    prevLoopEnd: ds.loopEnd,
+    prevLoopActive: ds.loopActive,
+    wasPlaying: d.isPlaying,
+    anchor,
+    beatsPerSlice,
+  });
+  useApp.getState().updateDeck(id, { loopStart: start, loopEnd: end, loopActive: true });
+  seek(id, start);
+  if (!d.isPlaying) play(id, start);
+}
+
+/** Release the slice — restore previous loop and jump to ghost playhead. */
+export function endSlice(id: DeckId) {
+  const st = sliceState.get(id);
+  if (!st) return;
+  sliceState.delete(id);
+  const d = getDeck(id);
+  if (!d.buffer) {
+    useApp.getState().updateDeck(id, {
+      loopStart: st.prevLoopStart,
+      loopEnd: st.prevLoopEnd,
+      loopActive: st.prevLoopActive,
+    });
+    return;
+  }
+  const elapsed = (performance.now() - st.startedAt) / 1000;
+  const ghost = Math.min(d.buffer.duration - 0.05, st.ghostStart + elapsed * d.playbackRate);
+  useApp.getState().updateDeck(id, {
+    loopStart: st.prevLoopStart,
+    loopEnd: st.prevLoopEnd,
+    loopActive: st.prevLoopActive,
+  });
+  seek(id, ghost);
+  useApp.getState().updateDeck(id, { position: ghost / d.buffer.duration });
+  if (st.wasPlaying && !d.isPlaying) play(id, ghost);
+}
+
 // ===== Voice-over presets =====
 export function setVoicePreset(presetId: string) {
   const p = VOICE_PRESETS.find((x) => x.id === presetId) ?? VOICE_PRESETS[0];
