@@ -13,6 +13,7 @@ import {
 } from "@/audio/automix";
 import { useApp } from "@/state/store";
 import { Sparkles, Activity, History, Mic2, Lock, RotateCcw, Play, X, Zap } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 /**
  * Visual control + status panel for AutoMix Pro.
@@ -24,6 +25,7 @@ export function AutoMixPanel({ compact = false, smartFaderActive = false }: { co
   const [cfg, setCfg] = useState<AutoMixConfig>(getAutoMixConfig());
   const tracks = useApp((s) => s.tracks);
   const updateSettings = useApp((s) => s.updateSettings);
+  const t = useT();
 
   useEffect(() => {
     const unsub = subscribeAutoMix(() => {
