@@ -223,6 +223,7 @@ export function Deck({ id, side }: DeckProps) {
         height={32}
         variant="mini"
         isPlaying={ds.isPlaying}
+        gridOffsetSec={ds.gridOffsetSec}
         onSeek={(p) => seekDeck(id, p)}
       />
       <Waveform
@@ -238,6 +239,7 @@ export function Deck({ id, side }: DeckProps) {
         variant="main"
         isPlaying={ds.isPlaying}
         styleVariant={waveformStyle}
+        gridOffsetSec={ds.gridOffsetSec}
       />
 
       <div
