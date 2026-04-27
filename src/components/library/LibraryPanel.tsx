@@ -11,6 +11,7 @@ import { isCompatible, type CamelotKey } from "@/lib/camelot";
 import { useT } from "@/lib/i18n";
 import { useActiveDeck } from "@/lib/activeDeck";
 import { Sparkles } from "lucide-react";
+import { toggleVdjTrack } from "@/audio/virtualDj";
 
 function FolderNode({
   folder,
