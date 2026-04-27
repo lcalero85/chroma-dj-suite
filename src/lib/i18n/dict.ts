@@ -1019,6 +1019,8 @@ export const DICT = {
     gridHalveBpm: "Mitad del BPM (½)",
     gridDoubleBpm: "Doble del BPM (×2)",
     gridOffset: "off",
+    tempoLockBtn: "TEMPO LOCK",
+    tempoLockTitle: "Master Tempo Lock — sincroniza continuamente el BPM de los otros decks al deck master",
     pro: "PRO",
     bpm: "BPM",
     bpmNoTrack: "Sin pista",
