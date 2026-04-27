@@ -142,10 +142,10 @@ export function AutoMixPanel({ compact = false, smartFaderActive = false }: { co
 
       {/* Toggles */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-        <Toggle on={cfg.keyMatch}    onClick={() => update({ keyMatch: !cfg.keyMatch })}    icon={<Activity size={11} />} label="Key match" />
-        <Toggle on={cfg.autoGain}    onClick={() => update({ autoGain: !cfg.autoGain })}    icon={<Activity size={11} />} label="AutoGain" />
-        <Toggle on={cfg.eqBlend}     onClick={() => update({ eqBlend: !cfg.eqBlend })}     icon={<Activity size={11} />} label="EQ blend" />
-        <Toggle on={cfg.vocalProtect} onClick={() => update({ vocalProtect: !cfg.vocalProtect })} icon={<Mic2 size={11} />} label="Vox guard" />
+        <Toggle on={cfg.keyMatch}    onClick={() => update({ keyMatch: !cfg.keyMatch })}    icon={<Activity size={11} />} label={t("amKeyMatch")} />
+        <Toggle on={cfg.autoGain}    onClick={() => update({ autoGain: !cfg.autoGain })}    icon={<Activity size={11} />} label={t("amAutoGain")} />
+        <Toggle on={cfg.eqBlend}     onClick={() => update({ eqBlend: !cfg.eqBlend })}     icon={<Activity size={11} />} label={t("amEqBlend")} />
+        <Toggle on={cfg.vocalProtect} onClick={() => update({ vocalProtect: !cfg.vocalProtect })} icon={<Mic2 size={11} />} label={t("amVoxGuard")} />
       </div>
 
       {/* Smart Fader toggle (mirrors the global setting) */}
@@ -154,9 +154,9 @@ export function AutoMixPanel({ compact = false, smartFaderActive = false }: { co
         data-active={smartFaderActive}
         onClick={() => updateSettings({ smartFaderEnabled: !smartFaderActive })}
         style={{ fontSize: 10, padding: "5px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-        title="When on, the crossfader auto-rides as the master deck nears its smart-exit"
+        title={t("amSmartFaderTip")}
       >
-        <Zap size={11} /> Smart Fader · {smartFaderActive ? "ON" : "OFF"}
+        <Zap size={11} /> {t("amSmartFader")} · {smartFaderActive ? t("amOn") : t("amOff")}
       </button>
 
       {/* Trigger row */}
@@ -165,28 +165,28 @@ export function AutoMixPanel({ compact = false, smartFaderActive = false }: { co
           className="vdj-btn"
           style={{ fontSize: 10, fontWeight: 700, padding: "6px 0", color: "var(--accent)" }}
           onClick={() => smartCrossfade()}
-          title="Trigger an intelligent transition now"
+          title={t("amSmartMixTip")}
         >
-          <Play size={10} style={{ display: "inline", marginRight: 4 }} /> SMART MIX
+          <Play size={10} style={{ display: "inline", marginRight: 4 }} /> {t("amSmartMix")}
         </button>
         <button
           className="vdj-btn"
           style={{ fontSize: 10, padding: "6px 0" }}
           onClick={() => cancelAutoMix()}
-          title="Cancel any running or pending mix"
+          title={t("amCancelTip")}
         >
-          <X size={10} style={{ display: "inline", marginRight: 4 }} /> CANCEL
+          <X size={10} style={{ display: "inline", marginRight: 4 }} /> {t("amCancel")}
         </button>
       </div>
 
       {/* History */}
       <details>
         <summary style={{ fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, opacity: 0.85 }}>
-          <History size={11} /> History ({status.history.length})
+          <History size={11} /> {t("amHistory")} ({status.history.length})
         </summary>
         <div style={{ maxHeight: 100, overflow: "auto", marginTop: 4, fontSize: 10, fontFamily: "var(--font-mono)" }}>
           {status.history.length === 0
-            ? <div style={{ opacity: 0.5, padding: "4px 0" }}>No tracks yet</div>
+            ? <div style={{ opacity: 0.5, padding: "4px 0" }}>{t("amHistoryEmpty")}</div>
             : status.history.slice().reverse().map((id, i) => (
                 <div key={i} style={{ padding: "2px 0", borderBottom: "1px dashed var(--line)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {trackName(id)}
@@ -195,10 +195,10 @@ export function AutoMixPanel({ compact = false, smartFaderActive = false }: { co
         </div>
         <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
           <button className="vdj-btn" style={{ fontSize: 9, flex: 1 }} onClick={() => clearHistory()}>
-            <RotateCcw size={9} style={{ display: "inline", marginRight: 3 }} /> Clear
+            <RotateCcw size={9} style={{ display: "inline", marginRight: 3 }} /> {t("amHistoryClear")}
           </button>
           <button className="vdj-btn" style={{ fontSize: 9, flex: 1 }} onClick={() => setAutoMixConfig(defaultAutoMixConfig())}>
-            <Lock size={9} style={{ display: "inline", marginRight: 3 }} /> Defaults
+            <Lock size={9} style={{ display: "inline", marginRight: 3 }} /> {t("amHistoryDefaults")}
           </button>
         </div>
       </details>
