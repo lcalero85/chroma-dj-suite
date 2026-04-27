@@ -295,7 +295,7 @@ export function Waveform({
       rafRef.current = null;
       ro.disconnect();
     };
-  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, height, variant, isPlaying, gridOffsetSec, styleVariant]);
+  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, phrases, height, variant, isPlaying, gridOffsetSec, styleVariant]);
 
   const handleClick = (e: React.MouseEvent) => {
     if (!onSeek || variant !== "mini") return;
