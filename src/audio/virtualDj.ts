@@ -1394,12 +1394,12 @@ export async function startVirtualDj(): Promise<void> {
   }
   // (v1.7.6 #1) Harmonic Mixing AI: detect missing keys + reorder.
   if (settings.vdjHarmonicMixing === true) {
-    setMessage("🎼 Analizando tonalidades…");
+    setMessage(vt("vdjAnalyzingKeys"));
     try { await ensureKeysForTracks(queue); } catch (e) { console.warn("[vdj] key detect error", e); }
     const planned = planHarmonic(queue);
     queue.length = 0;
     queue.push(...planned);
-    setMessage(`🎼 Cola armónica lista (${queue.length} pistas)`);
+    setMessage(vt("vdjHarmonicReady", { n: queue.length }));
   }
   // (v1.7.5 #10) Auto-start live stream of this set, if user enabled it.
   if (settings.vdjAutoStream === true) {
@@ -1407,7 +1407,7 @@ export async function startVirtualDj(): Promise<void> {
     if (cfg.serverUrl && cfg.password && !isStreaming()) {
       try {
         await startStream(cfg);
-        toast.success("📡 Streaming en vivo iniciado");
+        toast.success(vt("toastStreamLive"));
       } catch (err) {
         console.warn("[vdj] stream start failed", err);
       }
