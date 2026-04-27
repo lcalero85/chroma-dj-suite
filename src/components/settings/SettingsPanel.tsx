@@ -281,6 +281,167 @@ function VirtualDjSettings() {
           disabled={!enabled}
         />
       </Row>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "6px 0" }} />
+      <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>
+        Comportamiento del Virtual DJ
+      </div>
+      <Row label="Orden aleatorio (shuffle)">
+        <input
+          type="checkbox"
+          checked={settings.vdjShuffle === true}
+          onChange={(e) => update({ vdjShuffle: e.target.checked })}
+          disabled={!enabled}
+          title="Mezcla las pistas seleccionadas en orden aleatorio (sin repetir)"
+        />
+      </Row>
+      <Row label="Cortar pista al (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjCutAtPct ?? 0.75) * 100)}
+          min={50}
+          max={95}
+          step={1}
+          onChange={(e) => update({ vdjCutAtPct: Math.max(0.5, Math.min(0.95, Number(e.target.value) / 100)) })}
+          disabled={!enabled}
+          title="Porcentaje del track al que se inicia la transición (50–95%)"
+        />
+      </Row>
+      <Row label="Duración crossfade (s)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjXfadeSec ?? 0}
+          min={0}
+          max={30}
+          step={1}
+          onChange={(e) => update({ vdjXfadeSec: Math.max(0, Math.min(30, Number(e.target.value))) })}
+          disabled={!enabled}
+          title="0 = automático según el género"
+        />
+      </Row>
+      <Row label="Sincronizar BPM (Sync)">
+        <input
+          type="checkbox"
+          checked={settings.vdjSyncBpm !== false}
+          onChange={(e) => update({ vdjSyncBpm: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="AutoGain por pista">
+        <input
+          type="checkbox"
+          checked={settings.vdjAutoGain !== false}
+          onChange={(e) => update({ vdjAutoGain: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Aplicar efectos (FX) en transición">
+        <input
+          type="checkbox"
+          checked={settings.vdjUseFx !== false}
+          onChange={(e) => update({ vdjUseFx: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Loops automáticos">
+        <input
+          type="checkbox"
+          checked={settings.vdjUseLoops !== false}
+          onChange={(e) => update({ vdjUseLoops: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Hot cues automáticos">
+        <input
+          type="checkbox"
+          checked={settings.vdjUseHotCues !== false}
+          onChange={(e) => update({ vdjUseHotCues: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Scratch flourish">
+        <input
+          type="checkbox"
+          checked={settings.vdjUseScratch !== false}
+          onChange={(e) => update({ vdjUseScratch: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Pitch bend (micro-ajustes)">
+        <input
+          type="checkbox"
+          checked={settings.vdjUsePitchBend !== false}
+          onChange={(e) => update({ vdjUsePitchBend: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Spice (sweeps + loop a mitad)">
+        <input
+          type="checkbox"
+          checked={settings.vdjUseSpice !== false}
+          onChange={(e) => update({ vdjUseSpice: e.target.checked })}
+          disabled={!enabled}
+          title="Filtros, loops, scratch y bends a mitad de cada pista"
+        />
+      </Row>
+      <Row label="Anunciar nombre del DJ">
+        <input
+          type="checkbox"
+          checked={settings.vdjAnnounceDj !== false}
+          onChange={(e) => update({ vdjAnnounceDj: e.target.checked })}
+          disabled={!enabled}
+          title="Voz robótica con el nombre configurado en 'Nombre del DJ'"
+        />
+      </Row>
+      <Row label="Frecuencia del anuncio">
+        <select
+          className="vdj-btn"
+          value={settings.vdjAnnounceMode ?? "mid"}
+          onChange={(e) => update({ vdjAnnounceMode: e.target.value as "start" | "every" | "mid" })}
+          style={{ padding: "6px 8px" }}
+          disabled={!enabled || settings.vdjAnnounceDj === false}
+        >
+          <option value="start">Solo al iniciar</option>
+          <option value="mid">A mitad de pista</option>
+          <option value="every">En cada transición</option>
+        </select>
+      </Row>
+      <Row label="Volumen del anuncio">
+        <input
+          type="range"
+          min={0}
+          max={0.6}
+          step={0.02}
+          value={settings.vdjAnnounceVolume ?? 0.18}
+          onChange={(e) => update({ vdjAnnounceVolume: Number(e.target.value) })}
+          disabled={!enabled || settings.vdjAnnounceDj === false}
+          style={{ width: 120 }}
+        />
+      </Row>
+      <Row label="Outro profesional (brake + reverb)">
+        <input
+          type="checkbox"
+          checked={settings.vdjUseOutro !== false}
+          onChange={(e) => update({ vdjUseOutro: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Duración del brake final (s)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjBrakeSec ?? 3.5}
+          min={1}
+          max={8}
+          step={0.5}
+          onChange={(e) => update({ vdjBrakeSec: Math.max(1, Math.min(8, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjUseOutro === false}
+        />
+      </Row>
       <div style={{ fontSize: 11, opacity: 0.7, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Pistas seleccionadas: <b>{selected.length}</b> / {tracks.length}</span>
         {selected.length > 0 && (
