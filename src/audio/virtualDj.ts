@@ -1428,7 +1428,7 @@ export async function startVirtualDj(): Promise<void> {
     }
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
-    setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
+    setMessage(vt("vdjPlayingFirst", { title: queue[0].title || "Track 1", n: queue.length }));
     // (v1.7.5 #9) capture cue point for first track
     pushCue(0, queue[0]);
     pushReportEntry(0, queue[0], "Start");
