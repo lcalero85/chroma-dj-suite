@@ -566,6 +566,22 @@ export function setXfaderPosition(pos: number) {
   useApp.getState().updateMixer({ xfader: pos });
 }
 
+/**
+ * Beat-Jump Quantize Global. When the master quantize toggle is on, snaps a
+ * time (seconds) to the nearest beat in the deck's grid (uses the deck's BPM
+ * + gridOffsetSec). When off, returns the input unchanged.
+ */
+export function quantizeIfEnabled(id: DeckId, sec: number): number {
+  const quantize = useApp.getState().mixer.quantize;
+  if (!quantize) return sec;
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return sec;
+  const beat = 60 / ds.bpm;
+  const off = ds.gridOffsetSec ?? 0;
+  const snapped = Math.round((sec - off) / beat) * beat + off;
+  return Math.max(0, snapped);
+}
+
 export function addHotCue(id: DeckId, slot: number) {
   const t = quantizeIfEnabled(id, currentTime(id));
   const palette = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
