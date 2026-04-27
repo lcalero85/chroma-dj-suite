@@ -123,8 +123,15 @@ export function LibraryPanel() {
   const selectedFolderId = useApp((s) => s.selectedFolderId);
   const setSelectedFolder = useApp((s) => s.setSelectedFolder);
   const segments = useApp((s) => s.segments);
-  const vdjSelected = useApp((s) => s.settings.vdjSelectedTrackIds ?? []);
-  const vdjSelectedSet = useMemo(() => new Set(vdjSelected), [vdjSelected]);
+  // Select the raw array (may be undefined) so the selector stays referentially
+  // stable across renders. Falling back to `?? []` inside the selector returns
+  // a fresh array each time and triggers an infinite re-render loop with
+  // useSyncExternalStore.
+  const vdjSelected = useApp((s) => s.settings.vdjSelectedTrackIds);
+  const vdjSelectedSet = useMemo(
+    () => new Set(vdjSelected ?? []),
+    [vdjSelected],
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
