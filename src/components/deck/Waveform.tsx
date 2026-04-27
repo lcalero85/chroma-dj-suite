@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { t as tGlobal } from "@/lib/i18n";
+import type { PhraseMarker } from "@/lib/db";
 
 interface WaveformProps {
   peaks: number[];
@@ -10,6 +11,7 @@ interface WaveformProps {
   loopStart?: number | null;
   loopEnd?: number | null;
   hotCues?: { id: number; pos: number; color: string }[];
+  phrases?: PhraseMarker[];
   height?: number;
   variant?: "main" | "mini";
   onSeek?: (pos: number) => void;
@@ -29,6 +31,7 @@ export function Waveform({
   loopStart,
   loopEnd,
   hotCues,
+  phrases,
   height = 90,
   variant = "main",
   onSeek,
