@@ -16,6 +16,8 @@ export interface TrackRecord {
   peaks?: number[];
   bands?: { lo: number[]; mid: number[]; hi: number[] };
   hotCues?: { id: number; pos: number; color: string; label?: string }[];
+  /** Saved loops persisted with the track — recallable across sessions. */
+  savedLoops?: { id: number; start: number; end: number; color: string; label?: string }[];
   folderId?: string | null;
   kind?: "audio" | "video";
   mime?: string;

@@ -276,6 +276,7 @@ const defaultDeck = (): DeckState => ({
   loopStart: null,
   loopEnd: null,
   loopActive: false,
+  savedLoops: [],
   peaks: [],
   bands: null,
   reverse: false,
