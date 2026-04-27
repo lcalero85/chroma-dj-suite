@@ -38,6 +38,18 @@ export function TopBar() {
   const [recSec, setRecSec] = useState<number>(0);
   const [recBusy, setRecBusy] = useState(false);
   const setRecordings = useApp((s) => s.setRecordings);
+  const vdjEnabled = useApp((s) => s.settings.vdjEnabled === true);
+  const vdjSelectedCount = useApp((s) => (s.settings.vdjSelectedTrackIds ?? []).length);
+  const [vdjOn, setVdjOn] = useState<boolean>(() => isVirtualDjRunning());
+  const [vdjMsg, setVdjMsg] = useState<string>(() => getVdjStatus().message);
+  useEffect(() => {
+    const unsub = subscribeVdj(() => {
+      const st = getVdjStatus();
+      setVdjOn(st.running);
+      setVdjMsg(st.message);
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     if (appName) document.title = appName;
