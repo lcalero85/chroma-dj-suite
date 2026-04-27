@@ -672,6 +672,7 @@ export function LibraryPanel() {
           <thead>
             <tr style={{ color: "var(--text-3)", textAlign: "left" }}>
               <th style={{ padding: 6, fontWeight: 600, width: 18 }}></th>
+              <th style={{ padding: 6, fontWeight: 600, width: 32, textAlign: "center" }} title="Marca para que el Virtual DJ mezcle esta pista">VDJ</th>
               <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColTitle")}</th>
               <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColArtist")}</th>
               <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColBpm")}</th>
@@ -683,7 +684,7 @@ export function LibraryPanel() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: 0 }}>
+                <td colSpan={8} style={{ padding: 0 }}>
                   <div
                     style={{
                       display: "flex",
