@@ -196,6 +196,9 @@ export interface SettingsState {
   videoLowerThird?: boolean;
   /** Auto-gain on import. */
   autoGainOnImport?: boolean;
+  /** Auto-Cue on load: jump cue point to first transient when a track is
+   * loaded onto a deck. Like Serato/Rekordbox "Auto Cue". Default true. */
+  autoCueOnLoad?: boolean;
   /** How many decks are visible/active in the layout. Default 2 (A+B). */
   enabledDecks?: 2 | 4;
   /** Visual style for the deck waveforms. */

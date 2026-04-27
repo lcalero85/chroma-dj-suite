@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { radioAdd, addTrackToSegment } from "@/state/controller";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
 import { useT } from "@/lib/i18n";
+import { useActiveDeck } from "@/lib/activeDeck";
+import { Sparkles } from "lucide-react";
 
 function FolderNode({
   folder,
@@ -137,6 +139,59 @@ export function LibraryPanel() {
   const [sortBy, setSortBy] = useState<SortKey>("added");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showFavOnly, setShowFavOnly] = useState(false);
+  // Smart Playlists — quick one-click curation presets that drive the
+  // existing filter state (BPM range, key compatibility, favorites).
+  type SmartPreset = "warmup" | "peak" | "cooldown" | "compat" | "fresh";
+  const [smartPreset, setSmartPreset] = useState<SmartPreset | null>(null);
+  const activeDeckId = useActiveDeck();
+  const activeDeckKey = useApp((s) => s.decks[activeDeckId].key);
+  const activeDeckBpm = useApp((s) => s.decks[activeDeckId].bpm);
+
+  const applySmartPreset = (p: SmartPreset | null) => {
+    if (p === null || smartPreset === p) {
+      // toggle off → restore neutral filters
+      setSmartPreset(null);
+      setShowFilters(false);
+      setBpmMin(0);
+      setBpmMax(220);
+      setCompatibleWith("");
+      setShowFavOnly(false);
+      setSortBy("added");
+      setSortDir("desc");
+      return;
+    }
+    setSmartPreset(p);
+    setShowFilters(true);
+    setShowFavOnly(false);
+    setCompatibleWith("");
+    switch (p) {
+      case "warmup":
+        setBpmMin(90); setBpmMax(115);
+        setSortBy("bpm"); setSortDir("asc");
+        break;
+      case "peak":
+        setBpmMin(122); setBpmMax(132);
+        setSortBy("bpm"); setSortDir("asc");
+        break;
+      case "cooldown":
+        setBpmMin(60); setBpmMax(95);
+        setSortBy("bpm"); setSortDir("desc");
+        break;
+      case "compat": {
+        // Match active deck ±4 BPM and harmonically compatible key.
+        const bpm = activeDeckBpm ?? 0;
+        if (bpm > 0) { setBpmMin(Math.max(0, Math.round(bpm - 4))); setBpmMax(Math.round(bpm + 4)); }
+        else { setBpmMin(0); setBpmMax(220); }
+        if (activeDeckKey) setCompatibleWith(activeDeckKey as CamelotKey);
+        setSortBy("bpm"); setSortDir("asc");
+        break;
+      }
+      case "fresh":
+        setBpmMin(0); setBpmMax(220);
+        setSortBy("added"); setSortDir("desc");
+        break;
+    }
+  };
 
   const toggleFavorite = async (track: TrackRecord) => {
     const next = { ...track, favorite: !track.favorite };
@@ -488,6 +543,21 @@ export function LibraryPanel() {
         >
           <SlidersHorizontal size={12} />
         </button>
+      </div>
+
+      {/* Smart Playlist quick presets — one click curates BPM/Key/Sort */}
+      <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", padding: "0 2px" }}>
+        <span title={tr("smartPlaylistsTip")} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, color: "var(--text-3)", marginRight: 2 }}>
+          <Sparkles size={11} /> {tr("smartPlaylists")}
+        </span>
+        <button className="vdj-btn" data-active={smartPreset === "warmup"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("warmup")} title={tr("smartWarmupTip")}>{tr("smartWarmup")}</button>
+        <button className="vdj-btn" data-active={smartPreset === "peak"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("peak")} title={tr("smartPeakTip")}>{tr("smartPeak")}</button>
+        <button className="vdj-btn" data-active={smartPreset === "cooldown"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("cooldown")} title={tr("smartCooldownTip")}>{tr("smartCooldown")}</button>
+        <button className="vdj-btn" data-active={smartPreset === "compat"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("compat")} title={tr("smartCompatTip", { deck: activeDeckId })} disabled={!activeDeckBpm && !activeDeckKey}>{tr("smartCompat", { deck: activeDeckId })}</button>
+        <button className="vdj-btn" data-active={smartPreset === "fresh"} style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => applySmartPreset("fresh")} title={tr("smartFreshTip")}>{tr("smartFresh")}</button>
+        {smartPreset && (
+          <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10, opacity: 0.7 }} onClick={() => applySmartPreset(null)}>{tr("smartClear")}</button>
+        )}
       </div>
 
       {showFilters && (

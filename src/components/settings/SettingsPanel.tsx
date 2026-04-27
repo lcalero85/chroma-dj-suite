@@ -91,6 +91,13 @@ export function SettingsPanel() {
           onChange={(e) => update({ autoGainOnImport: e.target.checked })}
         />
       </Row>
+      <Row label={t("autoCueLabel")}>
+        <input
+          type="checkbox"
+          checked={settings.autoCueOnLoad ?? true}
+          onChange={(e) => update({ autoCueOnLoad: e.target.checked })}
+        />
+      </Row>
       <Row label={t("visibleDecks")}>
         <select
           className="vdj-btn"
