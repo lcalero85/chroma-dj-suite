@@ -209,6 +209,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     loopEnd: null,
     loopActive: false,
     savedLoops: t.savedLoops ?? [],
+    gridOffsetSec: t.gridOffsetSec ?? 0,
     hasVideo: isVideo,
   });
   // Position the playhead at the auto-cue so first PLAY drops on the beat.
@@ -279,6 +280,61 @@ export function setDeckPitch(id: DeckId, pitch: number) {
   const rate = 1 + pitch * range;
   setPlaybackRate(id, rate);
   useApp.getState().updateDeck(id, { pitch });
+}
+
+/** ===== Beat Grid editor ===== */
+
+function persistGrid(id: DeckId, patch: { gridOffsetSec?: number; bpm?: number | null }) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.trackId) return;
+  void getTrack(ds.trackId).then((tr) => {
+    if (!tr) return;
+    const next = { ...tr } as TrackRecord;
+    if (patch.gridOffsetSec !== undefined) next.gridOffsetSec = patch.gridOffsetSec;
+    if (patch.bpm !== undefined) next.bpm = patch.bpm;
+    putTrack(next);
+  });
+}
+
+/** Shift the beat-grid downbeat by deltaSec (negative = earlier). */
+export function nudgeGridOffset(id: DeckId, deltaSec: number) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const beat = 60 / ds.bpm;
+  // Keep the offset within one beat — adding multiples of beat is a no-op for the grid.
+  let next = ((ds.gridOffsetSec ?? 0) + deltaSec) % beat;
+  if (next < 0) next += beat;
+  useApp.getState().updateDeck(id, { gridOffsetSec: next });
+  persistGrid(id, { gridOffsetSec: next });
+}
+
+/** Snap the grid downbeat (beat 0) to the current playhead position. */
+export function snapGridToPlayhead(id: DeckId) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const beat = 60 / ds.bpm;
+  const t = currentTime(id);
+  let next = t % beat;
+  if (next < 0) next += beat;
+  useApp.getState().updateDeck(id, { gridOffsetSec: next });
+  persistGrid(id, { gridOffsetSec: next });
+  toast.success(tI18n("gridSet"));
+}
+
+/** Halve / double the track BPM (doesn't affect playback rate, only the grid + sync math). */
+export function scaleBpm(id: DeckId, factor: 0.5 | 2) {
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return;
+  const newBpm = Math.max(40, Math.min(300, ds.bpm * factor));
+  useApp.getState().updateDeck(id, { bpm: newBpm });
+  persistGrid(id, { bpm: newBpm });
+}
+
+/** Manually set the BPM to an exact value. */
+export function setTrackBpm(id: DeckId, bpm: number) {
+  const clamped = Math.max(40, Math.min(300, bpm));
+  useApp.getState().updateDeck(id, { bpm: clamped });
+  persistGrid(id, { bpm: clamped });
 }
 
 export function setDeckEQ(id: DeckId, band: "hi" | "mid" | "lo", v: number) {
@@ -413,7 +469,8 @@ export function addHotCue(id: DeckId, slot: number) {
     const ds = useApp.getState().decks[id];
     if (ds.bpm) {
       const beat = 60 / ds.bpm;
-      t = Math.round(t / beat) * beat;
+      const off = ds.gridOffsetSec ?? 0;
+      t = Math.round((t - off) / beat) * beat + off;
     }
   }
   const palette = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
@@ -684,8 +741,10 @@ export function beginSlice(id: DeckId, index: number, beatsPerSlice = 1) {
   const sliceLen = beat * beatsPerSlice;
   const barLen = sliceLen * 8;
   const now = currentTime(id);
-  // Anchor the bar to the start of the bar containing the current playhead.
-  const anchor = Math.max(0, Math.floor(now / barLen) * barLen);
+  // Anchor the bar to the start of the bar containing the current playhead,
+  // respecting the track's beat-grid offset (downbeat) when set.
+  const off = ds.gridOffsetSec ?? 0;
+  const anchor = Math.max(0, Math.floor((now - off) / barLen) * barLen + off);
   const start = Math.min(d.buffer.duration - 0.05, anchor + index * sliceLen);
   const end = Math.min(d.buffer.duration - 0.01, start + sliceLen);
   sliceState.set(id, {

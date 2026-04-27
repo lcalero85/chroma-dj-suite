@@ -27,6 +27,10 @@ export interface TrackRecord {
   gainOffsetDb?: number;
   /** Auto-detected first transient (seconds) — used as default cue point. */
   autoCueSec?: number;
+  /** Beat grid offset in seconds — where beat 0 lands.
+   *  Beats are spaced every (60/bpm) seconds starting from this offset.
+   *  Default 0 keeps the legacy behavior (grid anchored to t=0). */
+  gridOffsetSec?: number;
   /** Times this track has been loaded onto a deck. */
   playCount?: number;
   /** User-marked favorite for quick access in the library. */

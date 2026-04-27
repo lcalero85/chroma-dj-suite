@@ -1,8 +1,8 @@
 import { useApp, type DeckId } from "@/state/store";
-import { setDeckPitch } from "@/state/controller";
+import { setDeckPitch, nudgeGridOffset, snapGridToPlayhead, scaleBpm } from "@/state/controller";
 import { tap } from "@/audio/transport";
 import { useState } from "react";
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { Minus, Plus, RotateCcw, Grid3x3 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
 interface Props { id: DeckId }
@@ -78,6 +78,82 @@ export function BpmControls({ id }: Props) {
         </button>
         <span className="vdj-readout" style={{ fontSize: 9, color: "var(--text-3)", whiteSpace: "nowrap" }}>
           {t("bpmOriginal")} {ds.bpm.toFixed(1)}
+        </span>
+      </div>
+      {/* Beat Grid editor */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 3,
+          borderTop: "1px solid var(--surface-3)",
+          paddingTop: 4,
+        }}
+      >
+        <span className="vdj-label" style={{ fontSize: 9, display: "flex", alignItems: "center", gap: 2 }}>
+          <Grid3x3 size={9} /> {t("grid")}
+        </span>
+        <button
+          className="vdj-btn"
+          title={t("gridShiftLeft")}
+          style={{ fontSize: 9, padding: "3px 4px", flex: 1 }}
+          onClick={() => nudgeGridOffset(id, -0.01)}
+        >
+          ◀10
+        </button>
+        <button
+          className="vdj-btn"
+          title={t("gridShiftLeftFine")}
+          style={{ fontSize: 9, padding: "3px 4px", flex: 1 }}
+          onClick={() => nudgeGridOffset(id, -0.002)}
+        >
+          ◀2
+        </button>
+        <button
+          className="vdj-btn"
+          data-tone="accent"
+          title={t("gridSnapToPlayhead")}
+          style={{ fontSize: 9, padding: "3px 4px", flex: 1.4 }}
+          onClick={() => snapGridToPlayhead(id)}
+        >
+          {t("gridSetBtn")}
+        </button>
+        <button
+          className="vdj-btn"
+          title={t("gridShiftRightFine")}
+          style={{ fontSize: 9, padding: "3px 4px", flex: 1 }}
+          onClick={() => nudgeGridOffset(id, 0.002)}
+        >
+          2▶
+        </button>
+        <button
+          className="vdj-btn"
+          title={t("gridShiftRight")}
+          style={{ fontSize: 9, padding: "3px 4px", flex: 1 }}
+          onClick={() => nudgeGridOffset(id, 0.01)}
+        >
+          10▶
+        </button>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+        <button
+          className="vdj-btn"
+          title={t("gridHalveBpm")}
+          style={{ fontSize: 9, padding: "3px 4px", flex: 1 }}
+          onClick={() => scaleBpm(id, 0.5)}
+        >
+          ½ BPM
+        </button>
+        <button
+          className="vdj-btn"
+          title={t("gridDoubleBpm")}
+          style={{ fontSize: 9, padding: "3px 4px", flex: 1 }}
+          onClick={() => scaleBpm(id, 2)}
+        >
+          ×2 BPM
+        </button>
+        <span className="vdj-readout" style={{ fontSize: 9, color: "var(--text-3)", whiteSpace: "nowrap", minWidth: 56, textAlign: "right" }}>
+          {t("gridOffset")} {((ds.gridOffsetSec ?? 0) * 1000).toFixed(0)}ms
         </span>
       </div>
     </div>

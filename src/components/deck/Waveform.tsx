@@ -16,6 +16,8 @@ interface WaveformProps {
   isPlaying?: boolean;
   /** Visual style: classic = solid bars, bars = thicker spaced bars, dual = top/bottom mirror (Serato-like). */
   styleVariant?: "classic" | "bars" | "dual";
+  /** Beat grid downbeat offset (seconds) — shifts the grid lines without retiming. */
+  gridOffsetSec?: number;
 }
 
 export function Waveform({
@@ -32,6 +34,7 @@ export function Waveform({
   onSeek,
   isPlaying,
   styleVariant = "classic",
+  gridOffsetSec = 0,
 }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -148,10 +151,10 @@ export function Waveform({
         // beatgrid
         if (bpm && bpm > 0) {
           const beatSec = 60 / bpm;
-          const firstBeat = Math.ceil(startSec / beatSec) * beatSec;
-          // Use beat number to emphasize downbeats (every 4th = bar line).
-          // Beats are counted from t=0 of the track so the grid stays anchored.
-          const firstBeatIdx = Math.ceil(startSec / beatSec);
+          const off = (gridOffsetSec ?? 0);
+          // Beats are spaced every (60/bpm) seconds starting at the grid offset.
+          const firstBeatIdx = Math.ceil((startSec - off) / beatSec);
+          const firstBeat = firstBeatIdx * beatSec + off;
           let beatIdx = firstBeatIdx;
           for (let t = firstBeat; t < endSec; t += beatSec, beatIdx++) {
             const x = ((t - startSec) / (endSec - startSec)) * w;
@@ -257,7 +260,7 @@ export function Waveform({
       rafRef.current = null;
       ro.disconnect();
     };
-  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, height, variant, isPlaying]);
+  }, [peaks, bands, position, bpm, duration, loopStart, loopEnd, hotCues, height, variant, isPlaying, gridOffsetSec, styleVariant]);
 
   const handleClick = (e: React.MouseEvent) => {
     if (!onSeek || variant !== "mini") return;
