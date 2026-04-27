@@ -1589,8 +1589,9 @@ export async function startVirtualDj(): Promise<void> {
       const pollMs = settings.vdjTightTransitions !== false ? 80 : 300;
       // Pre-warm the OTHER deck early (~10% before cutPct) so the audio
       // buffer is decoded and ready the instant the crossfade begins.
-      const warmAt = Math.max(0.4, cutPct - 0.10);
+      const warmAt = Math.max(0.25, cutPct - 0.25);
       let warmed = false;
+      let warmPromise: Promise<void> | null = null;
       while (!cancelRequested) {
         const ds2 = useApp.getState().decks[fromId];
         const pos = (ds2.position ?? 0) * (ds2.duration || 0);
@@ -1598,7 +1599,8 @@ export async function startVirtualDj(): Promise<void> {
           warmed = true;
           // Fire-and-forget: load the next track ahead of time. The actual
           // (re)load below is a no-op cache hit if it's already loaded.
-          void warmLoadTrackToDeck(toId, next.id).catch(() => { /* tried */ });
+          warmPromise = warmLoadTrackToDeck(toId, next.id);
+          void warmPromise.catch(() => { /* tried */ });
         }
         if (pos >= (ds2.duration || 0) * cutPct) break;
         if (!ds2.isPlaying) break;
@@ -1611,7 +1613,7 @@ export async function startVirtualDj(): Promise<void> {
       // (v1.7.7 #3) Tight transitions: if auto-recover is on and the load
       // fails, skip this track (don't break the mix).
       try {
-        await warmLoadTrackToDeck(toId, next.id);
+        await (warmPromise ?? warmLoadTrackToDeck(toId, next.id));
       } catch (err) {
         console.warn("[vdj] track load failed", next.title, err);
         if (settings.vdjAutoRecover !== false) {
