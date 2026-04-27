@@ -1,7 +1,7 @@
 import { useApp, type DeckId } from "@/state/store";
 import { beatJump, brake, setReverse } from "@/audio/transport";
-import { beginLoopRoll, endLoopRoll, beginCensor, endCensor, beginSlice, endSlice } from "@/state/controller";
-import { Rewind, FastForward, RotateCcw, Disc, Square } from "lucide-react";
+import { beginLoopRoll, endLoopRoll, beginCensor, endCensor, beginSlice, endSlice, beginPitchPlay, endPitchPlay } from "@/state/controller";
+import { Rewind, FastForward, RotateCcw, Disc, Square, Music2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useState } from "react";
 
@@ -13,6 +13,10 @@ export function ProControls({ id }: Props) {
   const toggleSlip = () => useApp.getState().updateDeck(id, { slip: !ds.slip });
   // Beats per slice for the Slicer row. 1 beat → 8 pads = 1 bar.
   const [sliceBeats, setSliceBeats] = useState<number>(1);
+  // Pitch Play — root hot-cue + 8 semitone offsets played as notes.
+  const [pitchRoot, setPitchRoot] = useState<number>(0);
+  // Default offsets: -4..+3 semitones around the root cue.
+  const PITCH_OFFSETS = [-4, -3, -2, -1, 0, 1, 2, 3];
 
   // Press-and-hold helpers — keep the action active while the user holds the
   // pad (mouse, touch, keyboard). Pointer events handle all input devices.
@@ -116,6 +120,47 @@ export function ProControls({ id }: Props) {
           <option value={0.5}>1/2</option>
           <option value={1}>1</option>
           <option value={2}>2</option>
+        </select>
+      </div>
+      {/* Pitch Play — play a hot cue at different semitones, like a sampler. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span className="vdj-label" style={{ minWidth: 44, fontSize: 9, display: "flex", alignItems: "center", gap: 2 }}>
+          <Music2 size={10} /> {t("pitchPlay")}
+        </span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 3, flex: 1 }}>
+          {PITCH_OFFSETS.map((semi) => (
+            <button
+              key={semi}
+              className="vdj-btn"
+              title={t("pitchPlayHold", { n: semi >= 0 ? `+${semi}` : String(semi) })}
+              disabled={!ds.hotCues.find((c) => c.id === pitchRoot)}
+              style={{
+                fontSize: 9,
+                padding: "4px 0",
+                touchAction: "none",
+                fontWeight: semi === 0 ? 700 : 500,
+              }}
+              {...holdProps(
+                () => beginPitchPlay(id, pitchRoot, semi),
+                () => endPitchPlay(id),
+              )}
+            >
+              {semi >= 0 ? `+${semi}` : semi}
+            </button>
+          ))}
+        </div>
+        <select
+          value={pitchRoot}
+          onChange={(e) => setPitchRoot(Number(e.target.value))}
+          title={t("pitchPlayRoot")}
+          className="vdj-btn"
+          style={{ fontSize: 9, padding: "3px 4px" }}
+        >
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <option key={i} value={i}>
+              C{i + 1}
+            </option>
+          ))}
         </select>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 4 }}>
