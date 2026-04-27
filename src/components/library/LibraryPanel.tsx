@@ -600,6 +600,15 @@ export function LibraryPanel() {
         {smartPreset && (
           <button className="vdj-btn" style={{ padding: "2px 8px", fontSize: 10, opacity: 0.7 }} onClick={() => applySmartPreset(null)}>{tr("smartClear")}</button>
         )}
+        <button
+          className="vdj-btn"
+          style={{ padding: "2px 8px", fontSize: 10, marginLeft: "auto" }}
+          onClick={() => void runAiAutoTag()}
+          disabled={aiTagBusy}
+          title="Etiquetar con IA las pistas que aún no tienen tags (género/mood/energía)."
+        >
+          {aiTagBusy ? <Loader2 size={11} className="animate-spin" /> : <Bot size={11} />} Auto-tag IA
+        </button>
       </div>
 
       {showFilters && (
