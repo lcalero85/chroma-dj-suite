@@ -918,6 +918,55 @@ function VirtualDjSettings() {
         <input type="checkbox" checked={settings.vdjMixReport === true}
           onChange={(e) => update({ vdjMixReport: e.target.checked })} disabled={!enabled} />
       </Row>
+      <SmartAutonomyRows />
     </div>
+  );
+}
+
+function SmartAutonomyRows() {
+  const settings = useApp((s) => s.settings);
+  const update = useApp((s) => s.updateSettings);
+  const enabled = settings.vdjEnabled === true;
+  const vt = useVt();
+  return (
+    <>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "6px 0" }} />
+      <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>{vt("smart")}</div>
+      <Row label={vt("defaultSkin")}>
+        <select
+          className="vdj-btn"
+          value={(settings.vdjDefaultSkin ?? "") as string}
+          onChange={(e) => update({ vdjDefaultSkin: (e.target.value || "") as SkinId | "" })}
+          style={{ padding: "6px 8px", maxWidth: 200 }}
+          disabled={!enabled}
+          title={vt("defaultSkinTip")}
+        >
+          <option value="">{vt("defaultSkinKeep")}</option>
+          {VDJ_SKIN_OPTIONS.map((s) => (
+            <option key={s} value={s} style={{ textTransform: "capitalize" }}>{s}</option>
+          ))}
+        </select>
+      </Row>
+      <Row label={vt("smartAutopilot")}>
+        <input type="checkbox" checked={settings.vdjSmartAutopilot === true}
+          onChange={(e) => update({ vdjSmartAutopilot: e.target.checked })}
+          disabled={!enabled} title={vt("smartAutopilotTip")} />
+      </Row>
+      <Row label={vt("autoRecover")}>
+        <input type="checkbox" checked={settings.vdjAutoRecover !== false}
+          onChange={(e) => update({ vdjAutoRecover: e.target.checked })}
+          disabled={!enabled} title={vt("autoRecoverTip")} />
+      </Row>
+      <Row label={vt("smartTighten")}>
+        <input type="checkbox" checked={settings.vdjTightTransitions !== false}
+          onChange={(e) => update({ vdjTightTransitions: e.target.checked })}
+          disabled={!enabled} title={vt("smartTightenTip")} />
+      </Row>
+      <Row label={vt("showStatusOverlay")}>
+        <input type="checkbox" checked={settings.vdjShowStatusOverlay !== false}
+          onChange={(e) => update({ vdjShowStatusOverlay: e.target.checked })}
+          disabled={!enabled} title={vt("showStatusOverlayTip")} />
+      </Row>
+    </>
   );
 }
