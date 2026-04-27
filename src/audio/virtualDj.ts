@@ -139,6 +139,160 @@ let currentTrackId: string | null = null;
 let recordingActive = false;
 let lastMessage = "Idle";
 
+/** ============ (v1.7.5) Cue points capture ============ */
+interface CuePoint { trackIndex: number; timeSec: number; title: string; artist: string }
+let cuePoints: CuePoint[] = [];
+let recordingStartMs = 0;
+function pushCue(idx: number, t: TrackRecord) {
+  if (recordingStartMs === 0) return;
+  const elapsed = (Date.now() - recordingStartMs) / 1000;
+  cuePoints.push({ trackIndex: idx, timeSec: elapsed, title: t.title || "Track", artist: t.artist || "" });
+}
+
+/** Build a CDJ-style .cue sheet referencing the given audio file. */
+function buildCueSheet(audioFileName: string, perfTitle: string, perfArtist: string): string {
+  const lines: string[] = [];
+  lines.push(`PERFORMER "${perfArtist.replace(/"/g, "'")}"`);
+  lines.push(`TITLE "${perfTitle.replace(/"/g, "'")}"`);
+  lines.push(`FILE "${audioFileName}" WAVE`);
+  cuePoints.forEach((c, i) => {
+    const trackNo = String(i + 1).padStart(2, "0");
+    lines.push(`  TRACK ${trackNo} AUDIO`);
+    lines.push(`    TITLE "${c.title.replace(/"/g, "'")}"`);
+    lines.push(`    PERFORMER "${c.artist.replace(/"/g, "'")}"`);
+    const total = Math.max(0, c.timeSec);
+    const mm = Math.floor(total / 60);
+    const ss = Math.floor(total % 60);
+    const ff = Math.floor((total - Math.floor(total)) * 75); // 75 frames per second
+    lines.push(`    INDEX 01 ${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}:${String(ff).padStart(2, "0")}`);
+  });
+  return lines.join("\n") + "\n";
+}
+
+/** ============ (v1.7.5) Mic shoutout sidechain ============ */
+let micShoutoutRaf: number | null = null;
+let micShoutoutDuckActive = false;
+function startMicShoutoutMonitor() {
+  const settings = useApp.getState().settings;
+  if (settings.vdjMicShoutout !== true) return;
+  // Try to enable the mic if it's not already on (don't disturb user's other usage).
+  void enableMic({ deviceId: settings.audioInputDeviceId || undefined,
+    noiseSuppression: settings.micNoiseSuppression !== false,
+    echoCancellation: settings.micEchoCancellation !== false,
+    autoGainControl: settings.micAutoGainControl === true });
+  const { ctx, micAnalyser, masterDuck } = getEngine();
+  const buf = new Uint8Array(micAnalyser.fftSize);
+  const threshold = Math.max(0.02, Math.min(0.6, settings.vdjMicShoutoutThreshold ?? 0.12));
+  const duckAmt = Math.max(0, Math.min(0.9, settings.vdjMicShoutoutDuck ?? 0.55));
+  const baseGain = 1;
+  const duckGain = 1 - duckAmt;
+  let lastAbove = 0;
+  const HOLD_MS = 350;
+  const tick = () => {
+    if (!running || cancelRequested) {
+      micShoutoutRaf = null;
+      try { masterDuck.gain.setTargetAtTime(baseGain, ctx.currentTime, 0.08); } catch { /* noop */ }
+      micShoutoutDuckActive = false;
+      return;
+    }
+    micAnalyser.getByteTimeDomainData(buf);
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) {
+      const v = (buf[i] - 128) / 128;
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / buf.length);
+    const now = performance.now();
+    if (rms > threshold) lastAbove = now;
+    const speaking = (now - lastAbove) < HOLD_MS;
+    if (speaking && !micShoutoutDuckActive) {
+      micShoutoutDuckActive = true;
+      try { masterDuck.gain.setTargetAtTime(duckGain, ctx.currentTime, 0.06); } catch { /* noop */ }
+    } else if (!speaking && micShoutoutDuckActive) {
+      micShoutoutDuckActive = false;
+      try { masterDuck.gain.setTargetAtTime(baseGain, ctx.currentTime, 0.18); } catch { /* noop */ }
+    }
+    micShoutoutRaf = requestAnimationFrame(tick);
+  };
+  micShoutoutRaf = requestAnimationFrame(tick);
+}
+function stopMicShoutoutMonitor() {
+  if (micShoutoutRaf !== null) cancelAnimationFrame(micShoutoutRaf);
+  micShoutoutRaf = null;
+  try {
+    const { ctx, masterDuck } = getEngine();
+    masterDuck.gain.setTargetAtTime(1, ctx.currentTime, 0.1);
+  } catch { /* noop */ }
+  micShoutoutDuckActive = false;
+  // Note: we DO NOT auto-disable the mic — the user may have it on for other
+  // reasons. They control that via the mic toggle.
+}
+
+/** ============ (v1.7.5) Mood-adaptive genre arc ============ */
+const MOOD_ARC: VdjGenre[] = ["lofi", "house", "techno", "edm", "drumandbass", "edm", "house", "lofi", "ambient"];
+function moodGenreAt(i: number, n: number, shape: "arc" | "ascending" | "descending" | "wave"): VdjGenre {
+  if (n <= 1) return "house";
+  const t = i / (n - 1);
+  let k: number;
+  switch (shape) {
+    case "ascending":  k = t; break;
+    case "descending": k = 1 - t; break;
+    case "wave":       k = 0.5 - 0.5 * Math.cos(t * Math.PI * 2); break;
+    case "arc":
+    default:           k = Math.sin(t * Math.PI); break;
+  }
+  const idx = Math.min(MOOD_ARC.length - 1, Math.floor(k * (MOOD_ARC.length - 1)));
+  return MOOD_ARC[idx];
+}
+
+/** ============ (v1.7.5) Beatjuggling ============
+ *  Pequeños cortes A↔B sobre el mismo beat, perfecto para tracks lentos. */
+async function beatjuggle(activeId: DeckId, sittingId: DeckId, bars = 2) {
+  const dsA = useApp.getState().decks[activeId];
+  const beatSec = dsA.bpm && dsA.bpm > 40 ? 60 / dsA.bpm : 0.5;
+  const totalBeats = bars * 4;
+  const startX = useApp.getState().mixer.xfader;
+  const tA: -1 | 1 = activeId === "A" ? -1 : 1;
+  const tB: -1 | 1 = sittingId === "A" ? -1 : 1;
+  for (let i = 0; i < totalBeats; i++) {
+    if (cancelRequested) break;
+    setXfaderPosition(i % 2 === 0 ? tA : tB);
+    if (i % 4 === 3) { try { void performScratch(i % 2 === 0 ? activeId : sittingId, 1); } catch { /* noop */ } }
+    await sleep(beatSec * 1000);
+  }
+  setXfaderPosition(startX);
+}
+
+/** ============ (v1.7.5) Radio show jingle insert ============
+ *  Reproduce un jingle elegido por el usuario en el deck "B" rapido entre
+ *  pistas, con un shoutout antes y después. */
+async function playRadioJingle(targetDeck: DeckId, jingleTrackId: string): Promise<void> {
+  try {
+    setMessage("📻 Jingle de radio…");
+    announceDjName();
+    await sleep(800);
+    await loadTrackToDeck(targetDeck, jingleTrackId);
+    applyAutoGain(targetDeck);
+    seek(targetDeck, 0);
+    setXfaderPosition(targetDeck === "A" ? -1 : 1);
+    play(targetDeck, 0);
+    // Wait for the jingle to play out (cap at 25s — jingles are short).
+    const t0 = performance.now();
+    while (!cancelRequested) {
+      const ds = useApp.getState().decks[targetDeck];
+      const dur = ds.duration || 0;
+      const pos = (ds.position ?? 0) * dur;
+      if (dur > 0 && pos >= dur - 0.3) break;
+      if (!ds.isPlaying) break;
+      if ((performance.now() - t0) / 1000 > 25) break;
+      await sleep(200);
+    }
+    pause(targetDeck);
+  } catch (e) {
+    console.warn("[vdj] jingle error", e);
+  }
+}
+
 type Listener = () => void;
 const listeners = new Set<Listener>();
 export function subscribeVdj(fn: Listener): () => void {
