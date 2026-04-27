@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiStreamIngestRouteImport } from './routes/api/stream/ingest'
 import { Route as ApiSoundcloudStreamRouteImport } from './routes/api/soundcloud/stream'
 import { Route as ApiSoundcloudSearchRouteImport } from './routes/api/soundcloud/search'
+import { Route as ApiAiSetlistRouteImport } from './routes/api/ai/setlist'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,15 +35,22 @@ const ApiSoundcloudSearchRoute = ApiSoundcloudSearchRouteImport.update({
   path: '/api/soundcloud/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiSetlistRoute = ApiAiSetlistRouteImport.update({
+  id: '/api/ai/setlist',
+  path: '/api/ai/setlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/ai/setlist': typeof ApiAiSetlistRoute
   '/api/soundcloud/search': typeof ApiSoundcloudSearchRoute
   '/api/soundcloud/stream': typeof ApiSoundcloudStreamRoute
   '/api/stream/ingest': typeof ApiStreamIngestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/ai/setlist': typeof ApiAiSetlistRoute
   '/api/soundcloud/search': typeof ApiSoundcloudSearchRoute
   '/api/soundcloud/stream': typeof ApiSoundcloudStreamRoute
   '/api/stream/ingest': typeof ApiStreamIngestRoute
@@ -50,6 +58,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/ai/setlist': typeof ApiAiSetlistRoute
   '/api/soundcloud/search': typeof ApiSoundcloudSearchRoute
   '/api/soundcloud/stream': typeof ApiSoundcloudStreamRoute
   '/api/stream/ingest': typeof ApiStreamIngestRoute
@@ -58,18 +67,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/ai/setlist'
     | '/api/soundcloud/search'
     | '/api/soundcloud/stream'
     | '/api/stream/ingest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/ai/setlist'
     | '/api/soundcloud/search'
     | '/api/soundcloud/stream'
     | '/api/stream/ingest'
   id:
     | '__root__'
     | '/'
+    | '/api/ai/setlist'
     | '/api/soundcloud/search'
     | '/api/soundcloud/stream'
     | '/api/stream/ingest'
@@ -77,6 +89,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiAiSetlistRoute: typeof ApiAiSetlistRoute
   ApiSoundcloudSearchRoute: typeof ApiSoundcloudSearchRoute
   ApiSoundcloudStreamRoute: typeof ApiSoundcloudStreamRoute
   ApiStreamIngestRoute: typeof ApiStreamIngestRoute
@@ -112,11 +125,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSoundcloudSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/setlist': {
+      id: '/api/ai/setlist'
+      path: '/api/ai/setlist'
+      fullPath: '/api/ai/setlist'
+      preLoaderRoute: typeof ApiAiSetlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiAiSetlistRoute: ApiAiSetlistRoute,
   ApiSoundcloudSearchRoute: ApiSoundcloudSearchRoute,
   ApiSoundcloudStreamRoute: ApiSoundcloudStreamRoute,
   ApiStreamIngestRoute: ApiStreamIngestRoute,
