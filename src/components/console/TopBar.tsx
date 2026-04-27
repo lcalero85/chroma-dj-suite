@@ -1,5 +1,5 @@
 import { useApp } from "@/state/store";
-import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square, Bot } from "lucide-react";
+import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square, Bot, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
@@ -12,7 +12,7 @@ import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
 import { startVirtualDj, stopVirtualDj, isVirtualDjRunning, subscribeVdj, getVdjStatus } from "@/audio/virtualDj";
 
-const APP_VERSION = "1.7.9";
+const APP_VERSION = "1.8.0";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);
@@ -300,6 +300,14 @@ export function TopBar() {
         </button>
         <button className="vdj-btn" onClick={() => setShowShortcuts(true)} title={t("shortcutsBtnTitle")}>
           <Keyboard size={12} /> ?
+        </button>
+        <button
+          className="vdj-btn"
+          data-active={drawer === "ai"}
+          onClick={() => setDrawer(drawer === "ai" ? null : "ai")}
+          title="Asistente IA — pregúntame cómo usar VDJ PRO"
+        >
+          <MessageSquare size={12} /> IA
         </button>
         <button className="vdj-btn" data-active={drawer === "skins"} onClick={() => setDrawer(drawer === "skins" ? null : "skins")}>
           <Palette size={12} /> {t("skins")}
