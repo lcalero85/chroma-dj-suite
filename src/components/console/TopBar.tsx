@@ -12,7 +12,7 @@ import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
 import { startVirtualDj, stopVirtualDj, isVirtualDjRunning, subscribeVdj, getVdjStatus } from "@/audio/virtualDj";
 
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "1.8.1";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);

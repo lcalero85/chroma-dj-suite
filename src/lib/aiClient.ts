@@ -18,7 +18,7 @@ async function safeFetch(url: string, body: unknown, opts?: { silent?: boolean }
       return null;
     }
     if (res.status === 402) {
-      if (!opts?.silent) toast.error("IA: créditos agotados. Agrega créditos en Settings → Workspace → Usage.");
+      if (!opts?.silent) toast.error("IA: créditos agotados. Agrega créditos en Configuración → Espacio de trabajo → Uso.");
       return null;
     }
     if (!res.ok) {

@@ -47,7 +47,7 @@ export function aiErrorResponse(status: number, fallback?: string): Response {
   }
   if (status === 402) {
     return new Response(
-      JSON.stringify({ error: "payment_required", message: "Se agotaron los créditos de Lovable AI. Agrega créditos en Settings → Workspace → Usage." }),
+      JSON.stringify({ error: "payment_required", message: "Se agotaron los créditos de Lovable AI. Agrega créditos en Configuración → Espacio de trabajo → Uso." }),
       { status: 402, headers: { "Content-Type": "application/json" } },
     );
   }
