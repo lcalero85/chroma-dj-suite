@@ -203,9 +203,8 @@ async function fxWetRamp(slot: 1 | 2 | 3, from: number, to: number, seconds: num
 
 /** Smoothly ramp playback rate (brake / spin-down effect). */
 async function brakeStop(id: DeckId, seconds: number) {
-  const startRate = useApp.getState().decks[id].pitch !== undefined
-    ? 1 + (useApp.getState().decks[id].pitch * (useApp.getState().decks[id].pitchRange / 100))
-    : 1;
+  const ds = useApp.getState().decks[id];
+  const startRate = 1 + (ds.pitch * (ds.pitchRange / 100));
   const t0 = performance.now();
   return new Promise<void>((resolve) => {
     const step = () => {
