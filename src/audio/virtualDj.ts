@@ -1099,7 +1099,16 @@ export async function startVirtualDj(): Promise<void> {
       const toId = otherDeck(fromId);
       const next = queue[i];
 
-      const fxCfgBase = GENRE_FX[genre] ?? GENRE_FX.auto;
+      // (v1.7.5 #8) Mood-adaptive: override genre per-position following an arc.
+      const moodGenre: VdjGenre =
+        settings.vdjMoodAdaptive === true
+          ? moodGenreAt(
+              Math.floor((i - 1) / Math.max(1, settings.vdjMoodEveryN ?? 3)),
+              Math.max(1, Math.ceil(queue.length / Math.max(1, settings.vdjMoodEveryN ?? 3))),
+              settings.vdjMoodShape ?? "arc",
+            )
+          : genre;
+      const fxCfgBase = GENRE_FX[moodGenre] ?? GENRE_FX.auto;
       const lvl = getIntensity();
       // Allow user override of crossfade duration
       const xfadeOverride = settings.vdjXfadeSec;
@@ -1125,7 +1134,17 @@ export async function startVirtualDj(): Promise<void> {
         }
         if (!cancelRequested) {
           setMessage(`Live FX en ${fromId}`);
-          await spiceCurrent(fromId, genre);
+          await spiceCurrent(fromId, moodGenre);
+          // (v1.7.5 #11) Beatjuggling on slow tracks
+          if (settings.vdjBeatjuggle === true) {
+            const dsB = useApp.getState().decks[fromId];
+            const maxBpm = settings.vdjBeatjuggleMaxBpm ?? 100;
+            const prob = Math.max(0, Math.min(1, settings.vdjBeatjuggleProb ?? 0.4));
+            if (dsB.bpm && dsB.bpm > 40 && dsB.bpm <= maxBpm && Math.random() < prob) {
+              setMessage(`🤹 Beatjuggle ${fromId}`);
+              await beatjuggle(fromId, otherDeck(fromId), 2);
+            }
+          }
         }
       }
 
