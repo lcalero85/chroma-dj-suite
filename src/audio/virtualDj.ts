@@ -1909,6 +1909,36 @@ export async function startVirtualDj(): Promise<void> {
         toast.success(vt("toastReportPdf"));
       } catch (e) { console.warn("[vdj] mix report error", e); }
     }
+    // (v1.8.0) DJ Coach AI — request natural-language feedback about the set
+    // and surface it as a long-lived toast. Best-effort, never blocks teardown.
+    if (settings.vdjAiCoach === true && reportEntries.length > 0) {
+      const startedAtC = recordingStartMs || Date.now();
+      const endedAtC = Date.now();
+      const totalSec = (endedAtC - startedAtC) / 1000;
+      const entriesSnap = reportEntries.map((e) => ({
+        title: e.title,
+        artist: e.artist,
+        bpm: e.bpm,
+        key: e.key,
+        transitionInto: e.transitionInto,
+      }));
+      const fxSnap = { ...reportFx };
+      const energySnap = energyHistory.slice();
+      void aiDjCoach({
+        djName: settings.djName || "Virtual DJ",
+        totalSec,
+        entries: entriesSnap,
+        fxUsed: fxSnap,
+        energyCurve: energySnap,
+        lang: settings.lang ?? "es",
+      })
+        .then((feedback) => {
+          if (feedback) {
+            toast.success(`🎓 DJ Coach: ${feedback}`, { duration: 30000 });
+          }
+        })
+        .catch((err) => console.warn("[vdj] coach error", err));
+    }
     reportEntries = [];
     reportFx = {};
     energyHistory = [];
