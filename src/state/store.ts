@@ -318,6 +318,24 @@ export interface SettingsState {
    *  - 'hard' = transiciones más cortas y agresivas, FX más mojados, scratches más
    *     frecuentes, EQ kills más profundos, loops más cortos, "ácido". */
   vdjIntensity?: "soft" | "normal" | "hard";
+  /** ============ Funcionalidades avanzadas (v1.7.3) ============ */
+  /** Energy Curve / Set planner — reordena la cola por BPM + compatibilidad
+   *  Camelot formando un arco profesional warmup → peak → cooldown. */
+  vdjEnergyCurve?: boolean;
+  /** Forma de la curva de energía. */
+  vdjEnergyShape?: "arc" | "ascending" | "descending" | "wave";
+  /** Echo-Freeze + Cut transition — congela el último beat del outgoing
+   *  con un echo infinito mientras entra el drop del incoming. Activable
+   *  ocasionalmente además del crossfade clásico. */
+  vdjEchoFreeze?: boolean;
+  /** Probabilidad (0..1) de usar Echo-Freeze en lugar del crossfade clásico. */
+  vdjEchoFreezeProb?: number;
+  /** Drop / phrase alignment — alinea el corte al downbeat o al próximo
+   *  marker de drop/buildup de la pista entrante. */
+  vdjPhraseAlign?: boolean;
+  /** Tolerancia de espera (segundos) para encontrar el siguiente downbeat
+   *  o phrase marker. Si no aparece dentro de la ventana, corta igual. */
+  vdjPhraseAlignWindowSec?: number;
 }
 
 export interface SessionStats {
