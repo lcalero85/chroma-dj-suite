@@ -144,6 +144,7 @@ export const DICT = {
     sharp: "Sharp",
     masterClock: "MASTER CLOCK",
     snapCuesLoops: "Snap cues/loops to beat",
+    quantizeGlobalTitle: "Global Quantize — snaps hot cues, loops AND beat-jumps to the deck's grid (uses each deck's BPM + grid offset)",
     tapTempoTitle: "Tap tempo",
     autoMixTitle: "Auto crossfade to other deck",
     sleepTimer: "SLEEP TIMER",
