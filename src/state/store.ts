@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { TrackRecord, PlaylistRecord, RecordingRecord, FolderRecord } from "@/lib/db";
+import type { PhraseMarker } from "@/lib/db";
 import type { XfaderCurve } from "@/audio/crossfader";
 import type { CamelotKey } from "@/lib/camelot";
 import type { FxKind } from "@/audio/fx";
@@ -83,6 +84,8 @@ export interface DeckState {
   /** Beat grid offset (seconds) — where beat 0 of the bar lands.
    *  Used by the Waveform beatgrid, the Slicer anchor, and hot-cue quantize. */
   gridOffsetSec: number;
+  /** Phrase markers (intro/verse/break/buildup/drop/outro). */
+  phrases: PhraseMarker[];
   // Video support
   hasVideo?: boolean;
   videoUrl?: string | null;
@@ -306,6 +309,7 @@ const defaultDeck = (): DeckState => ({
   slip: false,
   vocalCut: 0,
   gridOffsetSec: 0,
+  phrases: [],
   hasVideo: false,
   videoUrl: null,
   videoFx: defaultVideoFx(),
