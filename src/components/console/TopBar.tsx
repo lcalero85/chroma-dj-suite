@@ -245,6 +245,30 @@ export function TopBar() {
         <span className="vdj-label" style={{ opacity: 0.7 }}>{t("numpadBacktickHint")}</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
+        {vdjEnabled && (
+          <button
+            className="vdj-btn"
+            data-active={vdjOn}
+            onClick={async () => {
+              if (vdjOn) stopVirtualDj();
+              else await startVirtualDj();
+            }}
+            title={vdjOn ? `Detener Virtual DJ — ${vdjMsg}` : `Iniciar Virtual DJ (${vdjSelectedCount} pistas)`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontWeight: 700,
+              color: vdjOn ? "#0b0b0b" : undefined,
+              background: vdjOn
+                ? "linear-gradient(90deg, var(--accent), var(--accent-2, var(--accent)))"
+                : undefined,
+              animation: vdjOn ? "vdj-pulse 1.2s infinite" : undefined,
+            }}
+          >
+            <Bot size={12} /> {vdjOn ? `VDJ · ${vdjMsg.slice(0, 18)}` : `VDJ (${vdjSelectedCount})`}
+          </button>
+        )}
         <button
           className="vdj-btn"
           onClick={toggleRecord}
