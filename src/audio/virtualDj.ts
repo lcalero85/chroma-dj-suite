@@ -320,6 +320,150 @@ function safeName(s: string): string {
   return s.replace(/[\\/:*?"<>|]+/g, "_").trim().slice(0, 64) || "session";
 }
 
+/** ============ Robotic DJ-name announcement ============
+ * Plays the DJ name through:
+ *  1) Web Speech API (live, audible in the room)
+ *  2) A short FM-modulated robotic stinger routed through the master bus,
+ *     so the recording captures it even though Web Speech can't be tapped.
+ */
+function speakRobotic(text: string) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.85;
+    u.pitch = 0.2;     // very low → robotic
+    u.volume = 1;
+    const lang = useApp.getState().settings.lang;
+    u.lang = lang === "es" ? "es-ES"
+      : lang === "pt" ? "pt-BR"
+      : lang === "fr" ? "fr-FR"
+      : lang === "it" ? "it-IT"
+      : "en-US";
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch { /* noop */ }
+}
+
+/** Robotic stinger: ring-modulated formant burst routed to the master bus
+ * so it's captured by the recorder. Length depends on text length. */
+function playRoboticStinger(text: string) {
+  try {
+    const { ctx, master } = getEngine();
+    const now = ctx.currentTime;
+    const syllables = Math.max(2, Math.min(10, Math.round(text.length / 2)));
+    const totalDur = Math.min(2.4, 0.18 * syllables + 0.3);
+
+    const out = ctx.createGain();
+    out.gain.value = 0;
+    out.connect(master);
+
+    // Master envelope (overall volume)
+    out.gain.setValueAtTime(0, now);
+    out.gain.linearRampToValueAtTime(0.18, now + 0.04);
+    out.gain.linearRampToValueAtTime(0.18, now + totalDur - 0.15);
+    out.gain.linearRampToValueAtTime(0, now + totalDur);
+
+    // Carrier (sawtooth) — vocal-like
+    const carrier = ctx.createOscillator();
+    carrier.type = "sawtooth";
+    carrier.frequency.value = 110;
+
+    // Modulator (sine LFO around 30Hz → ring-mod buzz = robotic timbre)
+    const mod = ctx.createOscillator();
+    mod.type = "sine";
+    mod.frequency.value = 32;
+    const modGain = ctx.createGain();
+    modGain.gain.value = 80;
+    mod.connect(modGain);
+    modGain.connect(carrier.frequency);
+
+    // Bandpass formant
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 1100;
+    bp.Q.value = 8;
+
+    // Subtle high-shelf for "tinny" robot edge
+    const hs = ctx.createBiquadFilter();
+    hs.type = "highshelf";
+    hs.frequency.value = 3000;
+    hs.gain.value = 4;
+
+    carrier.connect(bp);
+    bp.connect(hs);
+    hs.connect(out);
+
+    // Syllable gate — chops the carrier into syllable-like bursts
+    const gate = ctx.createGain();
+    gate.gain.value = 0;
+    hs.disconnect();
+    hs.connect(gate);
+    gate.connect(out);
+    const sylDur = totalDur / syllables;
+    for (let i = 0; i < syllables; i++) {
+      const t0 = now + i * sylDur;
+      gate.gain.setValueAtTime(0, t0);
+      gate.gain.linearRampToValueAtTime(1, t0 + sylDur * 0.15);
+      gate.gain.linearRampToValueAtTime(1, t0 + sylDur * 0.7);
+      gate.gain.linearRampToValueAtTime(0, t0 + sylDur * 0.95);
+      // Vary pitch per syllable for "speech" feel
+      const f = 95 + (i % 4) * 18;
+      carrier.frequency.setValueAtTime(f, t0);
+    }
+
+    carrier.start(now);
+    mod.start(now);
+    carrier.stop(now + totalDur + 0.05);
+    mod.stop(now + totalDur + 0.05);
+    setTimeout(() => { try { out.disconnect(); } catch { /* noop */ } }, (totalDur + 0.2) * 1000);
+  } catch (err) {
+    console.warn("[vdj] stinger error", err);
+  }
+}
+
+function announceDjName() {
+  const name = (useApp.getState().settings.djName || "").trim();
+  if (!name) return;
+  // Live spoken voice + recorded robotic stinger
+  playRoboticStinger(name);
+  speakRobotic(name);
+}
+
+/** Quick simulated scratch on the given deck — back-and-forth nudges. */
+async function performScratch(id: DeckId, scratches = 3) {
+  try {
+    await beginScratchDeck(id);
+    for (let i = 0; i < scratches; i++) {
+      scratchDeck(id, -0.12);
+      await sleep(80);
+      scratchDeck(id, 0.18);
+      await sleep(80);
+    }
+    endScratchDeck(id);
+  } catch { /* noop */ }
+}
+
+/** Smoothly ramp a numeric setter from `from` to `to` over `seconds`. */
+async function ramp(
+  setter: (v: number) => void,
+  from: number,
+  to: number,
+  seconds: number,
+) {
+  const t0 = performance.now();
+  return new Promise<void>((resolve) => {
+    const step = () => {
+      if (cancelRequested) { setter(to); resolve(); return; }
+      const t = (performance.now() - t0) / (seconds * 1000);
+      const k = Math.min(1, t);
+      setter(from + (to - from) * k);
+      if (k < 1) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+
 export async function startVirtualDj(): Promise<void> {
   if (running) { toast.error("Virtual DJ ya está corriendo"); return; }
   const queue = getQueue();
