@@ -517,7 +517,7 @@ interface AppState {
   recordings: RecordingRecord[];
   activeDecks: DeckId[];
   activeBottomTab: "library" | "fx" | "sampler" | "loops" | "recorder" | "radio" | "online" | "presets" | "synth" | "livevocal" | "beatmaker" | "stems";
-  drawer: null | "settings" | "skins" | "help" | "about";
+  drawer: null | "settings" | "skins" | "help" | "about" | "ai";
   search: string;
   selectedPlaylistId: string | null;
   radio: RadioState;
