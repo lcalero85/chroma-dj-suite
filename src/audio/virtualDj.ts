@@ -109,13 +109,16 @@ function getQueue(): TrackRecord[] {
   const s = useApp.getState();
   const selected = new Set(s.settings.vdjSelectedTrackIds ?? []);
   const genre = (s.settings.vdjGenre ?? "auto").toLowerCase();
-  return s.tracks.filter((t) => {
-    if (!selected.has(t.id)) return false;
-    if (genre === "auto") return true;
+  const allSelected = s.tracks.filter((t) => selected.has(t.id));
+  if (genre === "auto") return allSelected;
+  const filtered = allSelected.filter((t) => {
     const tags = (t.tags ?? []).map((x) => x.toLowerCase());
-    // match if any tag contains the genre keyword
     return tags.some((tag) => tag.includes(genre));
   });
+  // Fallback: if the genre filter eliminates every selected track, fall back
+  // to the full selection rather than returning an empty queue. This keeps
+  // the user's explicit selection respected even when tracks lack tags.
+  return filtered.length > 0 ? filtered : allSelected;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -211,7 +214,13 @@ export async function startVirtualDj(): Promise<void> {
   if (running) { toast.error("Virtual DJ ya está corriendo"); return; }
   const queue = getQueue();
   if (queue.length === 0) {
-    toast.error("Selecciona al menos una pista (columna VDJ en la Library)");
+    const s = useApp.getState();
+    const selectedCount = (s.settings.vdjSelectedTrackIds ?? []).length;
+    if (selectedCount === 0) {
+      toast.error("Marca pistas con la casilla VDJ en la Library");
+    } else {
+      toast.error("No hay pistas válidas en la cola");
+    }
     return;
   }
   const settings = useApp.getState().settings;
