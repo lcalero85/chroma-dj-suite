@@ -1085,6 +1085,7 @@ export const DICT = {
     sharp: "Agudo",
     masterClock: "RELOJ MAESTRO",
     snapCuesLoops: "Cuantizar cues/loops al beat",
+    quantizeGlobalTitle: "Cuantización global — alinea hot cues, loops Y beat-jumps a la rejilla del deck (usa BPM + offset de cada deck)",
     tapTempoTitle: "Tap tempo",
     autoMixTitle: "Auto-crossfade al otro deck",
     sleepTimer: "TEMPORIZADOR",
