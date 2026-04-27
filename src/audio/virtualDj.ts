@@ -35,6 +35,7 @@ import { listRecordings, putRecording, uid, type TrackRecord } from "@/lib/db";
 import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
 import { getEngine } from "@/audio/engine";
+import { isCompatible, type CamelotKey } from "@/lib/camelot";
 
 export type VdjGenre =
   | "auto"
@@ -191,6 +192,12 @@ function getQueue(): TrackRecord[] {
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     pool = arr;
+  }
+  // Energy Curve / Set planner — reorder by BPM + key compatibility.
+  // Runs AFTER shuffle so the shape always wins. Skipped if the user
+  // disabled it (default off — opt-in advanced feature).
+  if (s.settings.vdjEnergyCurve === true && pool.length >= 3) {
+    pool = planEnergyCurve(pool, s.settings.vdjEnergyShape ?? "arc");
   }
   return pool;
 }
@@ -607,6 +614,161 @@ async function ramp(
   });
 }
 
+/** ============ (v1.7.3) Energy Curve / Set planner ============
+ * Reordena la cola siguiendo un arco profesional warmup → peak → cooldown.
+ * Greedy: empieza por la pista de menor BPM y va eligiendo la siguiente
+ * que mejor encaje según (a) cercanía de BPM al objetivo de la curva y
+ * (b) compatibilidad de key (Camelot). Pistas sin BPM/key igual entran;
+ * el algoritmo nunca descarta tracks (no se pierden seleccionadas).
+ */
+type EnergyShape = "arc" | "ascending" | "descending" | "wave";
+
+function targetBpmAt(i: number, n: number, lo: number, hi: number, shape: EnergyShape): number {
+  if (n <= 1) return (lo + hi) / 2;
+  const t = i / (n - 1); // 0..1
+  let k: number;
+  switch (shape) {
+    case "ascending":  k = t; break;
+    case "descending": k = 1 - t; break;
+    case "wave":       k = 0.5 - 0.5 * Math.cos(t * Math.PI * 2); break;
+    case "arc":
+    default:           k = Math.sin(t * Math.PI); break; // 0 → 1 → 0
+  }
+  return lo + (hi - lo) * k;
+}
+
+function planEnergyCurve(tracks: TrackRecord[], shape: EnergyShape): TrackRecord[] {
+  if (tracks.length < 3) return tracks;
+  const withBpm = tracks.filter((t) => typeof t.bpm === "number" && (t.bpm as number) > 40);
+  const noBpm = tracks.filter((t) => !(typeof t.bpm === "number" && (t.bpm as number) > 40));
+  if (withBpm.length < 3) return tracks; // not enough info to plan
+  const bpms = withBpm.map((t) => t.bpm as number);
+  const lo = Math.min(...bpms);
+  const hi = Math.max(...bpms);
+
+  const remaining = [...withBpm];
+  const ordered: TrackRecord[] = [];
+  for (let i = 0; i < withBpm.length; i++) {
+    const target = targetBpmAt(i, withBpm.length, lo, hi, shape);
+    const prev = ordered[ordered.length - 1] ?? null;
+    let bestIdx = 0;
+    let bestScore = Infinity;
+    for (let j = 0; j < remaining.length; j++) {
+      const cand = remaining[j];
+      const bpmDiff = Math.abs((cand.bpm as number) - target);
+      // Bonus if key is compatible with previous (Camelot).
+      let keyBonus = 0;
+      if (prev && prev.key && cand.key) {
+        keyBonus = isCompatible(prev.key as CamelotKey, cand.key as CamelotKey) ? -8 : 4;
+      }
+      // Penalty for huge BPM jumps from previous track (>10% feels rough).
+      let jumpPenalty = 0;
+      if (prev && typeof prev.bpm === "number") {
+        const jump = Math.abs((cand.bpm as number) - prev.bpm) / prev.bpm;
+        if (jump > 0.10) jumpPenalty = (jump - 0.10) * 100;
+      }
+      const score = bpmDiff + keyBonus + jumpPenalty;
+      if (score < bestScore) { bestScore = score; bestIdx = j; }
+    }
+    ordered.push(remaining.splice(bestIdx, 1)[0]);
+  }
+  // Append tracks without BPM at the end (won't disrupt the curve).
+  return [...ordered, ...noBpm];
+}
+
+/** ============ (v1.7.3) Drop / Phrase / Downbeat alignment ============
+ * Espera hasta que la posición actual coincida con un downbeat de la
+ * grilla (gridOffsetSec + N * (60/bpm)) o, si la pista tiene phrase
+ * markers de tipo 'drop' / 'buildup' / 'outro', con el más cercano dentro
+ * de la ventana. Si no encuentra nada en `windowSec`, retorna sin esperar
+ * para no bloquear la mezcla.
+ */
+async function waitForPhraseAlign(id: DeckId, windowSec: number): Promise<void> {
+  const cfg = useApp.getState().settings;
+  if (cfg.vdjPhraseAlign === false) return;
+  const winMax = Math.max(0.5, Math.min(16, windowSec));
+  const t0 = performance.now();
+  while (!cancelRequested) {
+    const ds = useApp.getState().decks[id];
+    const dur = ds.duration || 0;
+    const pos = (ds.position ?? 0) * dur;
+    if (dur <= 0 || !ds.isPlaying) return;
+    // 1) Phrase marker (drop/buildup/outro) within window?
+    const phrases = ds.phrases ?? [];
+    const upcoming = phrases
+      .filter((p) => (p.type === "drop" || p.type === "buildup" || p.type === "outro") && p.pos >= pos)
+      .sort((a, b) => a.pos - b.pos)[0];
+    if (upcoming && upcoming.pos - pos <= winMax) {
+      const wait = (upcoming.pos - pos) * 1000;
+      await sleep(Math.max(0, wait - 30));
+      return;
+    }
+    // 2) Otherwise align to the next downbeat (every 4 beats).
+    if (ds.bpm && ds.bpm > 40) {
+      const beatSec = 60 / ds.bpm;
+      const barSec = beatSec * 4;
+      const offset = ds.gridOffsetSec ?? 0;
+      const sinceGrid = pos - offset;
+      const next = Math.ceil(sinceGrid / barSec) * barSec + offset;
+      const wait = next - pos;
+      if (wait >= 0 && wait <= winMax) {
+        await sleep(Math.max(0, wait * 1000 - 30));
+        return;
+      }
+    }
+    // Window expired — give up so the mix keeps moving.
+    if ((performance.now() - t0) / 1000 >= winMax) return;
+    await sleep(120);
+  }
+}
+
+/** ============ (v1.7.3) Echo-Freeze + Cut transition ============
+ * Pioneer-style: congela el último compás del outgoing con echo de feedback
+ * alto y duck del gain, mientras el incoming entra en seco al downbeat.
+ * Devuelve cuando el corte está completado.
+ */
+async function echoFreezeTransition(fromId: DeckId, toId: DeckId): Promise<void> {
+  const dsFrom = useApp.getState().decks[fromId];
+  const beatSec = dsFrom.bpm && dsFrom.bpm > 40 ? 60 / dsFrom.bpm : 0.5;
+  const freezeSec = Math.max(0.6, Math.min(2.4, beatSec * 4));
+
+  // 1) Slam echo on slot 2 with HUGE feedback for the freeze.
+  useApp.getState().updateFx(2, {
+    kind: "echo",
+    wet: 0.9,
+    param1: 0.5,    // shorter echo time → tighter freeze
+    param2: 0.85,   // high feedback
+    beatSync: true,
+    beatDiv: 0.5,
+  });
+  // 2) Quick filter sweep up + EQ kill on outgoing for the "freeze" feel.
+  void filterSweep(fromId, 0, 0.85, freezeSec * 0.6);
+  void ramp((v) => setEQ(fromId, "lo", v), dsFrom.lo, -1, freezeSec * 0.4);
+  // 3) Duck outgoing gain to ~30% as the echo takes over.
+  void ramp((v) => setDeckGain(fromId, v), 1, 0.3, freezeSec * 0.5);
+  await sleep(freezeSec * 0.45 * 1000);
+
+  // 4) HARD CUT crossfader to the incoming side at downbeat — no fade.
+  const target: -1 | 1 = toId === "A" ? -1 : 1;
+  setXfaderPosition(target);
+  useApp.getState().updateMixer({ masterDeck: toId });
+
+  // 5) Pause outgoing immediately, kill its EQ.
+  pause(fromId);
+  setEQ(fromId, "lo", 0);
+  setDeckFilter(fromId, 0);
+  setDeckGain(fromId, 1);
+
+  // 6) Let the echo tail breathe over the new track for a moment, then ramp out.
+  await sleep(Math.min(900, freezeSec * 600));
+  await fxWetRamp(2, 0.9, 0, 1.4);
+  useApp.getState().updateFx(2, { kind: "off", wet: 0 });
+
+  // 7) Light low-end boost on incoming for the drop entry.
+  void ramp((v) => setEQ(toId, "lo", v), 0, 0.4, 0.6);
+  setTimeout(() => { try { setEQ(toId, "lo", 0); } catch { /* noop */ } }, 3500);
+}
+
 export async function startVirtualDj(): Promise<void> {
   if (running) { toast.error("Virtual DJ ya está corriendo"); return; }
   const queue = getQueue();
@@ -732,32 +894,53 @@ export async function startVirtualDj(): Promise<void> {
       else seek(toId, 0);
       play(toId, useApp.getState().decks[toId].cuePoint || 0);
 
+      // (v1.7.3) Phrase / downbeat alignment — wait for next drop/buildup
+      // or downbeat (within window) before starting the actual transition.
+      if (settings.vdjPhraseAlign === true) {
+        const win = Math.max(0.5, Math.min(16, settings.vdjPhraseAlignWindowSec ?? 4));
+        await waitForPhraseAlign(fromId, win);
+        if (cancelRequested) break;
+      }
+
       // Per-transition DJ-name shoutout (only in 'every' mode)
       if (annMode === "every") announceDjName();
-      // Pre-transition: scratch flourish on outgoing as a "DJ mark"
-      if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
-      // Hard mode: extra scratch burst on the incoming deck right after start
-      if (lvl.scratchExtra && settings.vdjUseScratch !== false) {
-        setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
+
+      // (v1.7.3) Decide transition style: classic crossfade vs Echo-Freeze + Cut.
+      const useFreeze =
+        settings.vdjEchoFreeze === true &&
+        Math.random() < Math.max(0, Math.min(1, settings.vdjEchoFreezeProb ?? 0.35));
+
+      if (useFreeze) {
+        setMessage(`❄ Echo-Freeze → ${next.title}`);
+        if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+        await echoFreezeTransition(fromId, toId);
+      } else {
+        // Pre-transition: scratch flourish on outgoing as a "DJ mark"
+        if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+        // Hard mode: extra scratch burst on the incoming deck right after start
+        if (lvl.scratchExtra && settings.vdjUseScratch !== false) {
+          setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
+        }
+        // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
+        void filterSweep(fromId, 0, -lvl.filterDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
+        // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
+        void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
+        // Apply genre FX during transition with a wet ramp
+        if (settings.vdjUseFx !== false) applyGenreFx(genre);
+        setMessage(`Mezclando → ${next.title}`);
+        await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
+        // Reset outgoing filter + gain
+        setDeckFilter(fromId, 0);
+        setDeckGain(fromId, 1);
+        // Stop the outgoing deck cleanly
+        pause(fromId);
+        // Ramp down FX
+        if (settings.vdjUseFx !== false) {
+          await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
+          clearGenreFx();
+        }
       }
-      // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
-      void filterSweep(fromId, 0, -lvl.filterDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
-      // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
-      void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
-      // Apply genre FX during transition with a wet ramp
-      if (settings.vdjUseFx !== false) applyGenreFx(genre);
-      setMessage(`Mezclando → ${next.title}`);
-      await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
-      // Reset outgoing filter + gain
-      setDeckFilter(fromId, 0);
-      setDeckGain(fromId, 1);
-      // Stop the outgoing deck cleanly
-      pause(fromId);
-      // Ramp down FX
-      if (settings.vdjUseFx !== false) {
-        await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
-        clearGenreFx();
-      }
+
       // Light boost on the new track's lows for a fresh-energy feel
       setEQ(toId, "lo", 0);
       void ramp((v) => setEQ(toId, "lo", v), 0, lvl.acidEdge ? 0.45 : 0.3, 0.8);

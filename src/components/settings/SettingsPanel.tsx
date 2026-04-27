@@ -456,6 +456,79 @@ function VirtualDjSettings() {
           disabled={!enabled || settings.vdjUseOutro === false}
         />
       </Row>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "6px 0" }} />
+      <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>
+        ✨ Avanzado (v1.7.3)
+      </div>
+      <Row label="Energy Curve (planificador de set)">
+        <input
+          type="checkbox"
+          checked={settings.vdjEnergyCurve === true}
+          onChange={(e) => update({ vdjEnergyCurve: e.target.checked })}
+          disabled={!enabled}
+          title="Reordena las pistas seleccionadas siguiendo una curva profesional warmup → peak → cooldown (BPM + Camelot)"
+        />
+      </Row>
+      <Row label="Forma de la curva">
+        <select
+          className="vdj-btn"
+          value={settings.vdjEnergyShape ?? "arc"}
+          onChange={(e) => update({ vdjEnergyShape: e.target.value as "arc" | "ascending" | "descending" | "wave" })}
+          style={{ padding: "6px 8px" }}
+          disabled={!enabled || settings.vdjEnergyCurve !== true}
+        >
+          <option value="arc">🏔 Arco (warmup → peak → cooldown)</option>
+          <option value="ascending">📈 Ascendente</option>
+          <option value="descending">📉 Descendente</option>
+          <option value="wave">🌊 Olas (sube y baja)</option>
+        </select>
+      </Row>
+      <Row label="Echo-Freeze + Cut (transición Pioneer)">
+        <input
+          type="checkbox"
+          checked={settings.vdjEchoFreeze === true}
+          onChange={(e) => update({ vdjEchoFreeze: e.target.checked })}
+          disabled={!enabled}
+          title="Congela el último compás del outgoing con echo y corta seco al downbeat del incoming"
+        />
+      </Row>
+      <Row label="Probabilidad Echo-Freeze (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjEchoFreezeProb ?? 0.35) * 100)}
+          min={0}
+          max={100}
+          step={5}
+          onChange={(e) => update({ vdjEchoFreezeProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjEchoFreeze !== true}
+          title="% de transiciones que usarán Echo-Freeze en lugar del crossfade clásico"
+        />
+      </Row>
+      <Row label="Alinear corte al downbeat / drop">
+        <input
+          type="checkbox"
+          checked={settings.vdjPhraseAlign === true}
+          onChange={(e) => update({ vdjPhraseAlign: e.target.checked })}
+          disabled={!enabled}
+          title="Espera al próximo downbeat o phrase marker (drop/buildup) antes de cortar — transiciones perfectamente cuadradas"
+        />
+      </Row>
+      <Row label="Ventana de espera al downbeat (s)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjPhraseAlignWindowSec ?? 4}
+          min={0.5}
+          max={16}
+          step={0.5}
+          onChange={(e) => update({ vdjPhraseAlignWindowSec: Math.max(0.5, Math.min(16, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjPhraseAlign !== true}
+          title="Si no aparece downbeat/drop dentro de la ventana, corta igual para no bloquear la mezcla"
+        />
+      </Row>
       <div style={{ fontSize: 11, opacity: 0.7, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Pistas seleccionadas: <b>{selected.length}</b> / {tracks.length}</span>
         {selected.length > 0 && (
