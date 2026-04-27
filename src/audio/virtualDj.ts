@@ -1514,8 +1514,19 @@ export async function startVirtualDj(): Promise<void> {
       if (cancelRequested) break;
 
       // Preload next on the other deck
-      setMessage(`Preparando ${next.title} (${i + 1}/${queue.length})`);
-      await loadTrackToDeck(toId, next.id);
+      setMessage(vt("vdjPreparing", { title: next.title || `Track ${i + 1}`, i: i + 1, n: queue.length }));
+      // (v1.7.7 #3) Tight transitions: if auto-recover is on and the load
+      // fails, skip this track (don't break the mix).
+      try {
+        await loadTrackToDeck(toId, next.id);
+      } catch (err) {
+        console.warn("[vdj] track load failed", next.title, err);
+        if (settings.vdjAutoRecover !== false) {
+          toast.error(vt("toastTrackLoadFail", { title: next.title || "?" }));
+          continue; // skip — outgoing keeps playing, next iteration tries next track
+        }
+        throw err;
+      }
       currentTrackId = next.id;
       applyAutoGain(toId);
       if (settings.vdjSyncBpm !== false) syncBpm(fromId, toId);
