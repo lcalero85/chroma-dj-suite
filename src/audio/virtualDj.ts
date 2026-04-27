@@ -32,6 +32,7 @@ import {
 import { setPlaybackRate } from "@/audio/deck";
 import { analyzeLoudness } from "@/audio/analysis/loudness";
 import { startRecording, stopRecording, isRecording } from "@/audio/recorder";
+import { startScreenRecording, stopScreenRecording, isScreenRecording, downloadBlob } from "@/audio/screenRecorder";
 import { listRecordings, putRecording, uid, type TrackRecord } from "@/lib/db";
 import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
