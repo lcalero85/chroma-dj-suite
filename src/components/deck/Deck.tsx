@@ -494,6 +494,60 @@ function AdvancedDeckExtras({ id }: { id: DeckId }) {
   );
 }
 
+function SavedLoops({ id }: { id: DeckId }) {
+  const ds = useApp((s) => s.decks[id]);
+  const t = useT();
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div className="vdj-label">{t("savedLoops")}</div>
+        <span className="vdj-label" style={{ opacity: 0.6, fontSize: 9 }}>{t("savedLoopsHint")}</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 4 }}>
+        {Array.from({ length: 8 }).map((_, i) => {
+          const loop = ds.savedLoops?.find((l) => l.id === i);
+          const len = loop ? loop.end - loop.start : 0;
+          return (
+            <button
+              key={i}
+              className="vdj-pad"
+              data-armed={!!loop}
+              style={{
+                color: loop?.color,
+                borderColor: loop?.color,
+                height: 28,
+                fontSize: 9,
+                padding: 0,
+                position: "relative",
+              }}
+              onClick={() => {
+                if (loop) recallLoopSlot(id, i);
+                else if (saveLoopSlot(id, i)) toast(`${t("savedLoopSaved")} ${i + 1}`);
+                else toast.error(t("savedLoopNeedsActive"));
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                if (loop) {
+                  clearLoopSlot(id, i);
+                  toast(`${t("savedLoopCleared")} ${i + 1}`);
+                }
+              }}
+              title={loop ? `${t("savedLoopRecall")} ${i + 1} · ${len.toFixed(2)}s` : `${t("savedLoopSet")} ${i + 1}`}
+            >
+              {i + 1}
+              {loop && (
+                <span style={{ position: "absolute", bottom: 1, right: 3, fontSize: 7, opacity: 0.7 }}>
+                  {len < 1 ? `${(len * 1000) | 0}ms` : `${len.toFixed(1)}s`}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function VocalCutBar({ id }: { id: DeckId }) {
   const ds = useApp((s) => s.decks[id]);
   const t = useT();
