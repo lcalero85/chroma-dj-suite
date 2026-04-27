@@ -1381,6 +1381,19 @@ export async function startVirtualDj(): Promise<void> {
     }
   }
 
+  // (v1.7.8) Screen recording — capture the screen for the whole VDJ set.
+  // getDisplayMedia requires a user gesture; we're called from the TopBar
+  // click handler so the picker shows up immediately.
+  if (settings.vdjScreenRecord === true && !isScreenRecording()) {
+    try {
+      const ok = await startScreenRecording();
+      if (ok) toast.success("📹 Grabación de pantalla iniciada");
+      else toast.error("No se pudo iniciar la grabación de pantalla");
+    } catch (err) {
+      console.warn("[vdj] screen rec error", err);
+    }
+  }
+
   // (v1.7.5 #6) Mic shoutout sidechain — duck master when user speaks.
   if (settings.vdjMicShoutout === true) {
     try { startMicShoutoutMonitor(); } catch (err) { console.warn("[vdj] mic shoutout error", err); }
