@@ -264,9 +264,16 @@ export function TopBar() {
                 ? "linear-gradient(90deg, var(--accent), var(--accent-2, var(--accent)))"
                 : undefined,
               animation: vdjOn ? "vdj-pulse 1.2s infinite" : undefined,
+              maxWidth: 220,
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
             }}
           >
-            <Bot size={12} /> {vdjOn ? `VDJ · ${vdjMsg.slice(0, 18)}` : `VDJ (${vdjSelectedCount})`}
+            <Bot size={12} />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {vdjOn ? `VDJ · ${vdjMsg}` : `VDJ (${vdjSelectedCount})`}
+            </span>
           </button>
         )}
         <button
