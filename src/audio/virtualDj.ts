@@ -52,6 +52,52 @@ export type VdjGenre =
   | "lofi"
   | "ambient";
 
+export type VdjIntensity = "soft" | "normal" | "hard";
+
+/** Multiplicadores y comportamientos derivados de la intensidad.
+ *  Se aplican encima de la configuración del usuario sin reemplazarla. */
+interface IntensityProfile {
+  xfadeMul: number;       // multiplica xfadeSec del género
+  fxWetMul: number;       // multiplica wet del FX de género
+  filterDepth: number;    // 0..1 — profundidad máxima de los sweeps
+  scratchCount: number;   // scratches por flourish
+  scratchExtra: boolean;  // scratch adicional al inicio del incoming
+  loopBeatsMul: number;   // multiplica beats del loop spice
+  pitchBendAmt: number;   // ±pitch durante spice
+  cutPctBoost: number;    // restado al cutPct (ej. 0.04 = corta 4% antes)
+  duckTo: number;         // gain duck del outgoing en el crossfade
+  eqKillLo: number;       // profundidad del kill de lows en spice (0..1)
+  fxBeatSync: boolean;    // sincronizar FX al BPM
+  acidEdge: boolean;      // FX extra "ácidos" (bitcrusher / phaser layer)
+  spiceProb: number;      // probabilidad de hacer spice (0..1)
+}
+
+const INTENSITY_PROFILES: Record<VdjIntensity, IntensityProfile> = {
+  soft: {
+    xfadeMul: 1.4, fxWetMul: 0.7, filterDepth: 0.5, scratchCount: 1,
+    scratchExtra: false, loopBeatsMul: 1.5, pitchBendAmt: 0.012,
+    cutPctBoost: -0.04, duckTo: 0.7, eqKillLo: 0.5,
+    fxBeatSync: true, acidEdge: false, spiceProb: 0.7,
+  },
+  normal: {
+    xfadeMul: 1.0, fxWetMul: 1.0, filterDepth: 0.7, scratchCount: 2,
+    scratchExtra: false, loopBeatsMul: 1.0, pitchBendAmt: 0.025,
+    cutPctBoost: 0, duckTo: 0.55, eqKillLo: 0.9,
+    fxBeatSync: true, acidEdge: false, spiceProb: 1.0,
+  },
+  hard: {
+    xfadeMul: 0.6, fxWetMul: 1.25, filterDepth: 1.0, scratchCount: 5,
+    scratchExtra: true, loopBeatsMul: 0.5, pitchBendAmt: 0.05,
+    cutPctBoost: 0.06, duckTo: 0.35, eqKillLo: 1.0,
+    fxBeatSync: true, acidEdge: true, spiceProb: 1.0,
+  },
+};
+
+function getIntensity(): IntensityProfile {
+  const lvl = (useApp.getState().settings.vdjIntensity ?? "normal") as VdjIntensity;
+  return INTENSITY_PROFILES[lvl] ?? INTENSITY_PROFILES.normal;
+}
+
 /** Sugerencias de FX/transición por género. */
 const GENRE_FX: Record<VdjGenre, { kind: FxKind; wet: number; param1: number; param2: number; xfadeSec: number }> = {
   auto:        { kind: "filter",     wet: 0.6, param1: 0.55, param2: 0.5, xfadeSec: 8  },
