@@ -193,6 +193,12 @@ function getQueue(): TrackRecord[] {
     }
     pool = arr;
   }
+  // Energy Curve / Set planner — reorder by BPM + key compatibility.
+  // Runs AFTER shuffle so the shape always wins. Skipped if the user
+  // disabled it (default off — opt-in advanced feature).
+  if (s.settings.vdjEnergyCurve === true && pool.length >= 3) {
+    pool = planEnergyCurve(pool, s.settings.vdjEnergyShape ?? "arc");
+  }
   return pool;
 }
 
