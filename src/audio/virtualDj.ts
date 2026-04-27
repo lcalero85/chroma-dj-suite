@@ -128,15 +128,25 @@ function getQueue(): TrackRecord[] {
     seen.add(t.id);
     return true;
   });
-  if (genre === "auto") return allSelected;
-  const filtered = allSelected.filter((t) => {
-    const tags = (t.tags ?? []).map((x) => x.toLowerCase());
-    return tags.some((tag) => tag.includes(genre));
-  });
-  // Fallback: if the genre filter eliminates every selected track, fall back
-  // to the full selection rather than returning an empty queue. This keeps
-  // the user's explicit selection respected even when tracks lack tags.
-  return filtered.length > 0 ? filtered : allSelected;
+  let pool = allSelected;
+  if (genre !== "auto") {
+    const filtered = allSelected.filter((t) => {
+      const tags = (t.tags ?? []).map((x) => x.toLowerCase());
+      return tags.some((tag) => tag.includes(genre));
+    });
+    pool = filtered.length > 0 ? filtered : allSelected;
+  }
+  // Optional shuffle (Fisher–Yates) — never repeats a track because the input
+  // already has duplicates removed above.
+  if (s.settings.vdjShuffle) {
+    const arr = [...pool];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    pool = arr;
+  }
+  return pool;
 }
 
 function sleep(ms: number): Promise<void> {
