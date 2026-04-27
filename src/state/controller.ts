@@ -235,6 +235,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     loopActive: false,
     savedLoops: t.savedLoops ?? [],
     gridOffsetSec: t.gridOffsetSec ?? 0,
+    phrases: t.phrases ?? [],
     hasVideo: isVideo,
   });
   // Position the playhead at the auto-cue so first PLAY drops on the beat.
