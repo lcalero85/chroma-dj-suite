@@ -42,6 +42,8 @@ import { startStream, stopStream, updateStreamMetadata, isStreaming } from "@/au
 import { detectCamelotKey } from "@/audio/analysis/keyDetect";
 import { generateMixReport, trackToReportEntry, type MixReportEntry } from "@/audio/mixReport";
 import { setReverse } from "@/audio/transport";
+import { vt } from "@/lib/i18n/vdj";
+import type { SkinId } from "@/state/store";
 
 export type VdjGenre =
   | "auto"
@@ -379,7 +381,7 @@ function startVoiceCommands() {
     const SR = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike;
       webkitSpeechRecognition?: new () => SpeechRecognitionLike }).SpeechRecognition
       ?? (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
-    if (!SR) { toast("Comando por voz no soportado en este navegador"); return; }
+    if (!SR) { toast(vt("toastVoiceUnsupported")); return; }
     const settings = useApp.getState().settings;
     const rec = new SR();
     rec.lang = settings.vdjVoiceLang || (
@@ -404,7 +406,7 @@ function startVoiceCommands() {
     };
     rec.start();
     voiceRec = rec;
-    toast.success("🎤 Comandos por voz activos");
+    toast.success(vt("toastVoiceOn"));
   } catch (e) { console.warn("[vdj] voice cmd error", e); }
 }
 function stopVoiceCommands() {
@@ -417,16 +419,16 @@ function handleVoiceCommand(txt: string) {
   if (!txt) return;
   // Spanish + English keywords
   if (/(siguiente|next|skip)/.test(txt)) {
-    setMessage("🎤 Comando: siguiente"); cancelRequested = false;
+    setMessage(vt("toastVoiceSkip")); cancelRequested = false;
     // Force-cut by jumping outgoing position to 99% to trigger transition.
     const ds = useApp.getState().decks[currentDeck];
     if (ds.duration > 0) seek(currentDeck, ds.duration * 0.99);
-    toast("⏭ Siguiente pista");
+    toast(vt("toastVoiceNext"));
   } else if (/(pausa|pause|stop|para)/.test(txt)) {
-    pause(currentDeck); toast("⏸ Pausado");
+    pause(currentDeck); toast(vt("toastVoicePause"));
   } else if (/(play|reanuda|resume|continua)/.test(txt)) {
     play(currentDeck, useApp.getState().decks[currentDeck].position * (useApp.getState().decks[currentDeck].duration || 0));
-    toast("▶ Continúa");
+    toast(vt("toastVoicePlay"));
   } else if (/(reverse|reversa|atras|reverso)/.test(txt)) {
     void reverseCensor(currentDeck, 1);
   } else if (/(drop|builder)/.test(txt)) {
@@ -434,7 +436,7 @@ function handleVoiceCommand(txt: string) {
   } else if (/(scratch|raya)/.test(txt)) {
     void performScratch(currentDeck, 4);
   } else if (/(reporte|report|pdf)/.test(txt)) {
-    toast("📄 El reporte se generará al finalizar");
+    toast(vt("toastVoiceReportNote"));
   }
 }
 
@@ -568,7 +570,7 @@ async function beatjuggle(activeId: DeckId, sittingId: DeckId, bars = 2) {
  *  pistas, con un shoutout antes y después. */
 async function playRadioJingle(targetDeck: DeckId, jingleTrackId: string): Promise<void> {
   try {
-    setMessage("📻 Jingle de radio…");
+    setMessage(vt("vdjJingle"));
     announceDjName();
     await sleep(800);
     await loadTrackToDeck(targetDeck, jingleTrackId);
@@ -1312,20 +1314,45 @@ async function battleMode(fromId: DeckId, toId: DeckId, bars: number, rounds: nu
 }
 
 export async function startVirtualDj(): Promise<void> {
-  if (running) { toast.error("Virtual DJ ya está corriendo"); return; }
+  if (running) { toast.error(vt("toastAlreadyRunning")); return; }
   const queue = getQueue();
   // mutable working copy for harmonic re-ordering
   if (queue.length === 0) {
     const s = useApp.getState();
     const selectedCount = (s.settings.vdjSelectedTrackIds ?? []).length;
     if (selectedCount === 0) {
-      toast.error("Marca pistas con la casilla VDJ en la Library");
+      toast.error(vt("toastSelectFirst"));
     } else {
-      toast.error("No hay pistas válidas en la cola");
+      toast.error(vt("toastNoValid"));
     }
     return;
   }
   const settings = useApp.getState().settings;
+  // (v1.7.7) Smart autopilot — auto-tunes intensity from time-of-day so the set
+  // breathes with the room (mornings = soft, afternoon = normal, late night = hard).
+  // Only nudges the live setting, never overwrites the persisted user choice
+  // (we restore it in the finally block via `_originalIntensity`).
+  let originalIntensity: "soft" | "normal" | "hard" | undefined;
+  if (settings.vdjSmartAutopilot === true) {
+    const hour = new Date().getHours();
+    let chosen: "soft" | "normal" | "hard" = "normal";
+    if (hour >= 6 && hour < 12) chosen = "soft";
+    else if (hour >= 12 && hour < 19) chosen = "normal";
+    else chosen = "hard";
+    originalIntensity = settings.vdjIntensity ?? "normal";
+    if (chosen !== originalIntensity) {
+      useApp.getState().updateSettings({ vdjIntensity: chosen });
+    }
+  }
+  // (v1.7.7) Default skin per VDJ — auto apply at start, restore on stop.
+  let originalSkin: SkinId | null = null;
+  const wantedSkin = (settings.vdjDefaultSkin ?? "") as SkinId | "";
+  if (wantedSkin) {
+    originalSkin = useApp.getState().skin;
+    if (originalSkin !== wantedSkin) {
+      useApp.getState().setSkin(wantedSkin);
+    }
+  }
   const genre = (settings.vdjGenre ?? "auto") as VdjGenre;
   const shouldRecord = settings.vdjRecord !== false;
 
@@ -1339,7 +1366,7 @@ export async function startVirtualDj(): Promise<void> {
   reportEntries = [];
   reportFx = {};
   energyHistory = [];
-  setMessage(`Iniciando Virtual DJ (${queue.length} pistas)`);
+  setMessage(vt("vdjStarting", { n: queue.length }));
 
   // Start recording if requested
   if (shouldRecord && !isRecording()) {
@@ -1347,7 +1374,7 @@ export async function startVirtualDj(): Promise<void> {
       await startRecording();
       recordingActive = true;
       recordingStartMs = Date.now();
-      toast.success("Grabando sesión Virtual DJ");
+      toast.success(vt("toastRecording"));
     } catch (err) {
       console.warn("[vdj] no se pudo iniciar grabación", err);
     }
@@ -1367,12 +1394,12 @@ export async function startVirtualDj(): Promise<void> {
   }
   // (v1.7.6 #1) Harmonic Mixing AI: detect missing keys + reorder.
   if (settings.vdjHarmonicMixing === true) {
-    setMessage("🎼 Analizando tonalidades…");
+    setMessage(vt("vdjAnalyzingKeys"));
     try { await ensureKeysForTracks(queue); } catch (e) { console.warn("[vdj] key detect error", e); }
     const planned = planHarmonic(queue);
     queue.length = 0;
     queue.push(...planned);
-    setMessage(`🎼 Cola armónica lista (${queue.length} pistas)`);
+    setMessage(vt("vdjHarmonicReady", { n: queue.length }));
   }
   // (v1.7.5 #10) Auto-start live stream of this set, if user enabled it.
   if (settings.vdjAutoStream === true) {
@@ -1380,7 +1407,7 @@ export async function startVirtualDj(): Promise<void> {
     if (cfg.serverUrl && cfg.password && !isStreaming()) {
       try {
         await startStream(cfg);
-        toast.success("📡 Streaming en vivo iniciado");
+        toast.success(vt("toastStreamLive"));
       } catch (err) {
         console.warn("[vdj] stream start failed", err);
       }
@@ -1401,7 +1428,7 @@ export async function startVirtualDj(): Promise<void> {
     }
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
-    setMessage(`▶ ${queue[0].title} (1/${queue.length})`);
+    setMessage(vt("vdjPlayingFirst", { title: queue[0].title || "Track 1", n: queue.length }));
     // (v1.7.5 #9) capture cue point for first track
     pushCue(0, queue[0]);
     pushReportEntry(0, queue[0], "Start");
@@ -1455,7 +1482,7 @@ export async function startVirtualDj(): Promise<void> {
           await sleep(400);
         }
         if (!cancelRequested) {
-          setMessage(`Live FX en ${fromId}`);
+          setMessage(vt("vdjLiveFx", { deck: fromId }));
           await spiceCurrent(fromId, moodGenre);
           // (v1.7.5 #11) Beatjuggling on slow tracks
           if (settings.vdjBeatjuggle === true) {
@@ -1463,7 +1490,7 @@ export async function startVirtualDj(): Promise<void> {
             const maxBpm = settings.vdjBeatjuggleMaxBpm ?? 100;
             const prob = Math.max(0, Math.min(1, settings.vdjBeatjuggleProb ?? 0.4));
             if (dsB.bpm && dsB.bpm > 40 && dsB.bpm <= maxBpm && Math.random() < prob) {
-              setMessage(`🤹 Beatjuggle ${fromId}`);
+              setMessage(vt("vdjBeatjuggle", { deck: fromId }));
               await beatjuggle(fromId, otherDeck(fromId), 2);
             }
           }
@@ -1477,18 +1504,42 @@ export async function startVirtualDj(): Promise<void> {
         : (durCur > 240 ? 0.72 : 0.78);
       // Hard mode cuts earlier (more aggressive); soft slightly later.
       const cutPct = Math.max(0.5, Math.min(0.95, baseCut - lvl.cutPctBoost));
+      // (v1.7.7 #3) Tight transitions: poll faster so we cut on the right
+      // beat (no missed window → no audible gap before the next song starts).
+      const pollMs = settings.vdjTightTransitions !== false ? 80 : 300;
+      // Pre-warm the OTHER deck early (~10% before cutPct) so the audio
+      // buffer is decoded and ready the instant the crossfade begins.
+      const warmAt = Math.max(0.4, cutPct - 0.10);
+      let warmed = false;
       while (!cancelRequested) {
         const ds2 = useApp.getState().decks[fromId];
         const pos = (ds2.position ?? 0) * (ds2.duration || 0);
+        if (!warmed && (ds2.duration || 0) > 0 && pos >= (ds2.duration || 0) * warmAt) {
+          warmed = true;
+          // Fire-and-forget: load the next track ahead of time. The actual
+          // (re)load below is a no-op cache hit if it's already loaded.
+          void loadTrackToDeck(toId, next.id).catch(() => { /* tried */ });
+        }
         if (pos >= (ds2.duration || 0) * cutPct) break;
         if (!ds2.isPlaying) break;
-        await sleep(300);
+        await sleep(pollMs);
       }
       if (cancelRequested) break;
 
       // Preload next on the other deck
-      setMessage(`Preparando ${next.title} (${i + 1}/${queue.length})`);
-      await loadTrackToDeck(toId, next.id);
+      setMessage(vt("vdjPreparing", { title: next.title || `Track ${i + 1}`, i: i + 1, n: queue.length }));
+      // (v1.7.7 #3) Tight transitions: if auto-recover is on and the load
+      // fails, skip this track (don't break the mix).
+      try {
+        await loadTrackToDeck(toId, next.id);
+      } catch (err) {
+        console.warn("[vdj] track load failed", next.title, err);
+        if (settings.vdjAutoRecover !== false) {
+          toast.error(vt("toastTrackLoadFail", { title: next.title || "?" }));
+          continue; // skip — outgoing keeps playing, next iteration tries next track
+        }
+        throw err;
+      }
       currentTrackId = next.id;
       applyAutoGain(toId);
       if (settings.vdjSyncBpm !== false) syncBpm(fromId, toId);
@@ -1535,11 +1586,11 @@ export async function startVirtualDj(): Promise<void> {
       if (stemAware) void applyStemAwareDuck(fromId, stemAmt, 1.5);
 
       if (useFreeze) {
-        setMessage(`❄ Echo-Freeze → ${next.title}`);
+        setMessage(vt("vdjEchoFreezeTo", { title: next.title || "?" }));
         if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
         await echoFreezeTransition(fromId, toId);
       } else if (useBattle) {
-        setMessage(`⚔ Battle Mode → ${next.title}`);
+        setMessage(vt("vdjBattleTo", { title: next.title || "?" }));
         if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
         const bbars = (settings.vdjBattleBars ?? 4) as 4 | 8 | 16;
         const brounds = settings.vdjBattleRounds ?? 4;
@@ -1549,7 +1600,7 @@ export async function startVirtualDj(): Promise<void> {
           clearGenreFx();
         }
       } else if (useMashup) {
-        setMessage(`💥 Double Drop → ${next.title}`);
+        setMessage(vt("vdjMashupTo", { title: next.title || "?" }));
         if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
         const mbars = settings.vdjMashupBars ?? 8;
         await mashupDoubleDrop(fromId, toId, mbars);
@@ -1566,7 +1617,7 @@ export async function startVirtualDj(): Promise<void> {
         void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
         // Apply genre FX during transition with a wet ramp
         if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
-        setMessage(`Mezclando → ${next.title}`);
+        setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
         await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
         // Reset outgoing filter + gain
         setDeckFilter(fromId, 0);
@@ -1666,11 +1717,11 @@ export async function startVirtualDj(): Promise<void> {
           await sleep(400);
         }
         if (!cancelRequested) {
-          setMessage(`Live FX en ${currentDeck}`);
+          setMessage(vt("vdjLiveFx", { deck: currentDeck }));
           await spiceCurrent(currentDeck, settings.vdjMoodAdaptive === true ? "ambient" : genre);
         }
       }
-      setMessage(`Esperando final de la última pista`);
+      setMessage(vt("vdjWaitingLast"));
       // Wait until ~5s before end so we can do a brake outro
       while (!cancelRequested) {
         const ds = useApp.getState().decks[currentDeck];
@@ -1682,7 +1733,7 @@ export async function startVirtualDj(): Promise<void> {
       }
       // Pro outro: filter sweep down + echo tail + sustained brake + reverb tail
       if (!cancelRequested && settings.vdjUseOutro !== false) {
-        setMessage(`Outro profesional…`);
+        setMessage(vt("vdjOutroPro"));
         const lvlOut = getIntensity();
         // Hard = brake más corto y seco; soft = brake más largo y dramático.
         const brakeBase = settings.vdjBrakeSec ?? 3.5;
@@ -1711,7 +1762,7 @@ export async function startVirtualDj(): Promise<void> {
     }
   } catch (err) {
     console.error("[vdj] error", err);
-    toast.error("Virtual DJ: error " + ((err as Error)?.message ?? ""));
+    toast.error(vt("toastVdjError", { msg: (err as Error)?.message ?? "" }));
   } finally {
     // Stop recording and save
     if (recordingActive && isRecording()) {
@@ -1720,9 +1771,10 @@ export async function startVirtualDj(): Promise<void> {
         if (r) {
           const sname = safeName(settings.vdjSessionName ?? "");
           const stamp = new Date().toLocaleString();
+          const prefix = vt("sessionPrefix");
           const recName = sname
-            ? `Mezcla Virtual ${sname}`
-            : `Mezcla Virtual ${stamp}`;
+            ? `${prefix} ${sname}`
+            : `${prefix} ${stamp}`;
           await putRecording({
             id: uid(),
             name: recName,
@@ -1732,7 +1784,7 @@ export async function startVirtualDj(): Promise<void> {
             createdAt: Date.now(),
           });
           useApp.getState().setRecordings(await listRecordings());
-          toast.success(`Sesión guardada: ${recName}`);
+          toast.success(vt("toastSessionSaved", { name: recName }));
           // (v1.7.5 #9) Export .cue sheet alongside the recording.
           if (settings.vdjExportCue !== false && cuePoints.length > 0) {
             try {
@@ -1746,7 +1798,7 @@ export async function startVirtualDj(): Promise<void> {
               document.body.appendChild(a);
               a.click();
               setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch { /* noop */ } }, 1500);
-              toast.success(`📋 Cue sheet exportado (${cuePoints.length} pistas)`);
+              toast.success(vt("toastCueExported", { n: cuePoints.length }));
             } catch (e) { console.warn("[vdj] cue export error", e); }
           }
         }
@@ -1774,7 +1826,7 @@ export async function startVirtualDj(): Promise<void> {
           energyCurve: energyHistory.slice(),
           fxUsed: { ...reportFx },
         });
-        toast.success("📄 Mix Report PDF generado");
+        toast.success(vt("toastReportPdf"));
       } catch (e) { console.warn("[vdj] mix report error", e); }
     }
     reportEntries = [];
@@ -1790,7 +1842,14 @@ export async function startVirtualDj(): Promise<void> {
     running = false;
     cancelRequested = false;
     currentTrackId = null;
-    setMessage("Idle");
+    // (v1.7.7) Restore skin + intensity tweaks made by smart autopilot.
+    if (originalSkin) {
+      try { useApp.getState().setSkin(originalSkin); } catch { /* noop */ }
+    }
+    if (originalIntensity) {
+      try { useApp.getState().updateSettings({ vdjIntensity: originalIntensity }); } catch { /* noop */ }
+    }
+    setMessage(vt("vdjIdle"));
     notify();
   }
 }
@@ -1798,7 +1857,7 @@ export async function startVirtualDj(): Promise<void> {
 export function stopVirtualDj() {
   if (!running) return;
   cancelRequested = true;
-  setMessage("Deteniendo Virtual DJ…");
+  setMessage(vt("vdjStopping"));
 }
 
 export function isVirtualDjRunning(): boolean { return running; }
