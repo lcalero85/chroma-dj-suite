@@ -566,17 +566,24 @@ export function setXfaderPosition(pos: number) {
   useApp.getState().updateMixer({ xfader: pos });
 }
 
-export function addHotCue(id: DeckId, slot: number) {
+/**
+ * Beat-Jump Quantize Global. When the master quantize toggle is on, snaps a
+ * time (seconds) to the nearest beat in the deck's grid (uses the deck's BPM
+ * + gridOffsetSec). When off, returns the input unchanged.
+ */
+export function quantizeIfEnabled(id: DeckId, sec: number): number {
   const quantize = useApp.getState().mixer.quantize;
-  let t = currentTime(id);
-  if (quantize) {
-    const ds = useApp.getState().decks[id];
-    if (ds.bpm) {
-      const beat = 60 / ds.bpm;
-      const off = ds.gridOffsetSec ?? 0;
-      t = Math.round((t - off) / beat) * beat + off;
-    }
-  }
+  if (!quantize) return sec;
+  const ds = useApp.getState().decks[id];
+  if (!ds.bpm) return sec;
+  const beat = 60 / ds.bpm;
+  const off = ds.gridOffsetSec ?? 0;
+  const snapped = Math.round((sec - off) / beat) * beat + off;
+  return Math.max(0, snapped);
+}
+
+export function addHotCue(id: DeckId, slot: number) {
+  const t = quantizeIfEnabled(id, currentTime(id));
   const palette = ["#ff3b6b", "#ffb000", "#19e1c3", "#7c5cff", "#ff7a18", "#19a7ff", "#a3ff19", "#ff19c4"];
   const ds = useApp.getState().decks[id];
   const cues = [...ds.hotCues.filter((c) => c.id !== slot), { id: slot, pos: t, color: palette[slot % 8] }];
@@ -592,10 +599,11 @@ export function jumpHotCue(id: DeckId, slot: number) {
   const ds = useApp.getState().decks[id];
   const cue = ds.hotCues.find((c) => c.id === slot);
   if (!cue) return;
-  seek(id, cue.pos);
+  const target = quantizeIfEnabled(id, cue.pos);
+  seek(id, target);
   const d = getDeck(id);
   if (d.buffer) {
-    useApp.getState().updateDeck(id, { position: cue.pos / d.buffer.duration });
+    useApp.getState().updateDeck(id, { position: target / d.buffer.duration });
   }
 }
 
@@ -624,7 +632,7 @@ export function clearAllHotCues() {
 export function setLoop(id: DeckId, beats: number) {
   const ds = useApp.getState().decks[id];
   if (!ds.bpm) return;
-  const start = currentTime(id);
+  const start = quantizeIfEnabled(id, currentTime(id));
   const end = start + (60 / ds.bpm) * beats;
   useApp.getState().updateDeck(id, { loopStart: start, loopEnd: end, loopActive: true });
 }
@@ -632,12 +640,12 @@ export function clearLoop(id: DeckId) {
   useApp.getState().updateDeck(id, { loopStart: null, loopEnd: null, loopActive: false });
 }
 export function loopIn(id: DeckId) {
-  useApp.getState().updateDeck(id, { loopStart: currentTime(id) });
+  useApp.getState().updateDeck(id, { loopStart: quantizeIfEnabled(id, currentTime(id)) });
 }
 export function loopOut(id: DeckId) {
   const ds = useApp.getState().decks[id];
   if (ds.loopStart === null) return;
-  let end = currentTime(id);
+  let end = quantizeIfEnabled(id, currentTime(id));
   if (end <= ds.loopStart + 0.05) end = ds.loopStart + 0.25;
   useApp.getState().updateDeck(id, { loopEnd: end, loopActive: true });
 }

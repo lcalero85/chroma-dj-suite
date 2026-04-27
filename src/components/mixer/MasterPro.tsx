@@ -39,7 +39,16 @@ export function MasterPro() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
         <button className="vdj-btn" data-active={mixer.masterDeck === "A"} style={{ fontSize: 9 }} onClick={() => setMasterDeck("A")}>{t("masterDeckA")}</button>
         <button className="vdj-btn" data-active={mixer.masterDeck === "B"} style={{ fontSize: 9 }} onClick={() => setMasterDeck("B")}>{t("masterDeckB")}</button>
-        <button className="vdj-btn" data-active={mixer.quantize} style={{ fontSize: 9 }} onClick={toggleQuantize} title={t("snapCuesLoops")}>{t("quantizeBtn")}</button>
+        <button
+          className="vdj-btn"
+          data-active={mixer.quantize}
+          data-tone={mixer.quantize ? "accent" : undefined}
+          style={{ fontSize: 9 }}
+          onClick={toggleQuantize}
+          title={t("quantizeGlobalTitle")}
+        >
+          {t("quantizeBtn")} {mixer.quantize ? "ON" : "OFF"}
+        </button>
       </div>
       <button
         className="vdj-btn"

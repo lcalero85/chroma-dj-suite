@@ -11,7 +11,7 @@ import { listRecordings, putRecording, uid } from "@/lib/db";
 import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
 
-const APP_VERSION = "1.6.5";
+const APP_VERSION = "1.6.6";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);

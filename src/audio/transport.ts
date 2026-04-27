@@ -3,7 +3,7 @@ import type { DeckId } from "@/state/store";
 import { useApp } from "@/state/store";
 import { getDeck, currentTime, seek, pause, play, setPlaybackRate } from "./deck";
 import { setMasterVolume } from "./engine";
-import { setXfaderPosition } from "@/state/controller";
+import { setXfaderPosition, quantizeIfEnabled } from "@/state/controller";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 
@@ -14,7 +14,10 @@ export function beatJump(id: DeckId, beats: number) {
   const d = getDeck(id);
   if (!d.buffer) return;
   const sec = (60 / ds.bpm) * beats;
-  const target = Math.max(0, Math.min(d.buffer.duration - 0.05, currentTime(id) + sec));
+  const raw = currentTime(id) + sec;
+  // Snap landing position to grid when global quantize is on; clamp to track length.
+  const snapped = quantizeIfEnabled(id, raw);
+  const target = Math.max(0, Math.min(d.buffer.duration - 0.05, snapped));
   seek(id, target);
   useApp.getState().updateDeck(id, { position: target / d.buffer.duration });
 }
