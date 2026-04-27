@@ -570,7 +570,7 @@ async function beatjuggle(activeId: DeckId, sittingId: DeckId, bars = 2) {
  *  pistas, con un shoutout antes y después. */
 async function playRadioJingle(targetDeck: DeckId, jingleTrackId: string): Promise<void> {
   try {
-    setMessage("📻 Jingle de radio…");
+    setMessage(vt("vdjJingle"));
     announceDjName();
     await sleep(800);
     await loadTrackToDeck(targetDeck, jingleTrackId);
