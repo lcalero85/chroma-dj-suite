@@ -894,32 +894,53 @@ export async function startVirtualDj(): Promise<void> {
       else seek(toId, 0);
       play(toId, useApp.getState().decks[toId].cuePoint || 0);
 
+      // (v1.7.3) Phrase / downbeat alignment — wait for next drop/buildup
+      // or downbeat (within window) before starting the actual transition.
+      if (settings.vdjPhraseAlign === true) {
+        const win = Math.max(0.5, Math.min(16, settings.vdjPhraseAlignWindowSec ?? 4));
+        await waitForPhraseAlign(fromId, win);
+        if (cancelRequested) break;
+      }
+
       // Per-transition DJ-name shoutout (only in 'every' mode)
       if (annMode === "every") announceDjName();
-      // Pre-transition: scratch flourish on outgoing as a "DJ mark"
-      if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
-      // Hard mode: extra scratch burst on the incoming deck right after start
-      if (lvl.scratchExtra && settings.vdjUseScratch !== false) {
-        setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
+
+      // (v1.7.3) Decide transition style: classic crossfade vs Echo-Freeze + Cut.
+      const useFreeze =
+        settings.vdjEchoFreeze === true &&
+        Math.random() < Math.max(0, Math.min(1, settings.vdjEchoFreezeProb ?? 0.35));
+
+      if (useFreeze) {
+        setMessage(`❄ Echo-Freeze → ${next.title}`);
+        if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+        await echoFreezeTransition(fromId, toId);
+      } else {
+        // Pre-transition: scratch flourish on outgoing as a "DJ mark"
+        if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+        // Hard mode: extra scratch burst on the incoming deck right after start
+        if (lvl.scratchExtra && settings.vdjUseScratch !== false) {
+          setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
+        }
+        // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
+        void filterSweep(fromId, 0, -lvl.filterDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
+        // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
+        void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
+        // Apply genre FX during transition with a wet ramp
+        if (settings.vdjUseFx !== false) applyGenreFx(genre);
+        setMessage(`Mezclando → ${next.title}`);
+        await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
+        // Reset outgoing filter + gain
+        setDeckFilter(fromId, 0);
+        setDeckGain(fromId, 1);
+        // Stop the outgoing deck cleanly
+        pause(fromId);
+        // Ramp down FX
+        if (settings.vdjUseFx !== false) {
+          await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
+          clearGenreFx();
+        }
       }
-      // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
-      void filterSweep(fromId, 0, -lvl.filterDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
-      // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
-      void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
-      // Apply genre FX during transition with a wet ramp
-      if (settings.vdjUseFx !== false) applyGenreFx(genre);
-      setMessage(`Mezclando → ${next.title}`);
-      await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
-      // Reset outgoing filter + gain
-      setDeckFilter(fromId, 0);
-      setDeckGain(fromId, 1);
-      // Stop the outgoing deck cleanly
-      pause(fromId);
-      // Ramp down FX
-      if (settings.vdjUseFx !== false) {
-        await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
-        clearGenreFx();
-      }
+
       // Light boost on the new track's lows for a fresh-energy feel
       setEQ(toId, "lo", 0);
       void ramp((v) => setEQ(toId, "lo", v), 0, lvl.acidEdge ? 0.45 : 0.3, 0.8);
