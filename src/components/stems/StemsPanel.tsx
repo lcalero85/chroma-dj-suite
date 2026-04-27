@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp, type DeckId } from "@/state/store";
 import { setDeckEQ } from "@/state/controller";
 import { useT } from "@/lib/i18n";
 import { Music2, RotateCcw } from "lucide-react";
+import { useActiveDeck } from "@/lib/activeDeck";
 
 /**
  * Lightweight "stems" panel — uses each deck's existing 3-band EQ as
@@ -13,7 +14,13 @@ import { Music2, RotateCcw } from "lucide-react";
 export function StemsPanel() {
   const t = useT();
   const enabledDecks = useApp((s) => s.settings.enabledDecks ?? 2);
-  const [activeDeck, setActiveDeck] = useState<DeckId>("A");
+  const liveDeck = useActiveDeck();
+  const [autoFollow, setAutoFollow] = useState<boolean>(true);
+  const [manualDeck, setManualDeck] = useState<DeckId>("A");
+  const activeDeck: DeckId = autoFollow ? liveDeck : manualDeck;
+  useEffect(() => {
+    if (autoFollow) setManualDeck(liveDeck);
+  }, [autoFollow, liveDeck]);
   const decks: DeckId[] = enabledDecks === 4 ? ["A", "B", "C", "D"] : ["A", "B"];
 
   return (
@@ -23,12 +30,24 @@ export function StemsPanel() {
         <span className="vdj-label">{t("stemsLabel")}</span>
         <span className="vdj-label" style={{ opacity: 0.6 }}>{t("stemsHint")}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+          <button
+            className="vdj-btn"
+            data-active={autoFollow}
+            onClick={() => setAutoFollow((v) => !v)}
+            style={{ padding: "4px 10px" }}
+            title={t("presetsAutoTip")}
+          >
+            {t("presetsAuto")}
+          </button>
           {decks.map((d) => (
             <button
               key={d}
               className="vdj-btn"
-              data-active={activeDeck === d}
-              onClick={() => setActiveDeck(d)}
+              data-active={!autoFollow && manualDeck === d}
+              onClick={() => {
+                setAutoFollow(false);
+                setManualDeck(d);
+              }}
               style={{ padding: "4px 10px", minWidth: 32 }}
             >
               {t("stemsDeck")} {d}
