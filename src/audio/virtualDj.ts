@@ -1331,7 +1331,7 @@ async function battleMode(fromId: DeckId, toId: DeckId, bars: number, rounds: nu
 
 export async function startVirtualDj(): Promise<void> {
   if (running) { toast.error(vt("toastAlreadyRunning")); return; }
-  const queue = getQueue();
+  let queue = getQueue();
   // mutable working copy for harmonic re-ordering
   if (queue.length === 0) {
     const s = useApp.getState();
@@ -1344,6 +1344,40 @@ export async function startVirtualDj(): Promise<void> {
     return;
   }
   const settings = useApp.getState().settings;
+  // (v1.8.0) Smart Setlist AI — reorder the queue with Lovable AI for an
+  // optimal energy + harmonic arc. Best-effort: on any failure we keep the
+  // original order so the set never breaks.
+  if (settings.vdjAiSetlist === true && queue.length >= 3) {
+    setMessage("🤖 IA armando el setlist…");
+    try {
+      const result = await aiBuildSetlist(
+        queue.map((t) => ({
+          id: t.id,
+          title: t.title,
+          artist: t.artist,
+          bpm: typeof t.bpm === "number" ? t.bpm : null,
+          key: (t.key as string | null) ?? null,
+          tags: t.tags ?? [],
+        })),
+        (settings.vdjEnergyShape as "arc" | "ascending" | "descending" | "wave" | undefined) ?? "arc",
+        (settings.vdjGenre ?? "auto").toString(),
+      );
+      if (result && result.orderedIds.length > 0) {
+        const byId = new Map(queue.map((t) => [t.id, t] as const));
+        const reordered: TrackRecord[] = [];
+        for (const id of result.orderedIds) {
+          const t = byId.get(id);
+          if (t) reordered.push(t);
+        }
+        if (reordered.length === queue.length) {
+          queue = reordered;
+          if (result.reasoning) toast.success(`🤖 Setlist IA: ${result.reasoning}`);
+        }
+      }
+    } catch (e) {
+      console.warn("[vdj] AI setlist failed", e);
+    }
+  }
   // (v1.7.7) Smart autopilot — auto-tunes intensity from time-of-day so the set
   // breathes with the room (mornings = soft, afternoon = normal, late night = hard).
   // Only nudges the live setting, never overwrites the persisted user choice
