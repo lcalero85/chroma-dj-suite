@@ -11,6 +11,7 @@ import { isCompatible, type CamelotKey } from "@/lib/camelot";
 import { useT } from "@/lib/i18n";
 import { useActiveDeck } from "@/lib/activeDeck";
 import { Sparkles } from "lucide-react";
+import { toggleVdjTrack } from "@/audio/virtualDj";
 
 function FolderNode({
   folder,
@@ -122,6 +123,8 @@ export function LibraryPanel() {
   const selectedFolderId = useApp((s) => s.selectedFolderId);
   const setSelectedFolder = useApp((s) => s.setSelectedFolder);
   const segments = useApp((s) => s.segments);
+  const vdjSelected = useApp((s) => s.settings.vdjSelectedTrackIds ?? []);
+  const vdjSelectedSet = useMemo(() => new Set(vdjSelected), [vdjSelected]);
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -671,6 +674,7 @@ export function LibraryPanel() {
           <thead>
             <tr style={{ color: "var(--text-3)", textAlign: "left" }}>
               <th style={{ padding: 6, fontWeight: 600, width: 18 }}></th>
+              <th style={{ padding: 6, fontWeight: 600, width: 32, textAlign: "center" }} title="Marca para que el Virtual DJ mezcle esta pista">VDJ</th>
               <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColTitle")}</th>
               <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColArtist")}</th>
               <th style={{ padding: 6, fontWeight: 600 }}>{tr("libColBpm")}</th>
@@ -682,7 +686,7 @@ export function LibraryPanel() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: 0 }}>
+                <td colSpan={8} style={{ padding: 0 }}>
                   <div
                     style={{
                       display: "flex",
@@ -766,6 +770,15 @@ export function LibraryPanel() {
               >
                 <td style={{ padding: 6, color: t.kind === "video" ? "var(--accent)" : "var(--text-3)" }}>
                   {t.kind === "video" ? <Film size={12} /> : null}
+                </td>
+                <td style={{ padding: 6, textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={vdjSelectedSet.has(t.id)}
+                    onChange={(e) => { e.stopPropagation(); toggleVdjTrack(t.id); }}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Incluir en la mezcla del Virtual DJ"
+                  />
                 </td>
                 <td style={{ padding: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

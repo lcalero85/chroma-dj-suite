@@ -1,5 +1,5 @@
 import { useApp } from "@/state/store";
-import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square } from "lucide-react";
+import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square, Bot } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
@@ -10,8 +10,9 @@ import { ensureRunning } from "@/audio/engine";
 import { listRecordings, putRecording, uid } from "@/lib/db";
 import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
+import { startVirtualDj, stopVirtualDj, isVirtualDjRunning, subscribeVdj, getVdjStatus } from "@/audio/virtualDj";
 
-const APP_VERSION = "1.6.6";
+const APP_VERSION = "1.6.7";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);
@@ -37,6 +38,18 @@ export function TopBar() {
   const [recSec, setRecSec] = useState<number>(0);
   const [recBusy, setRecBusy] = useState(false);
   const setRecordings = useApp((s) => s.setRecordings);
+  const vdjEnabled = useApp((s) => s.settings.vdjEnabled === true);
+  const vdjSelectedCount = useApp((s) => (s.settings.vdjSelectedTrackIds ?? []).length);
+  const [vdjOn, setVdjOn] = useState<boolean>(() => isVirtualDjRunning());
+  const [vdjMsg, setVdjMsg] = useState<string>(() => getVdjStatus().message);
+  useEffect(() => {
+    const unsub = subscribeVdj(() => {
+      const st = getVdjStatus();
+      setVdjOn(st.running);
+      setVdjMsg(st.message);
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     if (appName) document.title = appName;
@@ -232,6 +245,30 @@ export function TopBar() {
         <span className="vdj-label" style={{ opacity: 0.7 }}>{t("numpadBacktickHint")}</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
+        {vdjEnabled && (
+          <button
+            className="vdj-btn"
+            data-active={vdjOn}
+            onClick={async () => {
+              if (vdjOn) stopVirtualDj();
+              else await startVirtualDj();
+            }}
+            title={vdjOn ? `Detener Virtual DJ — ${vdjMsg}` : `Iniciar Virtual DJ (${vdjSelectedCount} pistas)`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontWeight: 700,
+              color: vdjOn ? "#0b0b0b" : undefined,
+              background: vdjOn
+                ? "linear-gradient(90deg, var(--accent), var(--accent-2, var(--accent)))"
+                : undefined,
+              animation: vdjOn ? "vdj-pulse 1.2s infinite" : undefined,
+            }}
+          >
+            <Bot size={12} /> {vdjOn ? `VDJ · ${vdjMsg.slice(0, 18)}` : `VDJ (${vdjSelectedCount})`}
+          </button>
+        )}
         <button
           className="vdj-btn"
           onClick={toggleRecord}

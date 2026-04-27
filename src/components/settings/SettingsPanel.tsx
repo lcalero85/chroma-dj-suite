@@ -5,6 +5,7 @@ import { StreamSettings } from "./StreamSettings";
 import { ShortcutsSettings } from "./ShortcutsSettings";
 import { AudioDevicesPanel } from "./AudioDevicesPanel";
 import { CloudSyncPanel } from "./CloudSyncPanel";
+import { VDJ_GENRES } from "@/audio/virtualDj";
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
@@ -166,6 +167,8 @@ export function SettingsPanel() {
         />
       </Row>
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
+      <VirtualDjSettings />
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <PanelVisibilityRows />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <CloudSyncPanel />
@@ -222,6 +225,74 @@ function PanelVisibilityRows() {
           />
         </Row>
       ))}
+    </div>
+  );
+}
+
+function VirtualDjSettings() {
+  const settings = useApp((s) => s.settings);
+  const update = useApp((s) => s.updateSettings);
+  const tracks = useApp((s) => s.tracks);
+  const enabled = settings.vdjEnabled === true;
+  const selected = settings.vdjSelectedTrackIds ?? [];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.85 }}>🎧 Virtual DJ</div>
+      <div style={{ fontSize: 11, opacity: 0.65 }}>
+        Marca canciones en la Library (columna VDJ) y deja que el Virtual DJ las mezcle profesionalmente.
+      </div>
+      <Row label="Habilitar Virtual DJ">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => update({ vdjEnabled: e.target.checked })}
+        />
+      </Row>
+      <Row label="Género de la mezcla">
+        <select
+          className="vdj-btn"
+          value={settings.vdjGenre ?? "auto"}
+          onChange={(e) => update({ vdjGenre: e.target.value })}
+          style={{ padding: "6px 8px", textTransform: "capitalize" }}
+          disabled={!enabled}
+        >
+          {VDJ_GENRES.map((g) => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
+      </Row>
+      <Row label="Grabar la sesión">
+        <input
+          type="checkbox"
+          checked={settings.vdjRecord !== false}
+          onChange={(e) => update({ vdjRecord: e.target.checked })}
+          disabled={!enabled}
+        />
+      </Row>
+      <Row label="Nombre de la sesión">
+        <input
+          type="text"
+          className="vdj-btn"
+          style={{ width: 180, textAlign: "left", padding: "6px 8px" }}
+          value={settings.vdjSessionName ?? ""}
+          maxLength={48}
+          placeholder="(opcional — se usará la fecha)"
+          onChange={(e) => update({ vdjSessionName: e.target.value })}
+          disabled={!enabled}
+        />
+      </Row>
+      <div style={{ fontSize: 11, opacity: 0.7, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>Pistas seleccionadas: <b>{selected.length}</b> / {tracks.length}</span>
+        {selected.length > 0 && (
+          <button
+            className="vdj-btn"
+            style={{ fontSize: 10, padding: "4px 8px" }}
+            onClick={() => update({ vdjSelectedTrackIds: [] })}
+          >
+            Vaciar selección
+          </button>
+        )}
+      </div>
     </div>
   );
 }

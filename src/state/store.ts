@@ -268,6 +268,16 @@ export interface SettingsState {
   /** Enable Smart Fader — auto-rides the crossfader as the master deck nears its
    * smart-exit point. Triggers a `smartCrossfade()` once. Default false. */
   smartFaderEnabled?: boolean;
+  /** Virtual DJ — IDs de pistas marcadas para mezclar automáticamente. */
+  vdjSelectedTrackIds?: string[];
+  /** Virtual DJ — género objetivo (filtra por tag). 'auto' = sin filtro. */
+  vdjGenre?: string;
+  /** Virtual DJ — grabar la sesión completa (default true). */
+  vdjRecord?: boolean;
+  /** Virtual DJ — nombre de la sesión (opcional). */
+  vdjSessionName?: string;
+  /** Virtual DJ — habilitar el panel/botón en TopBar. Default false. */
+  vdjEnabled?: boolean;
 }
 
 export interface SessionStats {
