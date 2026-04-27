@@ -551,16 +551,16 @@ export async function startVirtualDj(): Promise<void> {
 
       const fxCfg = GENRE_FX[genre] ?? GENRE_FX.auto;
 
-      // Mid-track flair: spice up the playing deck once it's well underway,
-      // before we head to the exit point.
+      // Mid-track flair: spice up the playing deck around ~50% through.
+      // We DO NOT wait for the track to finish — we cut into the next song
+      // earlier (~70-78%) so the mix stays energetic.
       const dsCur = useApp.getState().decks[fromId];
       const durCur = dsCur.duration || 0;
       if (durCur > 0) {
-        // Wait until ~55% of the track to spice
         while (!cancelRequested) {
           const ds2 = useApp.getState().decks[fromId];
           const pos = (ds2.position ?? 0) * (ds2.duration || 0);
-          if (pos >= (ds2.duration || 0) * 0.55) break;
+          if (pos >= (ds2.duration || 0) * 0.50) break;
           if (!ds2.isPlaying) break;
           await sleep(400);
         }
@@ -570,8 +570,16 @@ export async function startVirtualDj(): Promise<void> {
         }
       }
 
-      // Wait until the current deck is near its end before transitioning
-      await waitUntilExitPoint(fromId, fxCfg.xfadeSec + 2);
+      // Cut early — wait until ~72% of the track (or 75% for short tracks),
+      // never letting it run out completely.
+      const cutPct = durCur > 240 ? 0.72 : 0.78;
+      while (!cancelRequested) {
+        const ds2 = useApp.getState().decks[fromId];
+        const pos = (ds2.position ?? 0) * (ds2.duration || 0);
+        if (pos >= (ds2.duration || 0) * cutPct) break;
+        if (!ds2.isPlaying) break;
+        await sleep(300);
+      }
       if (cancelRequested) break;
 
       // Preload next on the other deck
@@ -591,19 +599,28 @@ export async function startVirtualDj(): Promise<void> {
       else seek(toId, 0);
       play(toId, useApp.getState().decks[toId].cuePoint || 0);
 
-      // Pre-transition: filter sweep down on outgoing for smoother handoff
+      // Pre-transition: scratch flourish on outgoing as a "DJ mark"
+      void performScratch(fromId, 2);
+      // Filter sweep down on outgoing for smoother handoff
       void filterSweep(fromId, 0, -0.6, Math.min(3, fxCfg.xfadeSec / 2));
+      // Gain pump down on outgoing during the crossfade
+      void ramp((v) => setDeckGain(fromId, v), 1, 0.7, fxCfg.xfadeSec * 0.5);
       // Apply genre FX during transition with a wet ramp
       applyGenreFx(genre);
       setMessage(`Mezclando → ${next.title}`);
       await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
-      // Reset outgoing filter
+      // Reset outgoing filter + gain
       setDeckFilter(fromId, 0);
+      setDeckGain(fromId, 1);
       // Stop the outgoing deck cleanly
       pause(fromId);
       // Ramp down FX
       await fxWetRamp(1, fxCfg.wet, 0, 1.5);
       clearGenreFx();
+      // Light boost on the new track's lows for a fresh-energy feel
+      setEQ(toId, "lo", 0);
+      void ramp((v) => setEQ(toId, "lo", v), 0, 0.3, 0.8);
+      setTimeout(() => { try { setEQ(toId, "lo", 0); } catch { /* noop */ } }, 4000);
 
       currentDeck = toId;
       currentIndex = i;
