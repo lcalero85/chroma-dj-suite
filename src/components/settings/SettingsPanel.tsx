@@ -5,6 +5,7 @@ import { StreamSettings } from "./StreamSettings";
 import { ShortcutsSettings } from "./ShortcutsSettings";
 import { AudioDevicesPanel } from "./AudioDevicesPanel";
 import { CloudSyncPanel } from "./CloudSyncPanel";
+import { VDJ_GENRES } from "@/audio/virtualDj";
 
 export function SettingsPanel() {
   const settings = useApp((s) => s.settings);
@@ -165,6 +166,8 @@ export function SettingsPanel() {
           title="Auto-rides the crossfader as the master deck nears its smart-exit point"
         />
       </Row>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
+      <VirtualDjSettings />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
       <PanelVisibilityRows />
       <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "8px 0" }} />
