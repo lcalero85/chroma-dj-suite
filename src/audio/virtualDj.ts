@@ -37,6 +37,8 @@ import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
 import { getEngine } from "@/audio/engine";
 import { isCompatible, type CamelotKey } from "@/lib/camelot";
+import { enableMic, disableMic } from "@/audio/engine";
+import { startStream, stopStream, updateStreamMetadata, isStreaming } from "@/audio/iceStreamer";
 
 export type VdjGenre =
   | "auto"
