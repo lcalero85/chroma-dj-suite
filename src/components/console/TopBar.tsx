@@ -1,5 +1,5 @@
 import { useApp } from "@/state/store";
-import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square } from "lucide-react";
+import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square, Bot } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
@@ -10,8 +10,9 @@ import { ensureRunning } from "@/audio/engine";
 import { listRecordings, putRecording, uid } from "@/lib/db";
 import { formatTime } from "@/lib/format";
 import { toast } from "sonner";
+import { startVirtualDj, stopVirtualDj, isVirtualDjRunning, subscribeVdj, getVdjStatus } from "@/audio/virtualDj";
 
-const APP_VERSION = "1.6.6";
+const APP_VERSION = "1.6.7";
 
 export function TopBar() {
   const drawer = useApp((s) => s.drawer);
