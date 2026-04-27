@@ -23,6 +23,10 @@ import {
   setDeckFilter,
   setLoop,
   clearLoop,
+  setDeckGain,
+  beginScratchDeck,
+  scratchDeck,
+  endScratchDeck,
 } from "@/state/controller";
 import { setPlaybackRate } from "@/audio/deck";
 import { analyzeLoudness } from "@/audio/analysis/loudness";
@@ -30,6 +34,7 @@ import { startRecording, stopRecording, isRecording } from "@/audio/recorder";
 import { listRecordings, putRecording, uid, type TrackRecord } from "@/lib/db";
 import { toast } from "sonner";
 import type { FxKind } from "@/audio/fx";
+import { getEngine } from "@/audio/engine";
 
 export type VdjGenre =
   | "auto"
