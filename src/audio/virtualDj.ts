@@ -1504,12 +1504,25 @@ export async function startVirtualDj(): Promise<void> {
         : (durCur > 240 ? 0.72 : 0.78);
       // Hard mode cuts earlier (more aggressive); soft slightly later.
       const cutPct = Math.max(0.5, Math.min(0.95, baseCut - lvl.cutPctBoost));
+      // (v1.7.7 #3) Tight transitions: poll faster so we cut on the right
+      // beat (no missed window → no audible gap before the next song starts).
+      const pollMs = settings.vdjTightTransitions !== false ? 80 : 300;
+      // Pre-warm the OTHER deck early (~10% before cutPct) so the audio
+      // buffer is decoded and ready the instant the crossfade begins.
+      const warmAt = Math.max(0.4, cutPct - 0.10);
+      let warmed = false;
       while (!cancelRequested) {
         const ds2 = useApp.getState().decks[fromId];
         const pos = (ds2.position ?? 0) * (ds2.duration || 0);
+        if (!warmed && (ds2.duration || 0) > 0 && pos >= (ds2.duration || 0) * warmAt) {
+          warmed = true;
+          // Fire-and-forget: load the next track ahead of time. The actual
+          // (re)load below is a no-op cache hit if it's already loaded.
+          void loadTrackToDeck(toId, next.id).catch(() => { /* tried */ });
+        }
         if (pos >= (ds2.duration || 0) * cutPct) break;
         if (!ds2.isPlaying) break;
-        await sleep(300);
+        await sleep(pollMs);
       }
       if (cancelRequested) break;
 
