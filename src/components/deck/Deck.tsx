@@ -636,9 +636,22 @@ function PhraseStrip({ id }: { id: DeckId }) {
           </button>
         </div>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, minHeight: 22 }}>
+      <div
+        className="vdj-scroll"
+        style={{
+          display: "flex",
+          flexWrap: "nowrap",
+          gap: 4,
+          minHeight: 26,
+          maxHeight: 56,
+          overflowX: "auto",
+          overflowY: "hidden",
+          paddingBottom: 4,
+          alignItems: "center",
+        }}
+      >
         {phrases.length === 0 && (
-          <span className="vdj-label" style={{ fontSize: 9, opacity: 0.55 }}>{t("phraseEmpty")}</span>
+          <span className="vdj-label" style={{ fontSize: 9, opacity: 0.55, whiteSpace: "nowrap" }}>{t("phraseEmpty")}</span>
         )}
         {phrases.map((p) => {
           const time = `${Math.floor(p.pos / 60)}:${String(Math.floor(p.pos % 60)).padStart(2, "0")}`;
@@ -651,20 +664,24 @@ function PhraseStrip({ id }: { id: DeckId }) {
               style={{
                 background: p.color,
                 color: "#0a0a0a",
-                border: "none",
+                border: "1px solid rgba(0,0,0,0.35)",
                 borderRadius: 4,
                 fontSize: 9,
                 fontWeight: 700,
                 letterSpacing: 0.4,
-                padding: "2px 6px",
+                padding: "3px 7px",
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 4,
+                flexShrink: 0,
+                whiteSpace: "nowrap",
+                lineHeight: 1.2,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.4)",
               }}
             >
               {p.type.toUpperCase()}
-              <span style={{ opacity: 0.7, fontWeight: 500 }}>{time}</span>
+              <span style={{ opacity: 0.75, fontWeight: 500 }}>{time}</span>
             </button>
           );
         })}
