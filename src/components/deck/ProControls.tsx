@@ -1,8 +1,9 @@
 import { useApp, type DeckId } from "@/state/store";
 import { beatJump, brake, setReverse } from "@/audio/transport";
-import { beginLoopRoll, endLoopRoll, beginCensor, endCensor } from "@/state/controller";
+import { beginLoopRoll, endLoopRoll, beginCensor, endCensor, beginSlice, endSlice } from "@/state/controller";
 import { Rewind, FastForward, RotateCcw, Disc, Square } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useState } from "react";
 
 interface Props { id: DeckId }
 
@@ -10,6 +11,8 @@ export function ProControls({ id }: Props) {
   const ds = useApp((s) => s.decks[id]);
   const t = useT();
   const toggleSlip = () => useApp.getState().updateDeck(id, { slip: !ds.slip });
+  // Beats per slice for the Slicer row. 1 beat → 8 pads = 1 bar.
+  const [sliceBeats, setSliceBeats] = useState<number>(1);
 
   // Press-and-hold helpers — keep the action active while the user holds the
   // pad (mouse, touch, keyboard). Pointer events handle all input devices.
@@ -84,6 +87,36 @@ export function ProControls({ id }: Props) {
         >
           {t("censor")}
         </button>
+      </div>
+      {/* Slicer — 8 pads, press & hold to retrigger each slice of the current bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span className="vdj-label" style={{ minWidth: 44, fontSize: 9 }}>{t("slicer")}</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 3, flex: 1 }}>
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <button
+              key={i}
+              className="vdj-btn"
+              title={t("slicerHold", { n: i + 1 })}
+              disabled={!ds.bpm}
+              style={{ fontSize: 9, padding: "4px 0", touchAction: "none" }}
+              {...holdProps(() => beginSlice(id, i, sliceBeats), () => endSlice(id))}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+        <select
+          value={sliceBeats}
+          onChange={(e) => setSliceBeats(Number(e.target.value))}
+          title={t("slicerSize")}
+          className="vdj-btn"
+          style={{ fontSize: 9, padding: "3px 4px" }}
+        >
+          <option value={0.25}>1/4</option>
+          <option value={0.5}>1/2</option>
+          <option value={1}>1</option>
+          <option value={2}>2</option>
+        </select>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 4 }}>
         <button className="vdj-btn" title={t("brakeStop")} style={{ fontSize: 9, padding: "4px 0" }} onClick={() => brake(id, 1.4)}>
