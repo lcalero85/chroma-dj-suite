@@ -640,6 +640,8 @@ export const DICT = {
 
     // ===== Presets panel =====
     presetsApplyTo: "Apply to Deck",
+    presetsAuto: "Auto",
+    presetsAutoTip: "Auto-target the deck currently playing",
     presetsNewName: "New preset name",
     presetsCaptureTip: "Capture the deck's current EQ/Filter/FX as a preset",
     presetsCaptureBtn: "Capture Deck {deck}",
@@ -1467,6 +1469,8 @@ export const DICT = {
     sessionMetricsResetOk: "Estadísticas reiniciadas",
 
     presetsApplyTo: "Aplicar a Deck",
+    presetsAuto: "Auto",
+    presetsAutoTip: "Apuntar automáticamente al deck que está sonando",
     presetsNewName: "Nombre del nuevo preset",
     presetsCaptureTip: "Captura el EQ/Filter/FX actual del deck como preset",
     presetsCaptureBtn: "Capturar Deck {deck}",
