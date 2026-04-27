@@ -1218,7 +1218,7 @@ export async function startVirtualDj(): Promise<void> {
         await echoFreezeTransition(fromId, toId);
       } else if (useBattle) {
         setMessage(`⚔ Battle Mode → ${next.title}`);
-        if (settings.vdjUseFx !== false) applyGenreFx(genre);
+        if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
         const bbars = (settings.vdjBattleBars ?? 4) as 4 | 8 | 16;
         const brounds = settings.vdjBattleRounds ?? 4;
         await battleMode(fromId, toId, bbars, brounds);
@@ -1243,7 +1243,7 @@ export async function startVirtualDj(): Promise<void> {
         // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
         void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
         // Apply genre FX during transition with a wet ramp
-        if (settings.vdjUseFx !== false) applyGenreFx(genre);
+        if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
         setMessage(`Mezclando → ${next.title}`);
         await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
         // Reset outgoing filter + gain
@@ -1268,6 +1268,32 @@ export async function startVirtualDj(): Promise<void> {
 
       currentDeck = toId;
       currentIndex = i;
+
+      // (v1.7.5 #9) Capture cue point for the new track.
+      pushCue(i, next);
+      // (v1.7.5 #10) Update live stream metadata.
+      if (settings.vdjAutoStream === true && isStreaming()) {
+        void updateStreamMetadata(next.title || `Track ${i + 1}`, next.artist || "");
+      }
+      // (v1.7.5 #12) Radio Show: every N tracks, insert a jingle.
+      if (
+        settings.vdjRadioShow === true &&
+        settings.vdjRadioJingleTrackId &&
+        ((i + 1) % Math.max(2, settings.vdjRadioJingleEvery ?? 4) === 0) &&
+        i + 1 < queue.length
+      ) {
+        // Use the OTHER deck so the just-loaded track keeps its place visually.
+        const jdeck = otherDeck(currentDeck);
+        const dsCurNow = useApp.getState().decks[currentDeck];
+        const fadeOutSec = 1.5;
+        // Quick fade out of current
+        await ramp((v) => setDeckGain(currentDeck, v), 1, 0, fadeOutSec);
+        pause(currentDeck);
+        await playRadioJingle(jdeck, settings.vdjRadioJingleTrackId);
+        // Bring back current track from where it paused
+        setDeckGain(currentDeck, 1);
+        play(currentDeck, dsCurNow.position * (dsCurNow.duration || 0));
+      }
     }
 
     // Wait for last track to finish
@@ -1284,7 +1310,7 @@ export async function startVirtualDj(): Promise<void> {
         }
         if (!cancelRequested) {
           setMessage(`Live FX en ${currentDeck}`);
-          await spiceCurrent(currentDeck, genre);
+          await spiceCurrent(currentDeck, settings.vdjMoodAdaptive === true ? "ambient" : genre);
         }
       }
       setMessage(`Esperando final de la última pista`);
