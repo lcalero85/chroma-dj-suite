@@ -818,6 +818,96 @@ function VirtualDjSettings() {
           </button>
         )}
       </div>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "6px 0" }} />
+      <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>
+        🚀 Pro (v1.7.6)
+      </div>
+      <Row label="🎼 Harmonic Mixing AI (Camelot real)">
+        <input type="checkbox" checked={settings.vdjHarmonicMixing === true}
+          onChange={(e) => update({ vdjHarmonicMixing: e.target.checked })}
+          disabled={!enabled} title="Detecta key real y reordena para que cada salto sea Camelot-compatible" />
+      </Row>
+      <Row label="🎤 Acapella & Instrumental Layering">
+        <input type="checkbox" checked={settings.vdjAcapellaLayer === true}
+          onChange={(e) => update({ vdjAcapellaLayer: e.target.checked })} disabled={!enabled} />
+      </Row>
+      <Row label="Probabilidad acapella (%)">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjAcapellaProb ?? 0.2) * 100)} min={0} max={100} step={5}
+          onChange={(e) => update({ vdjAcapellaProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjAcapellaLayer !== true} />
+      </Row>
+      <Row label="Compases de layering">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjAcapellaBars ?? 4} min={1} max={8} step={1}
+          onChange={(e) => update({ vdjAcapellaBars: Math.max(1, Math.min(8, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjAcapellaLayer !== true} />
+      </Row>
+      <Row label="🌀 Loop Roll automático">
+        <input type="checkbox" checked={settings.vdjLoopRoll === true}
+          onChange={(e) => update({ vdjLoopRoll: e.target.checked })} disabled={!enabled} />
+      </Row>
+      <Row label="Probabilidad Loop Roll (%)">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjLoopRollProb ?? 0.25) * 100)} min={0} max={100} step={5}
+          onChange={(e) => update({ vdjLoopRollProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjLoopRoll !== true} />
+      </Row>
+      <Row label="📊 Crowd Energy Meter (overlay)">
+        <input type="checkbox" checked={settings.vdjEnergyMeter === true}
+          onChange={(e) => update({ vdjEnergyMeter: e.target.checked })} disabled={!enabled} />
+      </Row>
+      <Row label="↩ Reverse Censor FX">
+        <input type="checkbox" checked={settings.vdjReverseFx === true}
+          onChange={(e) => update({ vdjReverseFx: e.target.checked })} disabled={!enabled} />
+      </Row>
+      <Row label="Probabilidad reverse (%)">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjReverseFxProb ?? 0.15) * 100)} min={0} max={100} step={5}
+          onChange={(e) => update({ vdjReverseFxProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjReverseFx !== true} />
+      </Row>
+      <Row label="Compases reverse">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjReverseBars ?? 1} min={0.5} max={4} step={0.5}
+          onChange={(e) => update({ vdjReverseBars: Math.max(0.5, Math.min(4, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjReverseFx !== true} />
+      </Row>
+      <Row label="🎢 Auto Drop Builder (riser+snare)">
+        <input type="checkbox" checked={settings.vdjDropBuilder === true}
+          onChange={(e) => update({ vdjDropBuilder: e.target.checked })} disabled={!enabled} />
+      </Row>
+      <Row label="Probabilidad drop builder (%)">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjDropBuilderProb ?? 0.2) * 100)} min={0} max={100} step={5}
+          onChange={(e) => update({ vdjDropBuilderProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjDropBuilder !== true} />
+      </Row>
+      <Row label="Duración riser (s)">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjDropBuilderSec ?? 4} min={2} max={8} step={0.5}
+          onChange={(e) => update({ vdjDropBuilderSec: Math.max(2, Math.min(8, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjDropBuilder !== true} />
+      </Row>
+      <Row label="🎙 Voice Command Mode">
+        <input type="checkbox" checked={settings.vdjVoiceCommands === true}
+          onChange={(e) => update({ vdjVoiceCommands: e.target.checked })} disabled={!enabled}
+          title="Di: 'siguiente', 'pausa', 'play', 'reverse', 'drop', 'scratch'" />
+      </Row>
+      <Row label="💥 Auto Mashup Generator">
+        <input type="checkbox" checked={settings.vdjAutoMashup === true}
+          onChange={(e) => update({ vdjAutoMashup: e.target.checked })} disabled={!enabled} />
+      </Row>
+      <Row label="Mashup cada N pistas">
+        <input type="number" className="vdj-btn" style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjAutoMashupEveryN ?? 6} min={2} max={20} step={1}
+          onChange={(e) => update({ vdjAutoMashupEveryN: Math.max(2, Math.min(20, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjAutoMashup !== true} />
+      </Row>
+      <Row label="📄 Mix Report PDF al finalizar">
+        <input type="checkbox" checked={settings.vdjMixReport === true}
+          onChange={(e) => update({ vdjMixReport: e.target.checked })} disabled={!enabled} />
+      </Row>
     </div>
   );
 }

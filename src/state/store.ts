@@ -392,6 +392,50 @@ export interface SettingsState {
   vdjRadioJingleEvery?: number;
   /** ID del track marcado como jingle (debe estar en la library). */
   vdjRadioJingleTrackId?: string | null;
+  /** ============ Funcionalidades pro (v1.7.6) ============ */
+  /** #1 Harmonic Mixing AI — reordena la cola para que cada salto sea
+   *  Camelot-compatible (+1, -1, relativo). Usa detectCamelotKey real. */
+  vdjHarmonicMixing?: boolean;
+  /** Tolerancia: si no hay match perfecto, permitir ±2 semitonos por
+   *  pitch shift (0 = estricto, 1 = relajado). */
+  vdjHarmonicTolerance?: number;
+  /** #2 Acapella & Instrumental Layering — al cargar la siguiente pista,
+   *  isolar instrumentos del incoming y voz del outgoing por unos compases. */
+  vdjAcapellaLayer?: boolean;
+  /** Probabilidad de aplicar layering por transición (0..1). */
+  vdjAcapellaProb?: number;
+  /** Compases de layering (1..8). */
+  vdjAcapellaBars?: number;
+  /** #3 Loop Roll automático — antes del corte, ejecuta loops 1/2 → 1/4 →
+   *  1/8 → 1/16 estilo "stutter buildup". */
+  vdjLoopRoll?: boolean;
+  /** Probabilidad (0..1). */
+  vdjLoopRollProb?: number;
+  /** #4 Crowd Energy Meter — mostrar overlay con curva de energía y
+   *  nivel actual durante el set. */
+  vdjEnergyMeter?: boolean;
+  /** #5 Smart Queue Builder — reordenar cola por curva combinada
+   *  energía + key + bpm (más estricto que Energy Curve). */
+  vdjSmartQueue?: boolean;
+  /** #6 Reverse Play & Brake FX — censura inversa breve antes de cortar. */
+  vdjReverseFx?: boolean;
+  vdjReverseFxProb?: number;
+  /** Compases de reverse (0.5..4). */
+  vdjReverseBars?: number;
+  /** #7 Auto Drop Builder — riser sintético + snare roll antes del drop. */
+  vdjDropBuilder?: boolean;
+  vdjDropBuilderProb?: number;
+  /** Duración del riser (s). */
+  vdjDropBuilderSec?: number;
+  /** #8 Voice Command Mode — escuchar comandos por mic (Web Speech API). */
+  vdjVoiceCommands?: boolean;
+  /** Idioma reconocimiento (default = lang del app). */
+  vdjVoiceLang?: string;
+  /** #9 Auto Mashup Generator — combinar 2-3 tracks de la cola con stems. */
+  vdjAutoMashup?: boolean;
+  vdjAutoMashupEveryN?: number;
+  /** #10 Mix Report PDF — generar reporte al terminar la sesión. */
+  vdjMixReport?: boolean;
 }
 
 export interface SessionStats {
