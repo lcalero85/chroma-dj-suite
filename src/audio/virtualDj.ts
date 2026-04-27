@@ -1314,20 +1314,45 @@ async function battleMode(fromId: DeckId, toId: DeckId, bars: number, rounds: nu
 }
 
 export async function startVirtualDj(): Promise<void> {
-  if (running) { toast.error("Virtual DJ ya está corriendo"); return; }
+  if (running) { toast.error(vt("toastAlreadyRunning")); return; }
   const queue = getQueue();
   // mutable working copy for harmonic re-ordering
   if (queue.length === 0) {
     const s = useApp.getState();
     const selectedCount = (s.settings.vdjSelectedTrackIds ?? []).length;
     if (selectedCount === 0) {
-      toast.error("Marca pistas con la casilla VDJ en la Library");
+      toast.error(vt("toastSelectFirst"));
     } else {
-      toast.error("No hay pistas válidas en la cola");
+      toast.error(vt("toastNoValid"));
     }
     return;
   }
   const settings = useApp.getState().settings;
+  // (v1.7.7) Smart autopilot — auto-tunes intensity from time-of-day so the set
+  // breathes with the room (mornings = soft, afternoon = normal, late night = hard).
+  // Only nudges the live setting, never overwrites the persisted user choice
+  // (we restore it in the finally block via `_originalIntensity`).
+  let originalIntensity: "soft" | "normal" | "hard" | undefined;
+  if (settings.vdjSmartAutopilot === true) {
+    const hour = new Date().getHours();
+    let chosen: "soft" | "normal" | "hard" = "normal";
+    if (hour >= 6 && hour < 12) chosen = "soft";
+    else if (hour >= 12 && hour < 19) chosen = "normal";
+    else chosen = "hard";
+    originalIntensity = settings.vdjIntensity ?? "normal";
+    if (chosen !== originalIntensity) {
+      useApp.getState().updateSettings({ vdjIntensity: chosen });
+    }
+  }
+  // (v1.7.7) Default skin per VDJ — auto apply at start, restore on stop.
+  let originalSkin: SkinId | null = null;
+  const wantedSkin = (settings.vdjDefaultSkin ?? "") as SkinId | "";
+  if (wantedSkin) {
+    originalSkin = useApp.getState().skin;
+    if (originalSkin !== wantedSkin) {
+      useApp.getState().setSkin(wantedSkin);
+    }
+  }
   const genre = (settings.vdjGenre ?? "auto") as VdjGenre;
   const shouldRecord = settings.vdjRecord !== false;
 
@@ -1341,7 +1366,7 @@ export async function startVirtualDj(): Promise<void> {
   reportEntries = [];
   reportFx = {};
   energyHistory = [];
-  setMessage(`Iniciando Virtual DJ (${queue.length} pistas)`);
+  setMessage(vt("vdjStarting", { n: queue.length }));
 
   // Start recording if requested
   if (shouldRecord && !isRecording()) {
@@ -1349,7 +1374,7 @@ export async function startVirtualDj(): Promise<void> {
       await startRecording();
       recordingActive = true;
       recordingStartMs = Date.now();
-      toast.success("Grabando sesión Virtual DJ");
+      toast.success(vt("toastRecording"));
     } catch (err) {
       console.warn("[vdj] no se pudo iniciar grabación", err);
     }
