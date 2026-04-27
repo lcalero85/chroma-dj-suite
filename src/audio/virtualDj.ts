@@ -266,15 +266,24 @@ async function crossfadeBetween(fromId: DeckId, toId: DeckId, seconds: number) {
       if (cancelRequested) { resolve(); return; }
       const t = (performance.now() - t0) / (seconds * 1000);
       const k = Math.min(1, t);
-      const v = start + (target - start) * k;
+      // Equal-power S-curve (smoother and more "pro" than linear) — minimizes
+      // perceived dip at the midpoint.
+      const sCurve = 0.5 - 0.5 * Math.cos(Math.PI * k);
+      const v = start + (target - start) * sCurve;
       setXfaderPosition(v);
-      // EQ blend: outgoing hi cut, incoming lo cut
-      setEQ(fromId, "hi", -k * 0.6);
-      setEQ(toId,   "lo", -(1 - k) * 0.6);
+      // EQ blend: outgoing hi+lo cut progressively, incoming lo cut early then released.
+      // Cleaner handoff — kills the bass clash entirely between 35%-65%.
+      const hiCut = sCurve * 0.7;
+      const loCutFrom = k < 0.5 ? sCurve * 0.5 : sCurve * 1.0;
+      const loCutTo = k < 0.5 ? (1 - sCurve) * 1.0 : (1 - sCurve) * 0.4;
+      setEQ(fromId, "hi", -hiCut);
+      setEQ(fromId, "lo", -loCutFrom);
+      setEQ(toId,   "lo", -loCutTo);
       if (k < 1) {
         requestAnimationFrame(step);
       } else {
         setEQ(fromId, "hi", 0);
+        setEQ(fromId, "lo", 0);
         setEQ(toId,   "lo", 0);
         useApp.getState().updateMixer({ masterDeck: toId });
         resolve();
