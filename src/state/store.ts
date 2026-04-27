@@ -452,6 +452,13 @@ export interface SettingsState {
   vdjTightTransitions?: boolean;
   /** Mostrar overlay flotante "MEZCLANDO" durante el set. Default true. */
   vdjShowStatusOverlay?: boolean;
+  /** ============ Funcionalidades AI (v1.8.0) ============ */
+  /** Smart Setlist AI — reordena la cola usando IA (Lovable AI Gateway).
+   *  Si la IA falla, se respeta el orden actual. Default false. */
+  vdjAiSetlist?: boolean;
+  /** DJ Coach AI — al terminar la sesión, genera feedback en lenguaje natural
+   *  y lo muestra como toast + se incluye en el Mix Report. Default false. */
+  vdjAiCoach?: boolean;
 }
 
 export interface SessionStats {
