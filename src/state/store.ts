@@ -80,6 +80,9 @@ export interface DeckState {
   slip: boolean;
   /** 0..1 — center-channel vocal cancellation amount */
   vocalCut: number;
+  /** Beat grid offset (seconds) — where beat 0 of the bar lands.
+   *  Used by the Waveform beatgrid, the Slicer anchor, and hot-cue quantize. */
+  gridOffsetSec: number;
   // Video support
   hasVideo?: boolean;
   videoUrl?: string | null;
@@ -299,6 +302,7 @@ const defaultDeck = (): DeckState => ({
   reverse: false,
   slip: false,
   vocalCut: 0,
+  gridOffsetSec: 0,
   hasVideo: false,
   videoUrl: null,
   videoFx: defaultVideoFx(),
