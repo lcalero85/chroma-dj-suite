@@ -277,9 +277,17 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
   const fast = genre === "drumandbass" || genre === "dubstep" || genre === "techno";
   const dreamy = genre === "ambient" || genre === "lofi" || genre === "trance";
 
+  // 0) DJ-name announcement on the master bus (and out loud)
+  announceDjName();
+
   // 1) Filter sweep up
   await filterSweep(id, 0, fast ? 0.5 : 0.7, dreamy ? 4 : 2.5);
   if (cancelRequested) { setDeckFilter(id, 0); return; }
+
+  // 1.5) EQ kill on the lows briefly for a "filter drop" feel
+  const ds2 = useApp.getState().decks[id];
+  const startLo = ds2.lo;
+  await ramp((v) => setEQ(id, "lo", v), startLo, -0.9, 0.6);
 
   // 2) Beat loop (if BPM known) — 4 beats for fast, 8 for slow
   if (ds.bpm) {
@@ -292,11 +300,31 @@ async function spiceCurrent(id: DeckId, genre: VdjGenre) {
       param1: 0.55,
       param2: 0.5,
     });
+    // Add a hot cue at the loop entry for future reference
+    try { addHotCue(id, 1); } catch { /* noop */ }
+    // Mid-loop gain pump (down + back up) to feel like a "ducker"
+    void ramp((v) => setDeckGain(id, v), 1, 0.55, (60 / ds.bpm) * (beats / 2));
     await sleep((60 / ds.bpm) * beats * 1000 * 1.0);
+    // Restore gain
+    setDeckGain(id, 1);
     try { clearLoop(id); } catch { /* ignore */ }
     await fxWetRamp(2, 0.55, 0, 1.5);
     useApp.getState().updateFx(2, { kind: "off", wet: 0 });
   }
+
+  // 2.5) Restore lows
+  await ramp((v) => setEQ(id, "lo", v), -0.9, 0, 0.8);
+
+  // 2.6) A short scratch flourish (genre-aware)
+  if (!dreamy) {
+    await performScratch(id, fast ? 4 : 2);
+  }
+
+  // 2.7) Tiny pitch bend (±2%) — micro-beatmatch feel
+  const dsP = useApp.getState().decks[id];
+  const startPitch = dsP.pitch;
+  await ramp((v) => setDeckPitch(id, v), startPitch, Math.min(1, startPitch + 0.025), 0.6);
+  await ramp((v) => setDeckPitch(id, v), Math.min(1, startPitch + 0.025), startPitch, 0.6);
 
   // 3) Filter sweep back to neutral
   await filterSweep(id, 0.7, 0, 2);
