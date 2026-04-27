@@ -1335,6 +1335,9 @@ export async function startVirtualDj(): Promise<void> {
   recordingActive = false;
   cuePoints = [];
   recordingStartMs = 0;
+  reportEntries = [];
+  reportFx = {};
+  energyHistory = [];
   setMessage(`Iniciando Virtual DJ (${queue.length} pistas)`);
 
   // Start recording if requested
@@ -1352,6 +1355,23 @@ export async function startVirtualDj(): Promise<void> {
   // (v1.7.5 #6) Mic shoutout sidechain — duck master when user speaks.
   if (settings.vdjMicShoutout === true) {
     try { startMicShoutoutMonitor(); } catch (err) { console.warn("[vdj] mic shoutout error", err); }
+  }
+  // (v1.7.6 #4) Crowd Energy monitor.
+  if (settings.vdjEnergyMeter === true || settings.vdjMixReport === true) {
+    try { startEnergyMonitor(); } catch (err) { console.warn("[vdj] energy mon error", err); }
+  }
+  // (v1.7.6 #8) Voice commands.
+  if (settings.vdjVoiceCommands === true) {
+    try { startVoiceCommands(); } catch (err) { console.warn("[vdj] voice err", err); }
+  }
+  // (v1.7.6 #1) Harmonic Mixing AI: detect missing keys + reorder.
+  if (settings.vdjHarmonicMixing === true) {
+    setMessage("🎼 Analizando tonalidades…");
+    try { await ensureKeysForTracks(queue); } catch (e) { console.warn("[vdj] key detect error", e); }
+    const planned = planHarmonic(queue);
+    queue.length = 0;
+    queue.push(...planned);
+    setMessage(`🎼 Cola armónica lista (${queue.length} pistas)`);
   }
   // (v1.7.5 #10) Auto-start live stream of this set, if user enabled it.
   if (settings.vdjAutoStream === true) {
