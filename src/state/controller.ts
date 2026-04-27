@@ -193,6 +193,7 @@ export async function loadTrackToDeck(deckId: DeckId, trackId: string) {
     loopStart: null,
     loopEnd: null,
     loopActive: false,
+    savedLoops: t.savedLoops ?? [],
     hasVideo: isVideo,
   });
   toast(`${tI18n("loadedToast")} ${deckId}`, { description: t.title });
@@ -479,6 +480,59 @@ export function toggleLoop(id: DeckId) {
   if (ds.loopStart !== null && ds.loopEnd !== null) {
     useApp.getState().updateDeck(id, { loopActive: !ds.loopActive });
   }
+}
+
+/**
+ * Saved Loops — Serato/Rekordbox-style: 8 slots per deck (id 0..7).
+ * Each slot persists with the track via the library DB.
+ */
+const SAVED_LOOP_COLORS = [
+  "#ff5b6a", "#ffb33a", "#ffe66b", "#67e8a3",
+  "#5ad6ff", "#7c8cff", "#c39bff", "#ff8be0",
+];
+
+export function saveLoopSlot(id: DeckId, slot: number) {
+  const ds = useApp.getState().decks[id];
+  if (ds.loopStart === null || ds.loopEnd === null) return false;
+  const next = ds.savedLoops.filter((l) => l.id !== slot);
+  next.push({
+    id: slot,
+    start: ds.loopStart,
+    end: ds.loopEnd,
+    color: SAVED_LOOP_COLORS[slot % SAVED_LOOP_COLORS.length],
+  });
+  next.sort((a, b) => a.id - b.id);
+  useApp.getState().updateDeck(id, { savedLoops: next });
+  if (ds.trackId) {
+    void getTrack(ds.trackId).then((tr) => { if (tr) putTrack({ ...tr, savedLoops: next }); });
+  }
+  return true;
+}
+
+export function recallLoopSlot(id: DeckId, slot: number) {
+  const ds = useApp.getState().decks[id];
+  const loop = ds.savedLoops.find((l) => l.id === slot);
+  if (!loop) return false;
+  useApp.getState().updateDeck(id, {
+    loopStart: loop.start,
+    loopEnd: loop.end,
+    loopActive: true,
+  });
+  // Jump play position to loop start for instant entry.
+  seek(id, loop.start);
+  useApp.getState().updateDeck(id, { position: loop.start / Math.max(0.001, ds.duration) });
+  return true;
+}
+
+export function clearLoopSlot(id: DeckId, slot: number) {
+  const ds = useApp.getState().decks[id];
+  const next = ds.savedLoops.filter((l) => l.id !== slot);
+  if (next.length === ds.savedLoops.length) return false;
+  useApp.getState().updateDeck(id, { savedLoops: next });
+  if (ds.trackId) {
+    void getTrack(ds.trackId).then((tr) => { if (tr) putTrack({ ...tr, savedLoops: next }); });
+  }
+  return true;
 }
 
 // ===== Voice-over presets =====
