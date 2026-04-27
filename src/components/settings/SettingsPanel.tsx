@@ -529,6 +529,115 @@ function VirtualDjSettings() {
           title="Si no aparece downbeat/drop dentro de la ventana, corta igual para no bloquear la mezcla"
         />
       </Row>
+      <div style={{ height: 1, background: "var(--panel-3, #1a1a1a)", margin: "6px 0" }} />
+      <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 600 }}>
+        💥 Avanzado (v1.7.4)
+      </div>
+      <Row label="Mash-up Double Drop">
+        <input
+          type="checkbox"
+          checked={settings.vdjMashup === true}
+          onChange={(e) => update({ vdjMashup: e.target.checked })}
+          disabled={!enabled}
+          title="Ambas pistas suenan N compases con EQ split (lows del A, highs del B) antes del corte"
+        />
+      </Row>
+      <Row label="Probabilidad Mash-up (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjMashupProb ?? 0.25) * 100)}
+          min={0}
+          max={100}
+          step={5}
+          onChange={(e) => update({ vdjMashupProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjMashup !== true}
+        />
+      </Row>
+      <Row label="Compases del Double Drop">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjMashupBars ?? 8}
+          min={2}
+          max={16}
+          step={2}
+          onChange={(e) => update({ vdjMashupBars: Math.max(2, Math.min(16, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjMashup !== true}
+        />
+      </Row>
+      <Row label="Stem-aware (vocal duck en outgoing)">
+        <input
+          type="checkbox"
+          checked={settings.vdjStemAware === true}
+          onChange={(e) => update({ vdjStemAware: e.target.checked })}
+          disabled={!enabled}
+          title="Cancela la voz central del outgoing durante la transición para evitar choques vocales"
+        />
+      </Row>
+      <Row label="Cantidad de cancelación vocal (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjStemVocalCutAmt ?? 0.85) * 100)}
+          min={0}
+          max={100}
+          step={5}
+          onChange={(e) => update({ vdjStemVocalCutAmt: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjStemAware !== true}
+        />
+      </Row>
+      <Row label="⚔ Battle Mode (turntablism)">
+        <input
+          type="checkbox"
+          checked={settings.vdjBattleMode === true}
+          onChange={(e) => update({ vdjBattleMode: e.target.checked })}
+          disabled={!enabled}
+          title="Alterna decks cada N compases con scratches y cortes secos estilo turntablism"
+        />
+      </Row>
+      <Row label="Probabilidad Battle (%)">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={Math.round((settings.vdjBattleProb ?? 0.2) * 100)}
+          min={0}
+          max={100}
+          step={5}
+          onChange={(e) => update({ vdjBattleProb: Math.max(0, Math.min(1, Number(e.target.value) / 100)) })}
+          disabled={!enabled || settings.vdjBattleMode !== true}
+        />
+      </Row>
+      <Row label="Compases por ronda Battle">
+        <select
+          className="vdj-btn"
+          value={String(settings.vdjBattleBars ?? 4)}
+          onChange={(e) => update({ vdjBattleBars: Number(e.target.value) as 4 | 8 | 16 })}
+          style={{ padding: "6px 8px" }}
+          disabled={!enabled || settings.vdjBattleMode !== true}
+        >
+          <option value="4">4 compases</option>
+          <option value="8">8 compases</option>
+          <option value="16">16 compases</option>
+        </select>
+      </Row>
+      <Row label="Rondas de Battle">
+        <input
+          type="number"
+          className="vdj-btn"
+          style={{ width: 80, textAlign: "right", padding: "6px 8px" }}
+          value={settings.vdjBattleRounds ?? 4}
+          min={2}
+          max={8}
+          step={1}
+          onChange={(e) => update({ vdjBattleRounds: Math.max(2, Math.min(8, Number(e.target.value))) })}
+          disabled={!enabled || settings.vdjBattleMode !== true}
+        />
+      </Row>
       <div style={{ fontSize: 11, opacity: 0.7, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Pistas seleccionadas: <b>{selected.length}</b> / {tracks.length}</span>
         {selected.length > 0 && (
