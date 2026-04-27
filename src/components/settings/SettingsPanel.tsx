@@ -817,12 +817,15 @@ function VirtualDjSettings() {
           disabled={!enabled || settings.vdjRadioShow !== true}
         >
           <option value="">{vt("none")}</option>
-          {tracks.map((t) => (
-            <option key={t.id} value={t.id}>
-              {(t.title || vt("untitled")).slice(0, 40)}
-              {t.artist ? ` · ${t.artist.slice(0, 20)}` : ""}
-            </option>
-          ))}
+          {tracks.map((t) => {
+            const title = (t.title || vt("untitled")).slice(0, 40);
+            const artist = t.artist ? ` · ${t.artist.slice(0, 20)}` : "";
+            return (
+              <option key={t.id} value={t.id}>
+                {title}{artist}
+              </option>
+            );
+          })}
         </select>
       </Row>
 
