@@ -42,6 +42,7 @@ import { enableMic } from "@/audio/engine";
 import { startStream, stopStream, updateStreamMetadata, isStreaming } from "@/audio/iceStreamer";
 import { detectCamelotKey } from "@/audio/analysis/keyDetect";
 import { generateMixReport, trackToReportEntry, type MixReportEntry } from "@/audio/mixReport";
+import { aiBuildSetlist, aiDjCoach } from "@/lib/aiClient";
 import { setReverse } from "@/audio/transport";
 import { vt } from "@/lib/i18n/vdj";
 import type { SkinId } from "@/state/store";
