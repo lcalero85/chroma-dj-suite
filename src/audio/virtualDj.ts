@@ -1756,6 +1756,30 @@ export async function startVirtualDj(): Promise<void> {
     }
     // (v1.7.5 #6) Stop mic shoutout monitor.
     try { stopMicShoutoutMonitor(); } catch { /* noop */ }
+    // (v1.7.6) Stop energy monitor + voice commands.
+    try { stopEnergyMonitor(); } catch { /* noop */ }
+    try { stopVoiceCommands(); } catch { /* noop */ }
+    // (v1.7.6 #10) Generate Mix Report PDF.
+    if (settings.vdjMixReport === true && reportEntries.length > 0) {
+      try {
+        const startedAt = recordingStartMs || Date.now();
+        const endedAt = Date.now();
+        generateMixReport({
+          djName: settings.djName || "Virtual DJ",
+          sessionName: settings.vdjSessionName || "",
+          startedAt,
+          endedAt,
+          totalSec: (endedAt - startedAt) / 1000,
+          entries: reportEntries,
+          energyCurve: energyHistory.slice(),
+          fxUsed: { ...reportFx },
+        });
+        toast.success("📄 Mix Report PDF generado");
+      } catch (e) { console.warn("[vdj] mix report error", e); }
+    }
+    reportEntries = [];
+    reportFx = {};
+    energyHistory = [];
     // (v1.7.5 #10) Stop live stream if WE started it for this set.
     if (settings.vdjAutoStream === true && isStreaming()) {
       try { await stopStream(); } catch { /* noop */ }
