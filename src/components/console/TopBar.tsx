@@ -255,7 +255,14 @@ export function TopBar() {
               if (vdjOn) stopVirtualDj();
               else await startVirtualDj();
             }}
-            title={vdjOn ? `Detener Virtual DJ — ${vdjMsg}` : `Iniciar Virtual DJ (${vdjSelectedCount} pistas)`}
+            title={
+              vdjOn
+                ? vt("vdjBtnStopTip", { msg: vdjMsg })
+                : vt("vdjBtnStartTip", {
+                    n: vdjSelectedCount,
+                    trackWord: vt(vdjSelectedCount === 1 ? "vdjTrackOne" : "vdjTrackMany"),
+                  })
+            }
             style={{
               display: "inline-flex",
               alignItems: "center",
