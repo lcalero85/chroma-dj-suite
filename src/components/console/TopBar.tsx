@@ -2,6 +2,7 @@ import { useApp } from "@/state/store";
 import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square, Bot, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { useVt } from "@/lib/i18n/vdj";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
 import { resolveShortcuts } from "@/lib/shortcutDefs";
@@ -32,6 +33,7 @@ export function TopBar() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const shortcutsCfg = useApp((s) => s.settings.shortcuts);
   const t = useT();
+  const vt = useVt();
 
   // Live-ticking recording state (for the always-visible REC button)
   const [recOn, setRecOn] = useState<boolean>(() => isRecording());

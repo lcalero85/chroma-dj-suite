@@ -13,6 +13,10 @@ type VdjLang = "en" | "es";
 export const VDJ_STR = {
   // ===== Status messages (TopBar chip + overlay) =====
   vdjIdle:                 { en: "Idle",                                         es: "En espera" },
+  vdjBtnStartTip:          { en: "Start Virtual DJ ({n} {trackWord})",           es: "Iniciar Virtual DJ ({n} {trackWord})" },
+  vdjBtnStopTip:           { en: "Stop Virtual DJ — {msg}",                      es: "Detener Virtual DJ — {msg}" },
+  vdjTrackOne:             { en: "track",                                        es: "pista" },
+  vdjTrackMany:            { en: "tracks",                                       es: "pistas" },
   vdjStarting:             { en: "Starting Virtual DJ ({n} tracks)",             es: "Iniciando Virtual DJ ({n} pistas)" },
   vdjAnalyzingKeys:        { en: "🎼 Analyzing musical keys…",                   es: "🎼 Analizando tonalidades…" },
   vdjHarmonicReady:        { en: "🎼 Harmonic queue ready ({n} tracks)",         es: "🎼 Cola armónica lista ({n} pistas)" },
