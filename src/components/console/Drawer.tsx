@@ -17,7 +17,7 @@ export function Drawer() {
     skins: t("skins"),
     help: t("help"),
     about: t("about"),
-    ai: "🤖 Asistente IA",
+    ai: t("aiDrawerTitle"),
   };
   const isAi = drawer === "ai";
   return (
