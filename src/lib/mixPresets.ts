@@ -47,7 +47,8 @@ export type PresetCategory =
   | "country"
   | "indie"
   | "afrobeat"
-  | "funk";
+  | "funk"
+  | "reggae";
 
 export const CATEGORY_LABELS: Record<PresetCategory, string> = {
   general: "General",
@@ -68,6 +69,7 @@ export const CATEGORY_LABELS: Record<PresetCategory, string> = {
   indie: "Indie / Alternativo",
   afrobeat: "Afrobeat",
   funk: "Funk / Disco",
+  reggae: "Reggae",
 };
 
 export const CATEGORY_ORDER: PresetCategory[] = [
@@ -89,6 +91,7 @@ export const CATEGORY_ORDER: PresetCategory[] = [
   "indie",
   "afrobeat",
   "funk",
+  "reggae",
 ];
 
 export const DEFAULT_MIX_PRESETS: MixPreset[] = [
