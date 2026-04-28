@@ -5,7 +5,7 @@ import { useT } from "@/lib/i18n";
 import { getSessionStats, resetSessionStats } from "@/state/controller";
 import { toast } from "sonner";
 
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "2.0.0";
 
 export function AboutPanel() {
   const t = useT();
