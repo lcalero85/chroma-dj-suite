@@ -1623,10 +1623,12 @@ export async function startVirtualDj(): Promise<void> {
           await sleep(400);
         }
         if (!cancelRequested) {
-          setMessage(vt("vdjLiveFx", { deck: fromId }));
-          await spiceCurrent(fromId, moodGenre);
+          if (settings.vdjCleanCutMode !== true) {
+            setMessage(vt("vdjLiveFx", { deck: fromId }));
+            await spiceCurrent(fromId, moodGenre);
+          }
           // (v1.7.5 #11) Beatjuggling on slow tracks
-          if (settings.vdjBeatjuggle === true) {
+          if (settings.vdjCleanCutMode !== true && settings.vdjBeatjuggle === true) {
             const dsB = useApp.getState().decks[fromId];
             const maxBpm = settings.vdjBeatjuggleMaxBpm ?? 100;
             const prob = Math.max(0, Math.min(1, settings.vdjBeatjuggleProb ?? 0.4));
@@ -1715,11 +1717,12 @@ export async function startVirtualDj(): Promise<void> {
       // mismo orden de prioridad. Cada estilo entra al pool con su propia
       // probabilidad y se hace una elección final ponderada para que el set
       // tenga variedad real entre Crossfade / Echo-Freeze / Battle / Mash-up.
-      const wFreeze = settings.vdjEchoFreeze === true
+      const cleanCut = settings.vdjCleanCutMode === true;
+      const wFreeze = !cleanCut && settings.vdjEchoFreeze === true
         ? Math.max(0, Math.min(1, settings.vdjEchoFreezeProb ?? 0.35)) : 0;
-      const wBattle = settings.vdjBattleMode === true
+      const wBattle = !cleanCut && settings.vdjBattleMode === true
         ? Math.max(0, Math.min(1, settings.vdjBattleProb ?? 0.2)) : 0;
-      const wMashup = settings.vdjMashup === true
+      const wMashup = !cleanCut && settings.vdjMashup === true
         ? Math.max(0, Math.min(1, settings.vdjMashupProb ?? 0.25)) : 0;
       // El crossfade clásico cubre el resto de la probabilidad — siempre
       // dispone de al menos 0.25 de peso para que sea el "default" musical.
@@ -1728,9 +1731,9 @@ export async function startVirtualDj(): Promise<void> {
         ["classic", "freeze", "battle", "mashup"] as const,
         [wClassic, wFreeze, wBattle, wMashup],
       );
-      const useFreeze = style === "freeze";
-      const useBattle = style === "battle";
-      const useMashup = style === "mashup";
+      const useFreeze = !cleanCut && style === "freeze";
+      const useBattle = !cleanCut && style === "battle";
+      const useMashup = !cleanCut && style === "mashup";
 
       // (v1.7.4) Stem-aware vocal duck on outgoing — applies to ALL transition
       // styles to avoid vocal clashes.
@@ -1759,31 +1762,40 @@ export async function startVirtualDj(): Promise<void> {
         await mashupDoubleDrop(fromId, toId, mbars);
       } else {
         // Pre-transition: scratch flourish on outgoing as a "DJ mark"
-        if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+        if (!cleanCut && settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
         // Hard mode: extra scratch burst on the incoming deck right after start
-        if (lvl.scratchExtra && settings.vdjUseScratch !== false) {
+        if (!cleanCut && lvl.scratchExtra && settings.vdjUseScratch !== false) {
           setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
         }
-        // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
-        // Profundidad del sweep con jitter ±20% para variar el feel.
-        const sweepDepth = jitter(lvl.filterDepth, 0.2, 0.2, 1);
-        void filterSweep(fromId, 0, -sweepDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
-        // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
-        const duckTarget = jitter(lvl.duckTo, 0.15, 0.25, 0.85);
-        void ramp((v) => setDeckGain(fromId, v), 1, duckTarget, fxCfg.xfadeSec * 0.6);
-        // Apply genre FX during transition with a wet ramp
-        if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
-        setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
-        await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
-        // Reset outgoing filter + gain
-        setDeckFilter(fromId, 0);
-        setDeckGain(fromId, 1);
-        // Stop the outgoing deck cleanly
-        pause(fromId);
-        // Ramp down FX
-        if (settings.vdjUseFx !== false) {
-          await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
-          clearGenreFx();
+        // Clean-cut mode: hard cut, no FX/sweep/duck — just swap decks cleanly.
+        if (cleanCut) {
+          setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
+          await crossfadeBetween(fromId, toId, 0.05);
+          pause(fromId);
+          setDeckFilter(fromId, 0);
+          setDeckGain(fromId, 1);
+        } else {
+          // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
+          // Profundidad del sweep con jitter ±20% para variar el feel.
+          const sweepDepth = jitter(lvl.filterDepth, 0.2, 0.2, 1);
+          void filterSweep(fromId, 0, -sweepDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
+          // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
+          const duckTarget = jitter(lvl.duckTo, 0.15, 0.25, 0.85);
+          void ramp((v) => setDeckGain(fromId, v), 1, duckTarget, fxCfg.xfadeSec * 0.6);
+          // Apply genre FX during transition with a wet ramp
+          if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
+          setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
+          await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
+          // Reset outgoing filter + gain
+          setDeckFilter(fromId, 0);
+          setDeckGain(fromId, 1);
+          // Stop the outgoing deck cleanly
+          pause(fromId);
+          // Ramp down FX
+          if (settings.vdjUseFx !== false) {
+            await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
+            clearGenreFx();
+          }
         }
       }
 
@@ -1808,24 +1820,25 @@ export async function startVirtualDj(): Promise<void> {
       const transLabel = useFreeze ? "Echo-Freeze" : useBattle ? "Battle" : useMashup ? "Mash-up" : "Crossfade";
       pushReportEntry(i, next, transLabel);
       logFx(transLabel);
+      const _clean = settings.vdjCleanCutMode === true;
       // (v1.7.6 #3) Loop Roll buildup post-transition (probabilistic).
-      if (settings.vdjLoopRoll === true && Math.random() < (settings.vdjLoopRollProb ?? 0.25)) {
+      if (!_clean && settings.vdjLoopRoll === true && Math.random() < (settings.vdjLoopRollProb ?? 0.25)) {
         await loopRollBuildup(toId);
       }
       // (v1.7.6 #6) Reverse FX (probabilistic, occasional).
-      if (settings.vdjReverseFx === true && Math.random() < (settings.vdjReverseFxProb ?? 0.15)) {
+      if (!_clean && settings.vdjReverseFx === true && Math.random() < (settings.vdjReverseFxProb ?? 0.15)) {
         await reverseCensor(toId, settings.vdjReverseBars ?? 1);
       }
       // (v1.7.6 #7) Auto Drop Builder before drop entry (probabilistic).
-      if (settings.vdjDropBuilder === true && Math.random() < (settings.vdjDropBuilderProb ?? 0.2)) {
+      if (!_clean && settings.vdjDropBuilder === true && Math.random() < (settings.vdjDropBuilderProb ?? 0.2)) {
         void autoDropBuilder(settings.vdjDropBuilderSec ?? 4);
       }
       // (v1.7.6 #2) Acapella layer (probabilistic, on next iteration's outgoing).
-      if (settings.vdjAcapellaLayer === true && Math.random() < (settings.vdjAcapellaProb ?? 0.2)) {
+      if (!_clean && settings.vdjAcapellaLayer === true && Math.random() < (settings.vdjAcapellaProb ?? 0.2)) {
         await acapellaLayer(currentDeck, otherDeck(currentDeck), settings.vdjAcapellaBars ?? 4);
       }
       // (v1.7.6 #9) Auto Mashup every N tracks.
-      if (settings.vdjAutoMashup === true && (i % Math.max(2, settings.vdjAutoMashupEveryN ?? 6) === 0)) {
+      if (!_clean && settings.vdjAutoMashup === true && (i % Math.max(2, settings.vdjAutoMashupEveryN ?? 6) === 0)) {
         // Pre-load the track AFTER `next` onto otherDeck for the mashup.
         const j = i + 1;
         if (j < queue.length) {
@@ -1876,7 +1889,7 @@ export async function startVirtualDj(): Promise<void> {
           if (!d2.isPlaying) break;
           await sleep(400);
         }
-        if (!cancelRequested) {
+        if (!cancelRequested && settings.vdjCleanCutMode !== true) {
           setMessage(vt("vdjLiveFx", { deck: currentDeck }));
           await spiceCurrent(currentDeck, settings.vdjMoodAdaptive === true ? "ambient" : genre);
         }
@@ -1892,7 +1905,12 @@ export async function startVirtualDj(): Promise<void> {
         await sleep(400);
       }
       // Pro outro: filter sweep down + echo tail + sustained brake + reverb tail
-      if (!cancelRequested && settings.vdjUseOutro !== false) {
+      // En modo limpio: solo brake (sin sweep, sin echo, sin reverb tail).
+      if (!cancelRequested && settings.vdjCleanCutMode === true) {
+        setMessage(vt("vdjOutroPro"));
+        const brakeBase = settings.vdjBrakeSec ?? 3.5;
+        await brakeStop(currentDeck, Math.max(1, Math.min(8, brakeBase)));
+      } else if (!cancelRequested && settings.vdjUseOutro !== false) {
         setMessage(vt("vdjOutroPro"));
         const lvlOut = getIntensity();
         // Hard = brake más corto y seco; soft = brake más largo y dramático.

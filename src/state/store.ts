@@ -312,6 +312,9 @@ export interface SettingsState {
   vdjUseOutro?: boolean;
   /** Duración del brake (frenada de plato) al cierre, en segundos. */
   vdjBrakeSec?: number;
+  /** Modo "Mezcla limpia": sin FX/scratch/spice, solo corte seco entre canciones
+   *  y un brake al final del set. Aditivo y opt-in — no altera el resto. */
+  vdjCleanCutMode?: boolean;
   /** Reproducir en orden aleatorio las pistas seleccionadas. */
   vdjShuffle?: boolean;
   /** Intensidad de la mezcla del Virtual DJ:

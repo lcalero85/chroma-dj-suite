@@ -319,6 +319,15 @@ function VirtualDjSettings() {
           <option value="hard">{vt("intensityHard")}</option>
         </select>
       </Row>
+      <Row label={vt("cleanCutMode")}>
+        <input
+          type="checkbox"
+          checked={settings.vdjCleanCutMode === true}
+          onChange={(e) => update({ vdjCleanCutMode: e.target.checked })}
+          disabled={!enabled}
+          title={vt("cleanCutModeTip")}
+        />
+      </Row>
       <Row label={vt("shuffle")}>
         <input
           type="checkbox"
