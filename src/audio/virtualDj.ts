@@ -1623,10 +1623,12 @@ export async function startVirtualDj(): Promise<void> {
           await sleep(400);
         }
         if (!cancelRequested) {
-          setMessage(vt("vdjLiveFx", { deck: fromId }));
-          await spiceCurrent(fromId, moodGenre);
+          if (settings.vdjCleanCutMode !== true) {
+            setMessage(vt("vdjLiveFx", { deck: fromId }));
+            await spiceCurrent(fromId, moodGenre);
+          }
           // (v1.7.5 #11) Beatjuggling on slow tracks
-          if (settings.vdjBeatjuggle === true) {
+          if (settings.vdjCleanCutMode !== true && settings.vdjBeatjuggle === true) {
             const dsB = useApp.getState().decks[fromId];
             const maxBpm = settings.vdjBeatjuggleMaxBpm ?? 100;
             const prob = Math.max(0, Math.min(1, settings.vdjBeatjuggleProb ?? 0.4));
