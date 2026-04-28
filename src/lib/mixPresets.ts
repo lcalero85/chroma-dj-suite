@@ -35,7 +35,19 @@ export type PresetCategory =
   | "pop"
   | "electronica"
   | "rap"
-  | "rock";
+  | "rock"
+  | "salsa"
+  | "bachata"
+  | "cumbia"
+  | "merengue"
+  | "dancehall"
+  | "kpop"
+  | "rnb"
+  | "jazz"
+  | "country"
+  | "indie"
+  | "afrobeat"
+  | "funk";
 
 export const CATEGORY_LABELS: Record<PresetCategory, string> = {
   general: "General",
@@ -44,6 +56,18 @@ export const CATEGORY_LABELS: Record<PresetCategory, string> = {
   electronica: "Electrónica",
   rap: "Rap / Hip-Hop",
   rock: "Rock",
+  salsa: "Salsa",
+  bachata: "Bachata",
+  cumbia: "Cumbia",
+  merengue: "Merengue",
+  dancehall: "Dancehall",
+  kpop: "K-Pop",
+  rnb: "R&B / Soul",
+  jazz: "Jazz",
+  country: "Country",
+  indie: "Indie / Alternativo",
+  afrobeat: "Afrobeat",
+  funk: "Funk / Disco",
 };
 
 export const CATEGORY_ORDER: PresetCategory[] = [
@@ -53,6 +77,18 @@ export const CATEGORY_ORDER: PresetCategory[] = [
   "electronica",
   "rap",
   "rock",
+  "salsa",
+  "bachata",
+  "cumbia",
+  "merengue",
+  "dancehall",
+  "kpop",
+  "rnb",
+  "jazz",
+  "country",
+  "indie",
+  "afrobeat",
+  "funk",
 ];
 
 export const DEFAULT_MIX_PRESETS: MixPreset[] = [
