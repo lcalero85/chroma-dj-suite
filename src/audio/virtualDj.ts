@@ -127,6 +127,54 @@ const GENRE_FX: Record<VdjGenre, { kind: FxKind; wet: number; param1: number; pa
   ambient:     { kind: "reverb",     wet: 0.8,  param1: 0.85, param2: 0.7, xfadeSec: 18 },
 };
 
+/** Pool de FX alternativos por género para variar la mezcla manteniendo
+ *  coherencia musical. Cada transición elige uno aleatoriamente (incluyendo
+ *  el principal de GENRE_FX). Todos los FX listados son seguros para el género
+ *  y se han validado para no chocar con el groove. */
+const GENRE_FX_POOL: Record<VdjGenre, FxKind[]> = {
+  auto:        ["filter", "delay", "reverb"],
+  house:       ["filter", "delay", "reverb", "phaser"],
+  techno:      ["delay", "filter", "gate", "phaser"],
+  edm:         ["reverb", "filter", "delay", "flanger"],
+  trance:      ["reverb", "delay", "filter", "phaser"],
+  hiphop:      ["echo", "delay", "lofi", "filter"],
+  reggaeton:   ["delay", "echo", "filter", "reverb"],
+  pop:         ["reverb", "delay", "chorus", "filter"],
+  rock:        ["phaser", "flanger", "delay", "reverb"],
+  latin:       ["reverb", "delay", "echo", "filter"],
+  drumandbass: ["gate", "filter", "delay", "phaser"],
+  dubstep:     ["bitcrusher", "filter", "gate", "phaser"],
+  lofi:        ["lofi", "reverb", "echo", "filter"],
+  ambient:     ["reverb", "delay", "filter", "chorus"],
+};
+
+/** ============ Random helpers (profesionales, con rangos seguros) ============ */
+/** Número aleatorio uniforme en [min, max]. */
+function rand(min: number, max: number): number {
+  return min + Math.random() * (max - min);
+}
+/** Aplica un jitter porcentual (±pct) sobre `base` y lo recorta a [lo, hi]. */
+function jitter(base: number, pct: number, lo = -Infinity, hi = Infinity): number {
+  const v = base * (1 + (Math.random() * 2 - 1) * pct);
+  return Math.max(lo, Math.min(hi, v));
+}
+/** Elige uno aleatorio de la lista (uniforme). */
+function pickOne<T>(arr: T[], fallback: T): T {
+  if (!arr || !arr.length) return fallback;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+/** Elige por pesos. `weights` debe ser paralelo a `items`. */
+function pickWeighted<T>(items: T[], weights: number[]): T {
+  const total = weights.reduce((a, b) => a + Math.max(0, b), 0);
+  if (total <= 0) return items[0];
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= Math.max(0, weights[i]);
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
 export interface VdjStatus {
   running: boolean;
   paused: boolean;
