@@ -2,6 +2,7 @@ import { useApp } from "@/state/store";
 import { Settings, Palette, HelpCircle, Disc3, Wifi, Clock, Keyboard, Info, Headphones, Sparkles, Circle, Square, Bot, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { useVt } from "@/lib/i18n/vdj";
 import { getNextScheduledSegment, setNumpadDeck } from "@/state/controller";
 import { ShortcutsOverlay } from "@/components/help/ShortcutsOverlay";
 import { resolveShortcuts } from "@/lib/shortcutDefs";
