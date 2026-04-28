@@ -33,6 +33,7 @@ export function TopBar() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const shortcutsCfg = useApp((s) => s.settings.shortcuts);
   const t = useT();
+  const vt = useVt();
 
   // Live-ticking recording state (for the always-visible REC button)
   const [recOn, setRecOn] = useState<boolean>(() => isRecording());
