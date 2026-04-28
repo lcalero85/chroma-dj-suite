@@ -649,6 +649,37 @@ export const DEFAULT_MIX_PRESETS: MixPreset[] = [
     hi: 0.15, mid: 0.1, lo: 0.1, filter: -0.3, vocalCut: 0,
     fx: { slot: 2, kind: "flanger", wet: 0.4, param1: 0.4, param2: 0.55 },
   },
+
+  // ===== REGGAE =====
+  {
+    id: "builtin-reggae-roots",
+    name: "Roots Reggae",
+    description: "Bajos cálidos, agudos suaves. Skank de guitarra al frente.",
+    emoji: "🟢", builtin: true, category: "reggae",
+    hi: -0.15, mid: 0.25, lo: 0.45, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-reggae-dub-echo",
+    name: "Dub Echo",
+    description: "Echo largo y reverb amplio estilo dub jamaicano.",
+    emoji: "🌬️", builtin: true, category: "reggae",
+    hi: 0.1, mid: -0.1, lo: 0.3, filter: 0, vocalCut: 0,
+    fx: { slot: 1, kind: "echo", wet: 0.6, param1: 0.65, param2: 0.7 },
+  },
+  {
+    id: "builtin-reggae-skank",
+    name: "Skank Cut",
+    description: "Pasa-altos para resaltar el skank y sacar el bajo.",
+    emoji: "🎸", builtin: true, category: "reggae",
+    hi: 0.25, mid: 0.15, lo: -0.85, filter: 0.5, vocalCut: 0,
+  },
+  {
+    id: "builtin-reggae-instrumental",
+    name: "Riddim Sin Voz",
+    description: "Quita la voz para mezclar dos riddims sin chocar.",
+    emoji: "🎚️", builtin: true, category: "reggae",
+    hi: 0, mid: -0.15, lo: 0.2, filter: 0, vocalCut: 0.9,
+  },
 ];
 
 export function genPresetId(): string {
