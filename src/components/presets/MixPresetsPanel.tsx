@@ -19,6 +19,18 @@ const CATEGORY_KEY: Record<PresetCategory, DictKey> = {
   electronica: "catElectronica",
   rap: "catRap",
   rock: "catRock",
+  salsa: "catSalsa",
+  bachata: "catBachata",
+  cumbia: "catCumbia",
+  merengue: "catMerengue",
+  dancehall: "catDancehall",
+  kpop: "catKpop",
+  rnb: "catRnb",
+  jazz: "catJazz",
+  country: "catCountry",
+  indie: "catIndie",
+  afrobeat: "catAfrobeat",
+  funk: "catFunk",
 };
 
 /**
