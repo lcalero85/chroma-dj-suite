@@ -1605,7 +1605,8 @@ export async function startVirtualDj(): Promise<void> {
         ? xfadeOverride
         : fxCfgBase.xfadeSec;
       // Intensity scales the crossfade — hard = shorter/aggressive, soft = longer/smooth.
-      const xfadeSec = Math.max(2, Math.min(30, baseXfade * lvl.xfadeMul));
+      // Jitter ±18% para que ninguna transición dure exactamente lo mismo.
+      const xfadeSec = Math.max(2, Math.min(30, jitter(baseXfade * lvl.xfadeMul, 0.18)));
       const fxCfg = { ...fxCfgBase, xfadeSec };
 
       // Mid-track flair: spice up the playing deck around ~50% through.
@@ -1643,7 +1644,8 @@ export async function startVirtualDj(): Promise<void> {
         ? userCut
         : (durCur > 240 ? 0.72 : 0.78);
       // Hard mode cuts earlier (more aggressive); soft slightly later.
-      const cutPct = Math.max(0.5, Math.min(0.95, baseCut - lvl.cutPctBoost));
+      // Jitter ±3% para variar el punto de corte sin perder profesionalismo.
+      const cutPct = Math.max(0.5, Math.min(0.95, baseCut - lvl.cutPctBoost + rand(-0.03, 0.03)));
       // (v1.7.7 #3) Tight transitions: poll faster so we cut on the right
       // beat (no missed window → no audible gap before the next song starts).
       const pollMs = settings.vdjTightTransitions !== false ? 80 : 300;
@@ -1688,7 +1690,9 @@ export async function startVirtualDj(): Promise<void> {
       if (settings.vdjUseHotCues !== false) {
         addHotCue(toId, 0);
         const dT = useApp.getState().decks[toId];
-        if (dT.duration > 30) addHotCue(toId, dT.duration * 0.45);
+        // Hot-cue mid aleatorio entre 40% y 55% para que cada track tenga un
+        // punto de juego distinto si se reusa.
+        if (dT.duration > 30) addHotCue(toId, dT.duration * rand(0.40, 0.55));
       }
       // Jump to first hot-cue if exists, then play
       const tdState = useApp.getState().decks[toId];
@@ -1707,19 +1711,26 @@ export async function startVirtualDj(): Promise<void> {
       // Per-transition DJ-name shoutout (only in 'every' mode)
       if (annMode === "every") announceDjName();
 
-      // (v1.7.3) Decide transition style: classic crossfade vs Echo-Freeze + Cut.
-      const useFreeze =
-        settings.vdjEchoFreeze === true &&
-        Math.random() < Math.max(0, Math.min(1, settings.vdjEchoFreezeProb ?? 0.35));
-      // (v1.7.4) Optional Battle Mode and Mash-up — checked in priority order.
-      const useBattle =
-        !useFreeze &&
-        settings.vdjBattleMode === true &&
-        Math.random() < Math.max(0, Math.min(1, settings.vdjBattleProb ?? 0.2));
-      const useMashup =
-        !useFreeze && !useBattle &&
-        settings.vdjMashup === true &&
-        Math.random() < Math.max(0, Math.min(1, settings.vdjMashupProb ?? 0.25));
+      // (v1.8.2) Selección ponderada de estilo de transición — no siempre el
+      // mismo orden de prioridad. Cada estilo entra al pool con su propia
+      // probabilidad y se hace una elección final ponderada para que el set
+      // tenga variedad real entre Crossfade / Echo-Freeze / Battle / Mash-up.
+      const wFreeze = settings.vdjEchoFreeze === true
+        ? Math.max(0, Math.min(1, settings.vdjEchoFreezeProb ?? 0.35)) : 0;
+      const wBattle = settings.vdjBattleMode === true
+        ? Math.max(0, Math.min(1, settings.vdjBattleProb ?? 0.2)) : 0;
+      const wMashup = settings.vdjMashup === true
+        ? Math.max(0, Math.min(1, settings.vdjMashupProb ?? 0.25)) : 0;
+      // El crossfade clásico cubre el resto de la probabilidad — siempre
+      // dispone de al menos 0.25 de peso para que sea el "default" musical.
+      const wClassic = Math.max(0.25, 1 - (wFreeze + wBattle + wMashup));
+      const style = pickWeighted(
+        ["classic", "freeze", "battle", "mashup"] as const,
+        [wClassic, wFreeze, wBattle, wMashup],
+      );
+      const useFreeze = style === "freeze";
+      const useBattle = style === "battle";
+      const useMashup = style === "mashup";
 
       // (v1.7.4) Stem-aware vocal duck on outgoing — applies to ALL transition
       // styles to avoid vocal clashes.
@@ -1778,8 +1789,12 @@ export async function startVirtualDj(): Promise<void> {
 
       // Light boost on the new track's lows for a fresh-energy feel
       setEQ(toId, "lo", 0);
-      void ramp((v) => setEQ(toId, "lo", v), 0, lvl.acidEdge ? 0.45 : 0.3, 0.8);
-      setTimeout(() => { try { setEQ(toId, "lo", 0); } catch { /* noop */ } }, 4000);
+      // Boost de lows aleatorio para variar el "punch" de cada entrada.
+      const loBoost = jitter(lvl.acidEdge ? 0.45 : 0.3, 0.25, 0.15, 0.6);
+      const loRampSec = rand(0.6, 1.2);
+      const loHoldMs = Math.round(rand(3000, 5000));
+      void ramp((v) => setEQ(toId, "lo", v), 0, loBoost, loRampSec);
+      setTimeout(() => { try { setEQ(toId, "lo", 0); } catch { /* noop */ } }, loHoldMs);
 
       currentDeck = toId;
       currentIndex = i;
