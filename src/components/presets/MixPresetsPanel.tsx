@@ -31,6 +31,7 @@ const CATEGORY_KEY: Record<PresetCategory, DictKey> = {
   indie: "catIndie",
   afrobeat: "catAfrobeat",
   funk: "catFunk",
+  reggae: "catReggae",
 };
 
 /**
