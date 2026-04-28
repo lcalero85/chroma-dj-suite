@@ -1564,7 +1564,7 @@ export async function startVirtualDj(): Promise<void> {
       addHotCue("A", 0); // mark intro for reference
       // Drop a second hot-cue mid-track for later use
       const dA = useApp.getState().decks["A"];
-      if (dA.duration > 30) addHotCue("A", dA.duration * 0.45);
+      if (dA.duration > 30) addHotCue("A", dA.duration * rand(0.40, 0.55));
     }
     play("A", 0);
     useApp.getState().updateMixer({ masterDeck: "A" });
