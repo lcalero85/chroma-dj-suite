@@ -1668,6 +1668,18 @@ export const DICT = {
     catElectronica: "Electrónica",
     catRap: "Rap / Hip-Hop",
     catRock: "Rock",
+    catSalsa: "Salsa",
+    catBachata: "Bachata",
+    catCumbia: "Cumbia",
+    catMerengue: "Merengue",
+    catDancehall: "Dancehall",
+    catKpop: "K-Pop",
+    catRnb: "R&B / Soul",
+    catJazz: "Jazz",
+    catCountry: "Country",
+    catIndie: "Indie / Alternativo",
+    catAfrobeat: "Afrobeat",
+    catFunk: "Funk / Disco",
 
     // Nombres de presets predefinidos
     preset_clean_name: "Clean Cut",
