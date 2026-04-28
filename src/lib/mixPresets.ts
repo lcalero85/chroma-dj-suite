@@ -377,6 +377,275 @@ export const DEFAULT_MIX_PRESETS: MixPreset[] = [
     hi: 0.2, mid: 0.25, lo: 0.05, filter: 0, vocalCut: 0,
     fx: { slot: 1, kind: "reverb", wet: 0.55, param1: 0.8, param2: 0.5 },
   },
+
+  // ===== SALSA =====
+  {
+    id: "builtin-salsa-clave",
+    name: "Clave Brillante",
+    description: "Agudos y medios al frente para realzar clave, timbal y trompetas.",
+    emoji: "🎺", builtin: true, category: "salsa",
+    hi: 0.35, mid: 0.3, lo: 0, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-salsa-mambo",
+    name: "Mambo Drop",
+    description: "Pasa-altos para soltar el mambo limpio en el coro.",
+    emoji: "💃", builtin: true, category: "salsa",
+    hi: 0.25, mid: 0.1, lo: -0.85, filter: 0.55, vocalCut: 0,
+  },
+  {
+    id: "builtin-salsa-montuno",
+    name: "Montuno Echo",
+    description: "Echo corto sobre piano y coros para el montuno.",
+    emoji: "🎹", builtin: true, category: "salsa",
+    hi: 0.15, mid: 0.2, lo: -0.05, filter: 0, vocalCut: 0,
+    fx: { slot: 1, kind: "echo", wet: 0.4, param1: 0.4, param2: 0.55 },
+  },
+
+  // ===== BACHATA =====
+  {
+    id: "builtin-bachata-romance",
+    name: "Bachata Romance",
+    description: "Medios cálidos y reverb suave. Guitarras al frente.",
+    emoji: "🌹", builtin: true, category: "bachata",
+    hi: 0.1, mid: 0.3, lo: -0.1, filter: 0, vocalCut: 0,
+    fx: { slot: 1, kind: "reverb", wet: 0.35, param1: 0.55, param2: 0.5 },
+  },
+  {
+    id: "builtin-bachata-urbana",
+    name: "Bachata Urbana",
+    description: "Sub graves marcados y voz brillante estilo moderno.",
+    emoji: "🎶", builtin: true, category: "bachata",
+    hi: 0.25, mid: 0.15, lo: 0.45, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-bachata-instrumental",
+    name: "Bachata Sin Voz",
+    description: "Quita la voz para mezclar con otra pista vocal.",
+    emoji: "🎸", builtin: true, category: "bachata",
+    hi: 0, mid: -0.1, lo: 0, filter: 0, vocalCut: 0.9,
+  },
+
+  // ===== CUMBIA =====
+  {
+    id: "builtin-cumbia-fiesta",
+    name: "Cumbia Fiesta",
+    description: "Bajos redondos y medios cálidos. Acordeón y güira al frente.",
+    emoji: "🪗", builtin: true, category: "cumbia",
+    hi: 0.15, mid: 0.3, lo: 0.35, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-cumbia-sonidera",
+    name: "Sonidera Echo",
+    description: "Echo largo estilo sonidero mexicano.",
+    emoji: "📢", builtin: true, category: "cumbia",
+    hi: 0.1, mid: 0.1, lo: 0.1, filter: 0, vocalCut: 0,
+    fx: { slot: 1, kind: "echo", wet: 0.55, param1: 0.6, param2: 0.6 },
+  },
+  {
+    id: "builtin-cumbia-villera",
+    name: "Cumbia Villera",
+    description: "Bajos secos y agudos brillantes. Beat callejero.",
+    emoji: "🔥", builtin: true, category: "cumbia",
+    hi: 0.3, mid: 0, lo: 0.4, filter: 0, vocalCut: 0,
+  },
+
+  // ===== MERENGUE =====
+  {
+    id: "builtin-merengue-perico",
+    name: "Perico Ripiao",
+    description: "Agudos brillantes para güira y acordeón merenguero.",
+    emoji: "🎉", builtin: true, category: "merengue",
+    hi: 0.4, mid: 0.25, lo: 0.05, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-merengue-pista",
+    name: "Pista Caliente",
+    description: "Bajos firmes y medios potentes para la pista.",
+    emoji: "🕺", builtin: true, category: "merengue",
+    hi: 0.2, mid: 0.35, lo: 0.4, filter: 0, vocalCut: 0,
+  },
+
+  // ===== DANCEHALL =====
+  {
+    id: "builtin-dancehall-riddim",
+    name: "Riddim Pesado",
+    description: "Sub graves enormes para el riddim jamaicano.",
+    emoji: "🇯🇲", builtin: true, category: "dancehall",
+    hi: 0, mid: -0.15, lo: 0.7, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-dancehall-dub",
+    name: "Dub Echo",
+    description: "Echo largo y reverb dub clásico.",
+    emoji: "🔊", builtin: true, category: "dancehall",
+    hi: 0.1, mid: -0.1, lo: 0.3, filter: 0, vocalCut: 0,
+    fx: { slot: 1, kind: "echo", wet: 0.6, param1: 0.6, param2: 0.7 },
+  },
+  {
+    id: "builtin-dancehall-sirena",
+    name: "Air Horn FX",
+    description: "Filtro pasa-altos para tensión antes del drop dancehall.",
+    emoji: "📣", builtin: true, category: "dancehall",
+    hi: 0.3, mid: 0.1, lo: -0.9, filter: 0.6, vocalCut: 0,
+  },
+
+  // ===== K-POP =====
+  {
+    id: "builtin-kpop-shine",
+    name: "K-Pop Shine",
+    description: "Agudos cristalinos y voz al frente. Sonido idol.",
+    emoji: "💖", builtin: true, category: "kpop",
+    hi: 0.4, mid: 0.3, lo: 0.05, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-kpop-drop",
+    name: "K-Pop Drop",
+    description: "Bajos potentes para el drop estilo hyperpop coreano.",
+    emoji: "⚡", builtin: true, category: "kpop",
+    hi: 0.25, mid: 0, lo: 0.55, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-kpop-build",
+    name: "K-Pop Build",
+    description: "Pasa-altos progresivo antes del coro.",
+    emoji: "🚀", builtin: true, category: "kpop",
+    hi: 0.2, mid: 0.05, lo: -0.85, filter: 0.55, vocalCut: 0,
+  },
+
+  // ===== R&B / SOUL =====
+  {
+    id: "builtin-rnb-smooth",
+    name: "Smooth R&B",
+    description: "Cálido y suave. Voz aterciopelada al frente.",
+    emoji: "🍷", builtin: true, category: "rnb",
+    hi: 0.15, mid: 0.35, lo: 0.1, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-rnb-soul-reverb",
+    name: "Soul Reverb",
+    description: "Reverb amplio sobre voz y arreglos cálidos.",
+    emoji: "🎙️", builtin: true, category: "rnb",
+    hi: 0.1, mid: 0.25, lo: 0, filter: 0, vocalCut: 0,
+    fx: { slot: 1, kind: "reverb", wet: 0.45, param1: 0.65, param2: 0.5 },
+  },
+  {
+    id: "builtin-rnb-bedroom",
+    name: "Bedroom Vibes",
+    description: "Lo-fi suave, sin agudos crispy. Atmósfera íntima.",
+    emoji: "🌙", builtin: true, category: "rnb",
+    hi: -0.35, mid: 0.15, lo: 0.2, filter: -0.1, vocalCut: 0,
+  },
+
+  // ===== JAZZ =====
+  {
+    id: "builtin-jazz-club",
+    name: "Jazz Club",
+    description: "Cálido y vintage. Atmósfera de club nocturno.",
+    emoji: "🎷", builtin: true, category: "jazz",
+    hi: -0.15, mid: 0.3, lo: 0.15, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-jazz-vinyl",
+    name: "Vinyl Vintage",
+    description: "Sin agudos extremos. Sonido a disco antiguo.",
+    emoji: "💿", builtin: true, category: "jazz",
+    hi: -0.5, mid: 0.2, lo: -0.1, filter: 0.2, vocalCut: 0,
+  },
+  {
+    id: "builtin-jazz-trio",
+    name: "Trio Acústico",
+    description: "Medios al frente para piano, contrabajo y batería.",
+    emoji: "🎹", builtin: true, category: "jazz",
+    hi: 0.05, mid: 0.4, lo: 0.05, filter: 0, vocalCut: 0,
+  },
+
+  // ===== COUNTRY =====
+  {
+    id: "builtin-country-road",
+    name: "Country Road",
+    description: "Cálido y natural. Guitarras acústicas brillantes.",
+    emoji: "🤠", builtin: true, category: "country",
+    hi: 0.2, mid: 0.3, lo: 0, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-country-honky",
+    name: "Honky Tonk",
+    description: "Vintage rock-country. Medios fuertes.",
+    emoji: "🎻", builtin: true, category: "country",
+    hi: -0.1, mid: 0.4, lo: 0.15, filter: 0, vocalCut: 0,
+  },
+
+  // ===== INDIE / ALTERNATIVE =====
+  {
+    id: "builtin-indie-dream",
+    name: "Dream Pop",
+    description: "Reverb amplio + medios suaves. Atmósfera shoegaze.",
+    emoji: "☁️", builtin: true, category: "indie",
+    hi: 0.15, mid: -0.2, lo: -0.05, filter: 0, vocalCut: 0,
+    fx: { slot: 1, kind: "reverb", wet: 0.55, param1: 0.75, param2: 0.5 },
+  },
+  {
+    id: "builtin-indie-garage",
+    name: "Garage Rock",
+    description: "Sucio y crudo. Medios y agudos al frente.",
+    emoji: "🎸", builtin: true, category: "indie",
+    hi: 0.35, mid: 0.4, lo: -0.1, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-indie-lofi",
+    name: "Lo-Fi Chill",
+    description: "Sin agudos extremos. Tono cálido para chillout.",
+    emoji: "🍵", builtin: true, category: "indie",
+    hi: -0.4, mid: 0.1, lo: 0.1, filter: -0.1, vocalCut: 0,
+  },
+
+  // ===== AFROBEAT =====
+  {
+    id: "builtin-afro-rhythm",
+    name: "Afro Rhythm",
+    description: "Bajos potentes y percusión brillante. Groove afro.",
+    emoji: "🥁", builtin: true, category: "afrobeat",
+    hi: 0.25, mid: 0.15, lo: 0.5, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-afro-amapiano",
+    name: "Amapiano Log",
+    description: "Sub bajo profundo estilo log drum sudafricano.",
+    emoji: "🌍", builtin: true, category: "afrobeat",
+    hi: 0.1, mid: -0.1, lo: 0.65, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-afro-dance",
+    name: "Afro Dance",
+    description: "Pasa-altos para tensión antes del drop afrohouse.",
+    emoji: "💥", builtin: true, category: "afrobeat",
+    hi: 0.3, mid: 0.05, lo: -0.85, filter: 0.55, vocalCut: 0,
+  },
+
+  // ===== FUNK / DISCO =====
+  {
+    id: "builtin-funk-groove",
+    name: "Funk Groove",
+    description: "Bajos al frente y medios cálidos. Bass slap brillante.",
+    emoji: "🕺", builtin: true, category: "funk",
+    hi: 0.2, mid: 0.3, lo: 0.45, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-funk-disco",
+    name: "Disco Shine",
+    description: "Agudos cristalinos para hi-hats y strings disco.",
+    emoji: "🪩", builtin: true, category: "funk",
+    hi: 0.45, mid: 0.2, lo: 0.15, filter: 0, vocalCut: 0,
+  },
+  {
+    id: "builtin-funk-filter",
+    name: "Funk Filter",
+    description: "Filtro animado estilo French Touch / Daft Punk.",
+    emoji: "🤖", builtin: true, category: "funk",
+    hi: 0.15, mid: 0.1, lo: 0.1, filter: -0.3, vocalCut: 0,
+    fx: { slot: 2, kind: "flanger", wet: 0.4, param1: 0.4, param2: 0.55 },
+  },
 ];
 
 export function genPresetId(): string {
