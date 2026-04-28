@@ -1715,11 +1715,12 @@ export async function startVirtualDj(): Promise<void> {
       // mismo orden de prioridad. Cada estilo entra al pool con su propia
       // probabilidad y se hace una elección final ponderada para que el set
       // tenga variedad real entre Crossfade / Echo-Freeze / Battle / Mash-up.
-      const wFreeze = settings.vdjEchoFreeze === true
+      const cleanCut = settings.vdjCleanCutMode === true;
+      const wFreeze = !cleanCut && settings.vdjEchoFreeze === true
         ? Math.max(0, Math.min(1, settings.vdjEchoFreezeProb ?? 0.35)) : 0;
-      const wBattle = settings.vdjBattleMode === true
+      const wBattle = !cleanCut && settings.vdjBattleMode === true
         ? Math.max(0, Math.min(1, settings.vdjBattleProb ?? 0.2)) : 0;
-      const wMashup = settings.vdjMashup === true
+      const wMashup = !cleanCut && settings.vdjMashup === true
         ? Math.max(0, Math.min(1, settings.vdjMashupProb ?? 0.25)) : 0;
       // El crossfade clásico cubre el resto de la probabilidad — siempre
       // dispone de al menos 0.25 de peso para que sea el "default" musical.
@@ -1728,9 +1729,9 @@ export async function startVirtualDj(): Promise<void> {
         ["classic", "freeze", "battle", "mashup"] as const,
         [wClassic, wFreeze, wBattle, wMashup],
       );
-      const useFreeze = style === "freeze";
-      const useBattle = style === "battle";
-      const useMashup = style === "mashup";
+      const useFreeze = !cleanCut && style === "freeze";
+      const useBattle = !cleanCut && style === "battle";
+      const useMashup = !cleanCut && style === "mashup";
 
       // (v1.7.4) Stem-aware vocal duck on outgoing — applies to ALL transition
       // styles to avoid vocal clashes.
@@ -1759,31 +1760,40 @@ export async function startVirtualDj(): Promise<void> {
         await mashupDoubleDrop(fromId, toId, mbars);
       } else {
         // Pre-transition: scratch flourish on outgoing as a "DJ mark"
-        if (settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
+        if (!cleanCut && settings.vdjUseScratch !== false) void performScratch(fromId, lvl.scratchCount);
         // Hard mode: extra scratch burst on the incoming deck right after start
-        if (lvl.scratchExtra && settings.vdjUseScratch !== false) {
+        if (!cleanCut && lvl.scratchExtra && settings.vdjUseScratch !== false) {
           setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
         }
-        // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
-        // Profundidad del sweep con jitter ±20% para variar el feel.
-        const sweepDepth = jitter(lvl.filterDepth, 0.2, 0.2, 1);
-        void filterSweep(fromId, 0, -sweepDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
-        // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
-        const duckTarget = jitter(lvl.duckTo, 0.15, 0.25, 0.85);
-        void ramp((v) => setDeckGain(fromId, v), 1, duckTarget, fxCfg.xfadeSec * 0.6);
-        // Apply genre FX during transition with a wet ramp
-        if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
-        setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
-        await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
-        // Reset outgoing filter + gain
-        setDeckFilter(fromId, 0);
-        setDeckGain(fromId, 1);
-        // Stop the outgoing deck cleanly
-        pause(fromId);
-        // Ramp down FX
-        if (settings.vdjUseFx !== false) {
-          await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
-          clearGenreFx();
+        // Clean-cut mode: hard cut, no FX/sweep/duck — just swap decks cleanly.
+        if (cleanCut) {
+          setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
+          await crossfadeBetween(fromId, toId, 0.05);
+          pause(fromId);
+          setDeckFilter(fromId, 0);
+          setDeckGain(fromId, 1);
+        } else {
+          // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
+          // Profundidad del sweep con jitter ±20% para variar el feel.
+          const sweepDepth = jitter(lvl.filterDepth, 0.2, 0.2, 1);
+          void filterSweep(fromId, 0, -sweepDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
+          // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
+          const duckTarget = jitter(lvl.duckTo, 0.15, 0.25, 0.85);
+          void ramp((v) => setDeckGain(fromId, v), 1, duckTarget, fxCfg.xfadeSec * 0.6);
+          // Apply genre FX during transition with a wet ramp
+          if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
+          setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
+          await crossfadeBetween(fromId, toId, fxCfg.xfadeSec);
+          // Reset outgoing filter + gain
+          setDeckFilter(fromId, 0);
+          setDeckGain(fromId, 1);
+          // Stop the outgoing deck cleanly
+          pause(fromId);
+          // Ramp down FX
+          if (settings.vdjUseFx !== false) {
+            await fxWetRamp(1, fxCfg.wet * lvl.fxWetMul, 0, 1.5);
+            clearGenreFx();
+          }
         }
       }
 
