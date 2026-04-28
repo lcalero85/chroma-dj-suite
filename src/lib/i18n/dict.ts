@@ -730,6 +730,7 @@ export const DICT = {
     catIndie: "Indie / Alternative",
     catAfrobeat: "Afrobeat",
     catFunk: "Funk / Disco",
+    catReggae: "Reggae",
 
     // Built-in preset names
     preset_clean_name: "Clean Cut",
