@@ -760,26 +760,38 @@ function applyAutoGain(id: DeckId) {
 function applyGenreFx(genre: VdjGenre) {
   const cfg = GENRE_FX[genre] ?? GENRE_FX.auto;
   const lvl = getIntensity();
-  const wet = Math.max(0, Math.min(1, cfg.wet * lvl.fxWetMul));
+  // Randomización profesional: elige FX dentro del pool del género y aplica
+  // jitter suave a wet/param1/param2 para que ninguna mezcla suene idéntica.
+  const pool = GENRE_FX_POOL[genre] ?? [cfg.kind];
+  const kind: FxKind = pickOne(pool, cfg.kind);
+  const wet = jitter(cfg.wet * lvl.fxWetMul, 0.18, 0.05, 0.95);
+  const p1 = jitter(cfg.param1, 0.15, 0.1, 0.9);
+  const p2 = jitter(cfg.param2, 0.15, 0.1, 0.9);
+  // Beat division aleatoria entre divisiones musicales válidas.
+  const beatDiv = pickWeighted([0.5, 1, 2], [1, 2, 1]) as 0.5 | 1 | 2;
   useApp.getState().updateFx(1, {
-    kind: cfg.kind,
+    kind,
     wet,
-    param1: cfg.param1,
-    param2: cfg.param2,
+    param1: p1,
+    param2: p2,
     beatSync: lvl.fxBeatSync,
-    beatDiv: 1,
+    beatDiv,
   });
   // Acid edge (hard mode): add a layered phaser/bitcrusher on slot 2 for grit.
-  if (lvl.acidEdge) {
+  // En modo hard se aplica el ~70% de las veces (no siempre) para variar.
+  if (lvl.acidEdge && Math.random() < 0.7) {
     useApp.getState().updateFx(2, {
-      kind: genre === "techno" || genre === "dubstep" || genre === "drumandbass"
-        ? "bitcrusher"
-        : "phaser",
-      wet: 0.35,
-      param1: 0.55,
-      param2: 0.5,
+      kind: pickOne(
+        genre === "techno" || genre === "dubstep" || genre === "drumandbass"
+          ? (["bitcrusher", "gate", "phaser"] as FxKind[])
+          : (["phaser", "flanger", "bitcrusher"] as FxKind[]),
+        "phaser",
+      ),
+      wet: jitter(0.35, 0.25, 0.15, 0.55),
+      param1: jitter(0.55, 0.2, 0.2, 0.85),
+      param2: jitter(0.5, 0.2, 0.2, 0.85),
       beatSync: true,
-      beatDiv: 0.5,
+      beatDiv: pickWeighted([0.25, 0.5, 1], [1, 2, 1]) as 0.25 | 0.5 | 1,
     });
   }
 }
