@@ -1820,24 +1820,25 @@ export async function startVirtualDj(): Promise<void> {
       const transLabel = useFreeze ? "Echo-Freeze" : useBattle ? "Battle" : useMashup ? "Mash-up" : "Crossfade";
       pushReportEntry(i, next, transLabel);
       logFx(transLabel);
+      const _clean = settings.vdjCleanCutMode === true;
       // (v1.7.6 #3) Loop Roll buildup post-transition (probabilistic).
-      if (settings.vdjLoopRoll === true && Math.random() < (settings.vdjLoopRollProb ?? 0.25)) {
+      if (!_clean && settings.vdjLoopRoll === true && Math.random() < (settings.vdjLoopRollProb ?? 0.25)) {
         await loopRollBuildup(toId);
       }
       // (v1.7.6 #6) Reverse FX (probabilistic, occasional).
-      if (settings.vdjReverseFx === true && Math.random() < (settings.vdjReverseFxProb ?? 0.15)) {
+      if (!_clean && settings.vdjReverseFx === true && Math.random() < (settings.vdjReverseFxProb ?? 0.15)) {
         await reverseCensor(toId, settings.vdjReverseBars ?? 1);
       }
       // (v1.7.6 #7) Auto Drop Builder before drop entry (probabilistic).
-      if (settings.vdjDropBuilder === true && Math.random() < (settings.vdjDropBuilderProb ?? 0.2)) {
+      if (!_clean && settings.vdjDropBuilder === true && Math.random() < (settings.vdjDropBuilderProb ?? 0.2)) {
         void autoDropBuilder(settings.vdjDropBuilderSec ?? 4);
       }
       // (v1.7.6 #2) Acapella layer (probabilistic, on next iteration's outgoing).
-      if (settings.vdjAcapellaLayer === true && Math.random() < (settings.vdjAcapellaProb ?? 0.2)) {
+      if (!_clean && settings.vdjAcapellaLayer === true && Math.random() < (settings.vdjAcapellaProb ?? 0.2)) {
         await acapellaLayer(currentDeck, otherDeck(currentDeck), settings.vdjAcapellaBars ?? 4);
       }
       // (v1.7.6 #9) Auto Mashup every N tracks.
-      if (settings.vdjAutoMashup === true && (i % Math.max(2, settings.vdjAutoMashupEveryN ?? 6) === 0)) {
+      if (!_clean && settings.vdjAutoMashup === true && (i % Math.max(2, settings.vdjAutoMashupEveryN ?? 6) === 0)) {
         // Pre-load the track AFTER `next` onto otherDeck for the mashup.
         const j = i + 1;
         if (j < queue.length) {
@@ -1888,7 +1889,7 @@ export async function startVirtualDj(): Promise<void> {
           if (!d2.isPlaying) break;
           await sleep(400);
         }
-        if (!cancelRequested) {
+        if (!cancelRequested && settings.vdjCleanCutMode !== true) {
           setMessage(vt("vdjLiveFx", { deck: currentDeck }));
           await spiceCurrent(currentDeck, settings.vdjMoodAdaptive === true ? "ambient" : genre);
         }
@@ -1904,7 +1905,12 @@ export async function startVirtualDj(): Promise<void> {
         await sleep(400);
       }
       // Pro outro: filter sweep down + echo tail + sustained brake + reverb tail
-      if (!cancelRequested && settings.vdjUseOutro !== false) {
+      // En modo limpio: solo brake (sin sweep, sin echo, sin reverb tail).
+      if (!cancelRequested && settings.vdjCleanCutMode === true) {
+        setMessage(vt("vdjOutroPro"));
+        const brakeBase = settings.vdjBrakeSec ?? 3.5;
+        await brakeStop(currentDeck, Math.max(1, Math.min(8, brakeBase)));
+      } else if (!cancelRequested && settings.vdjUseOutro !== false) {
         setMessage(vt("vdjOutroPro"));
         const lvlOut = getIntensity();
         // Hard = brake más corto y seco; soft = brake más largo y dramático.
