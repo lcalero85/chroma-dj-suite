@@ -1765,9 +1765,12 @@ export async function startVirtualDj(): Promise<void> {
           setTimeout(() => { try { void performScratch(toId, 2); } catch { /* noop */ } }, 350);
         }
         // Filter sweep down on outgoing for smoother handoff (cleaner cut feel)
-        void filterSweep(fromId, 0, -lvl.filterDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
+        // Profundidad del sweep con jitter ±20% para variar el feel.
+        const sweepDepth = jitter(lvl.filterDepth, 0.2, 0.2, 1);
+        void filterSweep(fromId, 0, -sweepDepth, Math.min(3.5, fxCfg.xfadeSec / 2));
         // Gain duck on outgoing during the crossfade — deeper duck for cleaner blend
-        void ramp((v) => setDeckGain(fromId, v), 1, lvl.duckTo, fxCfg.xfadeSec * 0.6);
+        const duckTarget = jitter(lvl.duckTo, 0.15, 0.25, 0.85);
+        void ramp((v) => setDeckGain(fromId, v), 1, duckTarget, fxCfg.xfadeSec * 0.6);
         // Apply genre FX during transition with a wet ramp
         if (settings.vdjUseFx !== false) applyGenreFx(moodGenre);
         setMessage(vt("vdjMixingTo", { title: next.title || "?" }));
