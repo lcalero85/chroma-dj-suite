@@ -957,6 +957,19 @@ export const DICT = {
     bmSoloTip: "Solo",
     bmVolumeTip: "Volume",
     bmPanTip: "Pan",
+
+    // ===== AI Assistant =====
+    aiDrawerTitle: "🤖 AI Assistant",
+    aiHeaderTagline: "AI Assistant · ask me how to use VDJ PRO",
+    aiTopBarTitle: "AI Assistant — ask me how to use VDJ PRO",
+    aiClearChatTip: "Clear conversation",
+    aiPlaceholder: "Ask something…",
+    aiSendTip: "Send",
+    aiEmptyHint: "Type a question. E.g.: \"How do I record my session?\", \"How do I activate Virtual DJ?\"",
+    aiErrRate: "Too many requests. Try again in a few seconds.",
+    aiErrCredits: "Out of credits. Add credits in Settings → Workspace → Usage.",
+    aiErrUnavailable: "AI is not available right now.",
+    aiErrNetwork: "Network error talking to the AI.",
   },
 
   es: {
@@ -1880,6 +1893,19 @@ export const DICT = {
     bmSoloTip: "Solo",
     bmVolumeTip: "Volumen",
     bmPanTip: "Paneo",
+
+    // ===== AI Assistant =====
+    aiDrawerTitle: "🤖 Asistente IA",
+    aiHeaderTagline: "Asistente IA · pregúntame cómo usar VDJ PRO",
+    aiTopBarTitle: "Asistente IA — pregúntame cómo usar VDJ PRO",
+    aiClearChatTip: "Limpiar conversación",
+    aiPlaceholder: "Pregunta algo…",
+    aiSendTip: "Enviar",
+    aiEmptyHint: "Escribe una pregunta. Ej.: \"¿Cómo grabo mi sesión?\", \"¿Cómo activo el Virtual DJ?\"",
+    aiErrRate: "Demasiadas solicitudes. Intenta en unos segundos.",
+    aiErrCredits: "Créditos agotados. Agrega créditos en Configuración → Espacio de trabajo → Uso.",
+    aiErrUnavailable: "La IA no está disponible ahora.",
+    aiErrNetwork: "Error de red al hablar con la IA.",
   },
 } as const;
 

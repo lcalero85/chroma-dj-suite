@@ -305,7 +305,7 @@ export function TopBar() {
           className="vdj-btn"
           data-active={drawer === "ai"}
           onClick={() => setDrawer(drawer === "ai" ? null : "ai")}
-          title="Asistente IA — pregúntame cómo usar VDJ PRO"
+          title={t("aiTopBarTitle")}
         >
           <MessageSquare size={12} /> IA
         </button>

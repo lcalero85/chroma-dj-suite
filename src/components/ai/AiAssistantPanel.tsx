@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 /**
  * In-app conversational assistant powered by Lovable AI Gateway. Streams
@@ -25,6 +26,7 @@ function saveHistory(msgs: Msg[]) {
 }
 
 export function AiAssistantPanel() {
+  const t = useT();
   const [messages, setMessages] = useState<Msg[]>(() => loadHistory());
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,9 +73,9 @@ export function AiAssistantPanel() {
         body: JSON.stringify({ messages: next }),
         signal: ctrl.signal,
       });
-      if (res.status === 429) { setError("Demasiadas solicitudes. Intenta en unos segundos."); setBusy(false); return; }
-      if (res.status === 402) { setError("Créditos agotados. Agrega créditos en Configuración → Espacio de trabajo → Uso."); setBusy(false); return; }
-      if (!res.ok || !res.body) { setError("La IA no está disponible ahora."); setBusy(false); return; }
+      if (res.status === 429) { setError(t("aiErrRate")); setBusy(false); return; }
+      if (res.status === 402) { setError(t("aiErrCredits")); setBusy(false); return; }
+      if (!res.ok || !res.body) { setError(t("aiErrUnavailable")); setBusy(false); return; }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -104,7 +106,7 @@ export function AiAssistantPanel() {
     } catch (e) {
       if ((e as any)?.name !== "AbortError") {
         console.warn("[chat] error", e);
-        setError("Error de red al hablar con la IA.");
+        setError(t("aiErrNetwork"));
       }
     } finally {
       setBusy(false);
@@ -122,9 +124,9 @@ export function AiAssistantPanel() {
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-dim, #888)" }}>
         <Sparkles size={14} />
-        <span>Asistente IA · pregúntame cómo usar VDJ PRO</span>
+        <span>{t("aiHeaderTagline")}</span>
         <div style={{ marginLeft: "auto" }}>
-          <button className="vdj-btn" onClick={clearChat} title="Limpiar conversación" style={{ padding: 4 }}>
+          <button className="vdj-btn" onClick={clearChat} title={t("aiClearChatTip")} style={{ padding: 4 }}>
             <Trash2 size={12} />
           </button>
         </div>
@@ -146,7 +148,7 @@ export function AiAssistantPanel() {
       >
         {messages.length === 0 && (
           <div style={{ color: "var(--text-dim, #888)", fontSize: 12, textAlign: "center", marginTop: 40 }}>
-            Escribe una pregunta. Ej: <em>"¿Cómo grabo mi sesión?"</em>, <em>"¿Cómo activo el Virtual DJ?"</em>
+            {t("aiEmptyHint")}
           </div>
         )}
         {messages.map((m, i) => (
@@ -177,14 +179,14 @@ export function AiAssistantPanel() {
         <input
           type="text"
           className="vdj-btn"
-          placeholder="Pregunta algo…"
+          placeholder={t("aiPlaceholder")}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
           style={{ flex: 1, textAlign: "left", padding: "8px 10px", fontSize: 13 }}
           disabled={busy}
         />
-        <button className="vdj-btn" onClick={() => void send()} disabled={busy || !input.trim()} title="Enviar">
+        <button className="vdj-btn" onClick={() => void send()} disabled={busy || !input.trim()} title={t("aiSendTip")}>
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
         </button>
       </div>
